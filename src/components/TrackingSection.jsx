@@ -10,7 +10,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
 import SurahAyahPicker from "./SurahAyahPicker";
 import { useAuth } from "../context/AuthContext";
@@ -32,23 +32,31 @@ export default function TrackingSection({ type, title }) {
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    const unsubStudents = onSnapshot(
-      query(collection(db, "students"), orderBy("name")),
-      (snap) => setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const studentsQuery = isAdmin
+      ? query(collection(db, "students"), orderBy("name"))
+      : query(collection(db, "students"), where("__name__", "==", auth.currentUser.uid));
+    const unsubStudents = onSnapshot(studentsQuery, (snap) =>
+      setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const unsubRecords = onSnapshot(
-      query(collection(db, "records"), where("type", "==", type)),
-      (snap) => {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-        setRecords(list);
-      }
-    );
+
+    const recordsQuery = isAdmin
+      ? query(collection(db, "records"), where("type", "==", type))
+      : query(
+          collection(db, "records"),
+          where("type", "==", type),
+          where("studentId", "==", auth.currentUser.uid)
+        );
+    const unsubRecords = onSnapshot(recordsQuery, (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      setRecords(list);
+    });
+
     return () => {
       unsubStudents();
       unsubRecords();
     };
-  }, [type]);
+  }, [type, isAdmin]);
 
   function resetForm() {
     setForm(EMPTY_FORM);

@@ -11,9 +11,6 @@ service cloud.firestore {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
-    function isAuthorized() {
-      return isAdmin() || isAuthorizedStudent();
-    }
 
     match /users/{uid} {
       allow read: if isAdmin() || request.auth.uid == uid;
@@ -21,12 +18,14 @@ service cloud.firestore {
     }
 
     match /students/{studentId} {
-      allow read: if isAuthorized();
+      allow read: if isAdmin() ||
+        (isAuthorizedStudent() && request.auth.uid == studentId);
       allow write: if isAdmin();
     }
 
     match /records/{recordId} {
-      allow read: if isAuthorized();
+      allow read: if isAdmin() ||
+        (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
   }
