@@ -1,4 +1,3 @@
-// 114 surahs of the Quran: number, Arabic name, ayah count
 export const SURAHS = [
   { number: 1, name: "الفاتحة", ayahs: 7 },
   { number: 2, name: "البقرة", ayahs: 286 },

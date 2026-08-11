@@ -19,8 +19,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Creates a login account for a student without signing the current
-// admin/user out: runs on a throwaway secondary Firebase app instance.
 export async function createStudentAccount(email, password) {
   const secondaryApp = initializeApp(firebaseConfig, `secondary-${Date.now()}`);
   const secondaryAuth = getAuth(secondaryApp);

@@ -103,7 +103,6 @@ label {
   flex: 1;
 }
 
-/* Login */
 .login-page {
   min-height: 100vh;
   display: flex;
@@ -169,7 +168,6 @@ label {
   font-weight: 600;
 }
 
-/* Dashboard layout */
 .dashboard {
   display: flex;
   min-height: 100vh;
