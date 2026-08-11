@@ -34,10 +34,10 @@ const ICONS = {
 };
 
 const TABS = [
-  { key: "students", label: "الطلاب", desc: "إدارة قائمة الطلاب" },
-  { key: "hifz", label: "حفظ القرآن يوميًا", desc: "متابعة الحفظ اليومي" },
-  { key: "qiraah", label: "قراءة القرآن", desc: "متابعة القراءة اليومية" },
-  { key: "murajaah", label: "مراجعة حفظ القرآن", desc: "متابعة المراجعة" },
+  { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
+  { key: "hifz", label: "حفظ القرآن يوميًا", navLabel: "حفظ", desc: "متابعة الحفظ اليومي" },
+  { key: "qiraah", label: "قراءة القرآن", navLabel: "قراءة", desc: "متابعة القراءة اليومية" },
+  { key: "murajaah", label: "مراجعة حفظ القرآن", navLabel: "مراجعة", desc: "متابعة المراجعة" },
 ];
 
 export default function Dashboard() {
@@ -64,7 +64,7 @@ export default function Dashboard() {
               onClick={() => setTab(t.key)}
             >
               <span className="nav-icon">{ICONS[t.key]}</span>
-              {t.label}
+              {t.navLabel}
             </button>
           ))}
         </nav>
@@ -73,7 +73,7 @@ export default function Dashboard() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
           </svg>
-          تسجيل الخروج
+          خروج
         </button>
       </aside>
 
