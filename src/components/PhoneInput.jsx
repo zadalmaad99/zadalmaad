@@ -23,21 +23,21 @@ export default function PhoneInput({ value, onChange }) {
         <optgroup label="الدول العربية">
           {ARAB_COUNTRIES.map((c) => (
             <option key={`ar-${c.dial}-${c.name}`} value={c.dial}>
-              {c.flag} +{c.dial} {c.name}
+              {c.flag} +{c.dial}
             </option>
           ))}
         </optgroup>
         <optgroup label="دول إسلامية أخرى">
           {ISLAMIC_COUNTRIES.map((c) => (
             <option key={`is-${c.dial}-${c.name}`} value={c.dial}>
-              {c.flag} +{c.dial} {c.name}
+              {c.flag} +{c.dial}
             </option>
           ))}
         </optgroup>
         <optgroup label="دول أخرى">
           {OTHER_COUNTRIES.map((c) => (
             <option key={`ot-${c.dial}-${c.name}`} value={c.dial}>
-              {c.flag} +{c.dial} {c.name}
+              {c.flag} +{c.dial}
             </option>
           ))}
         </optgroup>

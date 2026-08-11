@@ -1,6 +1,6 @@
 export const ARAB_COUNTRIES = [
-  { name: "العراق", flag: "🇮🇶", dial: "964" },
   { name: "السعودية", flag: "🇸🇦", dial: "966" },
+  { name: "العراق", flag: "🇮🇶", dial: "964" },
   { name: "الإمارات", flag: "🇦🇪", dial: "971" },
   { name: "الكويت", flag: "🇰🇼", dial: "965" },
   { name: "قطر", flag: "🇶🇦", dial: "974" },
