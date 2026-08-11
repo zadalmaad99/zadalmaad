@@ -90,30 +90,6 @@ export default function StudentsPanel() {
     <div className="panel">
       <form className="record-form" onSubmit={handleAdd}>
         <div className="picker-row">
-          <label>
-            اسم الطالب
-            <input
-              type="text"
-              placeholder="اسم الطالب"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            كلمة المرور
-            <input
-              type="password"
-              placeholder="6 أحرف على الأقل"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              minLength={6}
-              required
-            />
-          </label>
-        </div>
-
-        <div className="picker-row">
           <div className="contact-toggle">
             <span className="contact-toggle-label">
               تسجيل الدخول والتواصل عن طريق
@@ -164,6 +140,30 @@ export default function StudentsPanel() {
               />
             </label>
           )}
+        </div>
+
+        <div className="picker-row">
+          <label>
+            اسم الطالب
+            <input
+              type="text"
+              placeholder="اسم الطالب"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            كلمة المرور
+            <input
+              type="password"
+              placeholder="6 أحرف على الأقل"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              minLength={6}
+              required
+            />
+          </label>
         </div>
 
         {error && <div className="error-box">{error}</div>}
