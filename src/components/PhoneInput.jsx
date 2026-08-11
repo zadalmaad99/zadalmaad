@@ -1,7 +1,7 @@
 import {
   ARAB_COUNTRIES,
   ISLAMIC_COUNTRIES,
-  OTHER_COUNTRIES,
+  CONTINENTS,
   splitPhone,
 } from "../data/countries";
 
@@ -34,13 +34,15 @@ export default function PhoneInput({ value, onChange }) {
             </option>
           ))}
         </optgroup>
-        <optgroup label="دول أخرى">
-          {OTHER_COUNTRIES.map((c) => (
-            <option key={`ot-${c.dial}-${c.name}`} value={c.dial}>
-              {c.flag} +{c.dial}
-            </option>
-          ))}
-        </optgroup>
+        {Object.entries(CONTINENTS).map(([continent, countries]) => (
+          <optgroup key={continent} label={continent}>
+            {countries.map((c) => (
+              <option key={`${continent}-${c.dial}-${c.name}`} value={c.dial}>
+                {c.flag} +{c.dial}
+              </option>
+            ))}
+          </optgroup>
+        ))}
       </select>
       <input
         type="tel"
