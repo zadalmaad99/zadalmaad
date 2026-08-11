@@ -18,7 +18,7 @@ export default function Login() {
     try {
       await login(email, password);
       navigate("/");
-    } catch (err) {
+    } catch {
       setError("فشل تسجيل الدخول: تحقق من البريد الإلكتروني وكلمة المرور");
     } finally {
       setLoading(false);

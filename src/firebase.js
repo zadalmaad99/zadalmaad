@@ -25,7 +25,12 @@ export async function createStudentAccount(email, password) {
   const secondaryApp = initializeApp(firebaseConfig, `secondary-${Date.now()}`);
   const secondaryAuth = getAuth(secondaryApp);
   try {
-    await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const credential = await createUserWithEmailAndPassword(
+      secondaryAuth,
+      email,
+      password
+    );
+    return credential.user.uid;
   } finally {
     await signOut(secondaryAuth).catch(() => {});
     await deleteApp(secondaryApp);

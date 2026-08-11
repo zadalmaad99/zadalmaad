@@ -7,14 +7,26 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && request.auth.token.email in ["mathelove2@gmail.com"];
     }
+    function isAuthorizedStudent() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function isAuthorized() {
+      return isAdmin() || isAuthorizedStudent();
+    }
+
+    match /users/{uid} {
+      allow read: if isAdmin() || request.auth.uid == uid;
+      allow write: if isAdmin();
+    }
 
     match /students/{studentId} {
-      allow read: if isSignedIn();
+      allow read: if isAuthorized();
       allow write: if isAdmin();
     }
 
     match /records/{recordId} {
-      allow read: if isSignedIn();
+      allow read: if isAuthorized();
       allow write: if isAdmin();
     }
   }

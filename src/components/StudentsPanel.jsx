@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
   onSnapshot,
   orderBy,
   query,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { db, createStudentAccount } from "../firebase";
@@ -34,11 +34,17 @@ export default function StudentsPanel() {
     setError("");
     setSaving(true);
     try {
-      await createStudentAccount(form.email.trim(), form.password);
-      await addDoc(collection(db, "students"), {
+      const uid = await createStudentAccount(form.email.trim(), form.password);
+      const createdAt = Date.now();
+      await setDoc(doc(db, "students", uid), {
         name: form.name.trim(),
         email: form.email.trim(),
-        createdAt: Date.now(),
+        createdAt,
+      });
+      await setDoc(doc(db, "users", uid), {
+        role: "student",
+        email: form.email.trim(),
+        createdAt,
       });
       setForm(EMPTY_FORM);
     } catch (err) {
@@ -59,10 +65,11 @@ export default function StudentsPanel() {
   async function handleDelete(id) {
     if (
       !confirm(
-        "هل أنت متأكد من حذف هذا الطالب؟ سيتم الاحتفاظ بسجلاته، ولن يُحذف حساب دخوله تلقائيًا (يمكن حذفه من Firebase Console)."
+        "هل أنت متأكد من حذف هذا الطالب؟ سيتم الاحتفاظ بسجلاته، وسيُسحب حق دخوله فورًا، لكن حسابه في Firebase Authentication يبقى موجودًا (يمكن حذفه يدويًا من Firebase Console إذا أردت)."
       )
     )
       return;
+    await deleteDoc(doc(db, "users", id));
     await deleteDoc(doc(db, "students", id));
   }
 
@@ -104,7 +111,7 @@ export default function StudentsPanel() {
           <label>
             كلمة المرور
             <input
-              type="text"
+              type="password"
               placeholder="6 أحرف على الأقل"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
