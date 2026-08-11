@@ -2,19 +2,31 @@ import { useEffect, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
-import SurahAyahPicker from "./SurahAyahPicker";
+import UnitPicker from "./UnitPicker";
 import SurahProgressBar from "./SurahProgressBar";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 
 const EMPTY_FORM = {
   studentId: "",
+  unitType: "surah",
   surahNumber: "",
   ayahFrom: 1,
   ayahTo: 1,
+  juzNumber: "",
+  hizbNumber: "",
+  pageFrom: "",
+  pageTo: "",
   date: new Date().toISOString().slice(0, 10),
   notes: "",
 };
+
+function unitLabel(r) {
+  if (r.unitType === "juz") return `الجزء ${r.juzNumber}`;
+  if (r.unitType === "hizb") return `الحزب ${r.hizbNumber}`;
+  if (r.unitType === "page") return `صفحة ${r.pageFrom} - ${r.pageTo}`;
+  return `${r.surahNumber}. ${r.surahName} (${r.ayahFrom} - ${r.ayahTo})`;
+}
 
 export default function TrackingSection({ type, title }) {
   const { isAdmin } = useAuth();
@@ -57,19 +69,34 @@ export default function TrackingSection({ type, title }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.studentId || !form.surahNumber) return;
+    if (!form.studentId) return;
 
-    const surah = SURAHS.find((s) => s.number === Number(form.surahNumber));
     const payload = {
       type,
       studentId: form.studentId,
-      surahNumber: Number(form.surahNumber),
-      surahName: surah?.name || "",
-      ayahFrom: Number(form.ayahFrom),
-      ayahTo: Number(form.ayahTo),
+      unitType: form.unitType,
       date: form.date,
       notes: form.notes.trim(),
     };
+
+    if (form.unitType === "surah") {
+      if (!form.surahNumber) return;
+      const surah = SURAHS.find((s) => s.number === Number(form.surahNumber));
+      payload.surahNumber = Number(form.surahNumber);
+      payload.surahName = surah?.name || "";
+      payload.ayahFrom = Number(form.ayahFrom);
+      payload.ayahTo = Number(form.ayahTo);
+    } else if (form.unitType === "juz") {
+      if (!form.juzNumber) return;
+      payload.juzNumber = Number(form.juzNumber);
+    } else if (form.unitType === "hizb") {
+      if (!form.hizbNumber) return;
+      payload.hizbNumber = Number(form.hizbNumber);
+    } else if (form.unitType === "page") {
+      if (!form.pageFrom || !form.pageTo) return;
+      payload.pageFrom = Number(form.pageFrom);
+      payload.pageTo = Number(form.pageTo);
+    }
 
     if (editingId) {
       await api.updateRecord(editingId, payload);
@@ -83,9 +110,14 @@ export default function TrackingSection({ type, title }) {
     setEditingId(r.id);
     setForm({
       studentId: r.studentId,
-      surahNumber: r.surahNumber,
-      ayahFrom: r.ayahFrom,
-      ayahTo: r.ayahTo,
+      unitType: r.unitType || "surah",
+      surahNumber: r.surahNumber || "",
+      ayahFrom: r.ayahFrom || 1,
+      ayahTo: r.ayahTo || 1,
+      juzNumber: r.juzNumber || "",
+      hizbNumber: r.hizbNumber || "",
+      pageFrom: r.pageFrom || "",
+      pageTo: r.pageTo || "",
       date: r.date,
       notes: r.notes || "",
     });
@@ -103,7 +135,9 @@ export default function TrackingSection({ type, title }) {
   function coveredSurahsFor(studentId) {
     const set = new Set();
     for (const r of records) {
-      if (r.studentId === studentId) set.add(r.surahNumber);
+      if (r.studentId === studentId && r.unitType !== "juz" && r.unitType !== "hizb" && r.unitType !== "page") {
+        set.add(r.surahNumber);
+      }
     }
     return set;
   }
@@ -149,12 +183,7 @@ export default function TrackingSection({ type, title }) {
             </label>
           </div>
 
-          <SurahAyahPicker
-            surahNumber={form.surahNumber}
-            ayahFrom={form.ayahFrom}
-            ayahTo={form.ayahTo}
-            onChange={(vals) => setForm({ ...form, ...vals })}
-          />
+          <UnitPicker form={form} onChange={(vals) => setForm({ ...form, ...vals })} />
 
           <label>
             ملاحظات
@@ -180,8 +209,7 @@ export default function TrackingSection({ type, title }) {
         <thead>
           <tr>
             <th>الطالب</th>
-            <th>السورة</th>
-            <th>من - إلى</th>
+            <th>الوحدة</th>
             <th>التاريخ</th>
             <th>ملاحظات</th>
             {isAdmin && <th>إجراءات</th>}
@@ -191,12 +219,7 @@ export default function TrackingSection({ type, title }) {
           {records.map((r) => (
             <tr key={r.id}>
               <td>{studentName(r.studentId)}</td>
-              <td>
-                {r.surahNumber}. {r.surahName}
-              </td>
-              <td>
-                {r.ayahFrom} - {r.ayahTo}
-              </td>
+              <td>{unitLabel(r)}</td>
               <td>{r.date}</td>
               <td>{r.notes || "—"}</td>
               {isAdmin && (
@@ -213,7 +236,7 @@ export default function TrackingSection({ type, title }) {
           ))}
           {records.length === 0 && (
             <tr>
-              <td colSpan={isAdmin ? 6 : 5} className="empty">
+              <td colSpan={isAdmin ? 5 : 4} className="empty">
                 لا توجد سجلات بعد
               </td>
             </tr>
