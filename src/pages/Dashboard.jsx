@@ -41,9 +41,10 @@ const TABS = [
 ];
 
 export default function Dashboard() {
-  const { logout } = useAuth();
-  const [tab, setTab] = useState("students");
-  const current = TABS.find((t) => t.key === tab);
+  const { logout, isAdmin } = useAuth();
+  const visibleTabs = isAdmin ? TABS : TABS.filter((t) => t.key !== "students");
+  const [tab, setTab] = useState(isAdmin ? "students" : "hifz");
+  const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
 
   return (
     <div className="dashboard">
@@ -57,7 +58,7 @@ export default function Dashboard() {
         </div>
 
         <nav>
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.key}
               className={tab === t.key ? "nav-btn active" : "nav-btn"}
@@ -83,7 +84,7 @@ export default function Dashboard() {
           <p>{current.desc}</p>
         </header>
 
-        {tab === "students" && <StudentsPanel />}
+        {tab === "students" && isAdmin && <StudentsPanel />}
         {tab === "hifz" && (
           <TrackingSection type="hifz" title="سجلات الحفظ اليومي" />
         )}

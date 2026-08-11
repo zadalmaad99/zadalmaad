@@ -4,7 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, ADMIN_EMAILS } from "../firebase";
 
 const AuthContext = createContext(null);
 
@@ -20,8 +20,10 @@ export function AuthProvider({ children }) {
 
   const logout = () => signOut(auth);
 
+  const isAdmin = !!user && ADMIN_EMAILS.includes(user.email);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

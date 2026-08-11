@@ -13,6 +13,7 @@ import {
 import { db } from "../firebase";
 import { SURAHS } from "../data/surahs";
 import SurahAyahPicker from "./SurahAyahPicker";
+import { useAuth } from "../context/AuthContext";
 
 const EMPTY_FORM = {
   studentId: "",
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
 };
 
 export default function TrackingSection({ type, title }) {
+  const { isAdmin } = useAuth();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -106,60 +108,62 @@ export default function TrackingSection({ type, title }) {
     <div className="panel">
       <h3 className="panel-title">{title}</h3>
 
-      <form className="record-form" onSubmit={handleSubmit}>
-        <div className="picker-row">
-          <label>
-            الطالب
-            <select
-              value={form.studentId}
-              onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-              required
-            >
-              <option value="">اختر الطالب</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </label>
+      {isAdmin && (
+        <form className="record-form" onSubmit={handleSubmit}>
+          <div className="picker-row">
+            <label>
+              الطالب
+              <select
+                value={form.studentId}
+                onChange={(e) => setForm({ ...form, studentId: e.target.value })}
+                required
+              >
+                <option value="">اختر الطالب</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              التاريخ
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                required
+              />
+            </label>
+          </div>
+
+          <SurahAyahPicker
+            surahNumber={form.surahNumber}
+            ayahFrom={form.ayahFrom}
+            ayahTo={form.ayahTo}
+            onChange={(vals) => setForm({ ...form, ...vals })}
+          />
 
           <label>
-            التاريخ
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              required
+            ملاحظات
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={2}
             />
           </label>
-        </div>
 
-        <SurahAyahPicker
-          surahNumber={form.surahNumber}
-          ayahFrom={form.ayahFrom}
-          ayahTo={form.ayahTo}
-          onChange={(vals) => setForm({ ...form, ...vals })}
-        />
-
-        <label>
-          ملاحظات
-          <textarea
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-            rows={2}
-          />
-        </label>
-
-        <div className="form-actions">
-          <button type="submit">{editingId ? "حفظ التعديل" : "إضافة سجل"}</button>
-          {editingId && (
-            <button type="button" className="ghost" onClick={resetForm}>
-              إلغاء
-            </button>
-          )}
-        </div>
-      </form>
+          <div className="form-actions">
+            <button type="submit">{editingId ? "حفظ التعديل" : "إضافة سجل"}</button>
+            {editingId && (
+              <button type="button" className="ghost" onClick={resetForm}>
+                إلغاء
+              </button>
+            )}
+          </div>
+        </form>
+      )}
 
       <table>
         <thead>
@@ -169,7 +173,7 @@ export default function TrackingSection({ type, title }) {
             <th>من - إلى</th>
             <th>التاريخ</th>
             <th>ملاحظات</th>
-            <th>إجراءات</th>
+            {isAdmin && <th>إجراءات</th>}
           </tr>
         </thead>
         <tbody>
@@ -184,19 +188,21 @@ export default function TrackingSection({ type, title }) {
               </td>
               <td>{r.date}</td>
               <td>{r.notes || "—"}</td>
-              <td className="actions">
-                <button className="ghost" onClick={() => startEdit(r)}>
-                  تعديل
-                </button>
-                <button className="danger" onClick={() => handleDelete(r.id)}>
-                  حذف
-                </button>
-              </td>
+              {isAdmin && (
+                <td className="actions">
+                  <button className="ghost" onClick={() => startEdit(r)}>
+                    تعديل
+                  </button>
+                  <button className="danger" onClick={() => handleDelete(r.id)}>
+                    حذف
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
           {records.length === 0 && (
             <tr>
-              <td colSpan={6} className="empty">
+              <td colSpan={isAdmin ? 6 : 5} className="empty">
                 لا توجد سجلات بعد
               </td>
             </tr>
