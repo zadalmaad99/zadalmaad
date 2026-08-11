@@ -1,0 +1,99 @@
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import StudentsPanel from "../components/StudentsPanel";
+import TrackingSection from "../components/TrackingSection";
+import logo from "../assets/logo.png";
+
+const ICONS = {
+  students: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="9" cy="7" r="3.2" />
+      <path d="M2.5 20c.7-3.6 3.3-5.6 6.5-5.6s5.8 2 6.5 5.6" />
+      <circle cx="17" cy="8" r="2.4" />
+      <path d="M15.5 14.6c2.6.2 4.6 2 5.2 5" />
+    </svg>
+  ),
+  hifz: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 4.5C4 3.7 4.7 3 5.5 3H12v18H5.5c-.8 0-1.5-.7-1.5-1.5v-15Z" />
+      <path d="M20 4.5c0-.8-.7-1.5-1.5-1.5H12v18h6.5c.8 0 1.5-.7 1.5-1.5v-15Z" />
+    </svg>
+  ),
+  qiraah: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="4" y="3.5" width="16" height="17" rx="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </svg>
+  ),
+  murajaah: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 12a8 8 0 1 1 2.6 5.9" />
+      <path d="M4 20v-5h5" />
+    </svg>
+  ),
+};
+
+const TABS = [
+  { key: "students", label: "الطلاب", desc: "إدارة قائمة الطلاب" },
+  { key: "hifz", label: "حفظ القرآن يوميًا", desc: "متابعة الحفظ اليومي" },
+  { key: "qiraah", label: "قراءة القرآن", desc: "متابعة القراءة اليومية" },
+  { key: "murajaah", label: "مراجعة حفظ القرآن", desc: "متابعة المراجعة" },
+];
+
+export default function Dashboard() {
+  const { logout } = useAuth();
+  const [tab, setTab] = useState("students");
+  const current = TABS.find((t) => t.key === tab);
+
+  return (
+    <div className="dashboard">
+      <aside className="sidebar">
+        <div className="brand">
+          <img src={logo} alt="شعار التطبيق" className="brand-mark" />
+          <div>
+            <h1>لوحة المراقبة</h1>
+            <span className="brand-sub">حفظ وقراءة القرآن الكريم</span>
+          </div>
+        </div>
+
+        <nav>
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              className={tab === t.key ? "nav-btn active" : "nav-btn"}
+              onClick={() => setTab(t.key)}
+            >
+              <span className="nav-icon">{ICONS[t.key]}</span>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <button className="logout-btn" onClick={logout}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+          </svg>
+          تسجيل الخروج
+        </button>
+      </aside>
+
+      <main className="content">
+        <header className="content-header">
+          <h2>{current.label}</h2>
+          <p>{current.desc}</p>
+        </header>
+
+        {tab === "students" && <StudentsPanel />}
+        {tab === "hifz" && (
+          <TrackingSection type="hifz" title="سجلات الحفظ اليومي" />
+        )}
+        {tab === "qiraah" && (
+          <TrackingSection type="qiraah" title="سجلات القراءة" />
+        )}
+        {tab === "murajaah" && (
+          <TrackingSection type="murajaah" title="سجلات المراجعة" />
+        )}
+      </main>
+    </div>
+  );
+}
