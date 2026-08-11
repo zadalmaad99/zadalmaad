@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { toLoginEmail } from "../authIdentifier";
 import logo from "../assets/logo.png";
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,10 +17,10 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await login(toLoginEmail(identifier), password);
       navigate("/");
     } catch {
-      setError("فشل تسجيل الدخول: تحقق من البريد الإلكتروني وكلمة المرور");
+      setError("فشل تسجيل الدخول: تحقق من البريد الإلكتروني/رقم الهاتف وكلمة المرور");
     } finally {
       setLoading(false);
     }
@@ -35,11 +36,11 @@ export default function Login() {
         {error && <div className="error-box">{error}</div>}
 
         <label>
-          البريد الإلكتروني
+          البريد الإلكتروني أو رقم الهاتف
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
             autoFocus
           />

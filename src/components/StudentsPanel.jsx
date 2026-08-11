@@ -6,7 +6,6 @@ import PhoneInput from "./PhoneInput";
 
 const EMPTY_FORM = {
   name: "",
-  email: "",
   password: "",
   contactType: "email",
   contactValue: "",
@@ -36,13 +35,12 @@ export default function StudentsPanel() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.password) return;
+    if (!form.name.trim() || !form.contactValue.trim() || !form.password) return;
     setError("");
     setSaving(true);
     try {
       await api.createStudent({
         name: form.name.trim(),
-        email: form.email.trim(),
         password: form.password,
         contactType: form.contactType,
         contactValue: form.contactValue.trim(),
@@ -50,11 +48,9 @@ export default function StudentsPanel() {
       setForm(EMPTY_FORM);
     } catch (err) {
       if (err.message === "email already in use") {
-        setError("هذا البريد الإلكتروني مستخدم بالفعل");
+        setError("هذا البريد الإلكتروني أو رقم الهاتف مستخدم بالفعل");
       } else if (err.message.includes("password")) {
         setError("كلمة المرور ضعيفة، يجب أن تكون 6 أحرف على الأقل");
-      } else if (err.message.includes("email")) {
-        setError("صيغة البريد الإلكتروني غير صحيحة");
       } else {
         setError("حدث خطأ أثناء إنشاء حساب الطالب");
       }
@@ -105,16 +101,6 @@ export default function StudentsPanel() {
             />
           </label>
           <label>
-            البريد الإلكتروني (لتسجيل دخول الطالب)
-            <input
-              type="email"
-              placeholder="student@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
-          </label>
-          <label>
             كلمة المرور
             <input
               type="password"
@@ -129,7 +115,9 @@ export default function StudentsPanel() {
 
         <div className="picker-row">
           <div className="contact-toggle">
-            <span className="contact-toggle-label">معلومة تواصل إضافية</span>
+            <span className="contact-toggle-label">
+              تسجيل الدخول والتواصل عن طريق
+            </span>
             <div className="contact-toggle-options">
               <label className="radio-label">
                 <input
@@ -169,9 +157,10 @@ export default function StudentsPanel() {
               البريد الإلكتروني
               <input
                 type="email"
-                placeholder="contact@example.com"
+                placeholder="student@example.com"
                 value={form.contactValue}
                 onChange={(e) => setForm({ ...form, contactValue: e.target.value })}
+                required
               />
             </label>
           )}
@@ -190,8 +179,7 @@ export default function StudentsPanel() {
         <thead>
           <tr>
             <th>الاسم</th>
-            <th>البريد الإلكتروني</th>
-            <th>معلومة التواصل</th>
+            <th>بريد/هاتف الدخول</th>
             <th>إجراءات</th>
           </tr>
         </thead>
@@ -208,10 +196,12 @@ export default function StudentsPanel() {
                   s.name
                 )}
               </td>
-              <td>{s.email || "—"}</td>
               <td>
                 {editingId === s.id ? (
                   <div className="contact-toggle">
+                    <span className="hint-text">
+                      تعديل هنا للعرض فقط، بيانات الدخول الفعلية لا تتغير
+                    </span>
                     <div className="contact-toggle-options">
                       <label className="radio-label">
                         <input
@@ -245,24 +235,20 @@ export default function StudentsPanel() {
                       />
                     )}
                   </div>
-                ) : s.contactValue ? (
-                  s.contactType === "phone" ? (
-                    <a
-                      className="whatsapp-link"
-                      href={whatsappLink(s.contactValue)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      +{s.contactValue}
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8.9-.2.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.2.2-.4.1-.2 0-.3 0-.4 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.5 3.9 3.4.5.2 1 .4 1.3.5.5.2 1 .1 1.3.1.4-.1 1.2-.5 1.4-1 .2-.5.2-.9.1-1Z" />
-                      </svg>
-                    </a>
-                  ) : (
-                    s.contactValue
-                  )
+                ) : s.contactType === "phone" ? (
+                  <a
+                    className="whatsapp-link"
+                    href={whatsappLink(s.contactValue)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    +{s.contactValue}
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8.9-.2.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.2.2-.4.1-.2 0-.3 0-.4 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.5 3.9 3.4.5.2 1 .4 1.3.5.5.2 1 .1 1.3.1.4-.1 1.2-.5 1.4-1 .2-.5.2-.9.1-1Z" />
+                    </svg>
+                  </a>
                 ) : (
-                  "—"
+                  s.contactValue || "—"
                 )}
               </td>
               <td className="actions">
@@ -288,7 +274,7 @@ export default function StudentsPanel() {
           ))}
           {students.length === 0 && (
             <tr>
-              <td colSpan={4} className="empty">
+              <td colSpan={3} className="empty">
                 لا يوجد طلاب بعد
               </td>
             </tr>

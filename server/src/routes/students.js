@@ -4,36 +4,47 @@ import { requireAdmin } from "../adminAuth.js";
 
 const router = Router();
 
-function parseContact(body) {
+const PHONE_DOMAIN = "phone.quran-tracker.app";
+
+function resolveIdentifier(body) {
   const contactType = body.contactType === "phone" ? "phone" : "email";
   const contactValue = (body.contactValue || "").trim();
-  return { contactType, contactValue };
+  if (!contactValue) return null;
+
+  const loginEmail =
+    contactType === "phone"
+      ? `${contactValue.replace(/[^\d]/g, "")}@${PHONE_DOMAIN}`
+      : contactValue;
+
+  return { contactType, contactValue, loginEmail };
 }
 
 router.post("/", requireAdmin, async (req, res) => {
-  const { name, email, password } = req.body || {};
-  if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
-    return res.status(400).json({ error: "invalid name, email, or password" });
+  const { name, password } = req.body || {};
+  const identifier = resolveIdentifier(req.body || {});
+  if (!name?.trim() || !identifier || !password || password.length < 6) {
+    return res
+      .status(400)
+      .json({ error: "invalid name, contact info, or password" });
   }
-  const { contactType, contactValue } = parseContact(req.body || {});
 
   try {
     const userRecord = await adminAuth.createUser({
-      email: email.trim(),
+      email: identifier.loginEmail,
       password,
     });
     const createdAt = Date.now();
     const batch = adminDb.batch();
     batch.set(adminDb.collection("students").doc(userRecord.uid), {
       name: name.trim(),
-      email: email.trim(),
-      contactType,
-      contactValue,
+      contactType: identifier.contactType,
+      contactValue: identifier.contactValue,
+      loginEmail: identifier.loginEmail,
       createdAt,
     });
     batch.set(adminDb.collection("users").doc(userRecord.uid), {
       role: "student",
-      email: email.trim(),
+      loginEmail: identifier.loginEmail,
       createdAt,
     });
     await batch.commit();
@@ -51,12 +62,13 @@ router.patch("/:id", requireAdmin, async (req, res) => {
   if (!name?.trim()) {
     return res.status(400).json({ error: "invalid name" });
   }
-  const { contactType, contactValue } = parseContact(req.body || {});
-  await adminDb.collection("students").doc(req.params.id).update({
-    name: name.trim(),
-    contactType,
-    contactValue,
-  });
+  const identifier = resolveIdentifier(req.body || {});
+  const update = { name: name.trim() };
+  if (identifier) {
+    update.contactType = identifier.contactType;
+    update.contactValue = identifier.contactValue;
+  }
+  await adminDb.collection("students").doc(req.params.id).update(update);
   res.json({ ok: true });
 });
 

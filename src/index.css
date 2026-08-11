@@ -386,6 +386,10 @@ label {
   gap: 8px;
   min-width: 220px;
 }
+.hint-text {
+  font-size: 11px;
+  color: var(--muted);
+}
 .contact-toggle-label {
   font-size: 13px;
   font-weight: 600;
