@@ -9,11 +9,15 @@ import {
   query,
   updateDoc,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, createStudentAccount } from "../firebase";
+
+const EMPTY_FORM = { name: "", email: "", password: "" };
 
 export default function StudentsPanel() {
   const [students, setStudents] = useState([]);
-  const [name, setName] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
 
@@ -26,16 +30,39 @@ export default function StudentsPanel() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!name.trim()) return;
-    await addDoc(collection(db, "students"), {
-      name: name.trim(),
-      createdAt: Date.now(),
-    });
-    setName("");
+    if (!form.name.trim() || !form.email.trim() || !form.password) return;
+    setError("");
+    setSaving(true);
+    try {
+      await createStudentAccount(form.email.trim(), form.password);
+      await addDoc(collection(db, "students"), {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        createdAt: Date.now(),
+      });
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") {
+        setError("هذا البريد الإلكتروني مستخدم بالفعل");
+      } else if (err.code === "auth/weak-password") {
+        setError("كلمة المرور ضعيفة، يجب أن تكون 6 أحرف على الأقل");
+      } else if (err.code === "auth/invalid-email") {
+        setError("صيغة البريد الإلكتروني غير صحيحة");
+      } else {
+        setError("حدث خطأ أثناء إنشاء حساب الطالب");
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id) {
-    if (!confirm("هل أنت متأكد من حذف هذا الطالب؟ سيتم الاحتفاظ بسجلاته.")) return;
+    if (
+      !confirm(
+        "هل أنت متأكد من حذف هذا الطالب؟ سيتم الاحتفاظ بسجلاته، ولن يُحذف حساب دخوله تلقائيًا (يمكن حذفه من Firebase Console)."
+      )
+    )
+      return;
     await deleteDoc(doc(db, "students", id));
   }
 
@@ -52,21 +79,55 @@ export default function StudentsPanel() {
 
   return (
     <div className="panel">
-      <form className="inline-form" onSubmit={handleAdd}>
-        <input
-          type="text"
-          placeholder="اسم الطالب الجديد"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <button type="submit">إضافة طالب</button>
+      <form className="record-form" onSubmit={handleAdd}>
+        <div className="picker-row">
+          <label>
+            اسم الطالب
+            <input
+              type="text"
+              placeholder="اسم الطالب"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            البريد الإلكتروني (لتسجيل دخول الطالب)
+            <input
+              type="email"
+              placeholder="student@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            كلمة المرور
+            <input
+              type="text"
+              placeholder="6 أحرف على الأقل"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              minLength={6}
+              required
+            />
+          </label>
+        </div>
+
+        {error && <div className="error-box">{error}</div>}
+
+        <div className="form-actions">
+          <button type="submit" disabled={saving}>
+            {saving ? "جارٍ الإضافة..." : "إضافة طالب وإنشاء حساب دخول"}
+          </button>
+        </div>
       </form>
 
       <table>
         <thead>
           <tr>
             <th>الاسم</th>
+            <th>البريد الإلكتروني</th>
             <th>إجراءات</th>
           </tr>
         </thead>
@@ -83,6 +144,7 @@ export default function StudentsPanel() {
                   s.name
                 )}
               </td>
+              <td>{s.email || "—"}</td>
               <td className="actions">
                 {editingId === s.id ? (
                   <>
@@ -106,7 +168,7 @@ export default function StudentsPanel() {
           ))}
           {students.length === 0 && (
             <tr>
-              <td colSpan={2} className="empty">
+              <td colSpan={3} className="empty">
                 لا يوجد طلاب بعد
               </td>
             </tr>
