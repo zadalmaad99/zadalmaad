@@ -1,20 +1,11 @@
 import { useEffect, useState } from "react";
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
 import SurahAyahPicker from "./SurahAyahPicker";
 import SurahProgressBar from "./SurahProgressBar";
 import { useAuth } from "../context/AuthContext";
+import { api } from "../api";
 
 const EMPTY_FORM = {
   studentId: "",
@@ -78,16 +69,12 @@ export default function TrackingSection({ type, title }) {
       ayahTo: Number(form.ayahTo),
       date: form.date,
       notes: form.notes.trim(),
-      updatedAt: Date.now(),
     };
 
     if (editingId) {
-      await updateDoc(doc(db, "records", editingId), payload);
+      await api.updateRecord(editingId, payload);
     } else {
-      await addDoc(collection(db, "records"), {
-        ...payload,
-        createdAt: Date.now(),
-      });
+      await api.createRecord(payload);
     }
     resetForm();
   }
@@ -106,7 +93,7 @@ export default function TrackingSection({ type, title }) {
 
   async function handleDelete(id) {
     if (!confirm("هل أنت متأكد من حذف هذا السجل؟")) return;
-    await deleteDoc(doc(db, "records", id));
+    await api.deleteRecord(id);
   }
 
   function studentName(id) {

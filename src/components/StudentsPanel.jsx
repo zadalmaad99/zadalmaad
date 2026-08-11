@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
-import { db, createStudentAccount } from "../firebase";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { db } from "../firebase";
+import { api } from "../api";
 
 const EMPTY_FORM = { name: "", email: "", password: "" };
 
@@ -34,25 +26,14 @@ export default function StudentsPanel() {
     setError("");
     setSaving(true);
     try {
-      const uid = await createStudentAccount(form.email.trim(), form.password);
-      const createdAt = Date.now();
-      await setDoc(doc(db, "students", uid), {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        createdAt,
-      });
-      await setDoc(doc(db, "users", uid), {
-        role: "student",
-        email: form.email.trim(),
-        createdAt,
-      });
+      await api.createStudent(form.name.trim(), form.email.trim(), form.password);
       setForm(EMPTY_FORM);
     } catch (err) {
-      if (err.code === "auth/email-already-in-use") {
+      if (err.message === "email already in use") {
         setError("هذا البريد الإلكتروني مستخدم بالفعل");
-      } else if (err.code === "auth/weak-password") {
+      } else if (err.message.includes("password")) {
         setError("كلمة المرور ضعيفة، يجب أن تكون 6 أحرف على الأقل");
-      } else if (err.code === "auth/invalid-email") {
+      } else if (err.message.includes("email")) {
         setError("صيغة البريد الإلكتروني غير صحيحة");
       } else {
         setError("حدث خطأ أثناء إنشاء حساب الطالب");
@@ -69,8 +50,7 @@ export default function StudentsPanel() {
       )
     )
       return;
-    await deleteDoc(doc(db, "users", id));
-    await deleteDoc(doc(db, "students", id));
+    await api.deleteStudent(id);
   }
 
   function startEdit(s) {
@@ -80,7 +60,7 @@ export default function StudentsPanel() {
 
   async function saveEdit(id) {
     if (!editingName.trim()) return;
-    await updateDoc(doc(db, "students", id), { name: editingName.trim() });
+    await api.updateStudent(id, editingName.trim());
     setEditingId(null);
   }
 

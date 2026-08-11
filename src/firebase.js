@@ -1,9 +1,5 @@
-import { initializeApp, deleteApp } from "firebase/app";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,19 +16,3 @@ export const ADMIN_EMAILS = ["mathelove2@gmail.com"];
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-export async function createStudentAccount(email, password) {
-  const secondaryApp = initializeApp(firebaseConfig, `secondary-${Date.now()}`);
-  const secondaryAuth = getAuth(secondaryApp);
-  try {
-    const credential = await createUserWithEmailAndPassword(
-      secondaryAuth,
-      email,
-      password
-    );
-    return credential.user.uid;
-  } finally {
-    await signOut(secondaryAuth).catch(() => {});
-    await deleteApp(secondaryApp);
-  }
-}

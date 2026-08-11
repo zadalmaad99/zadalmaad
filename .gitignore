@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 info.txt
+.env
+.env.local
+server/.env
+*serviceAccount*.json
