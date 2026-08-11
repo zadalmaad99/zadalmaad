@@ -1,0 +1,100 @@
+export const ARAB_COUNTRIES = [
+  { name: "العراق", flag: "🇮🇶", dial: "964" },
+  { name: "السعودية", flag: "🇸🇦", dial: "966" },
+  { name: "الإمارات", flag: "🇦🇪", dial: "971" },
+  { name: "الكويت", flag: "🇰🇼", dial: "965" },
+  { name: "قطر", flag: "🇶🇦", dial: "974" },
+  { name: "البحرين", flag: "🇧🇭", dial: "973" },
+  { name: "عُمان", flag: "🇴🇲", dial: "968" },
+  { name: "اليمن", flag: "🇾🇪", dial: "967" },
+  { name: "الأردن", flag: "🇯🇴", dial: "962" },
+  { name: "سوريا", flag: "🇸🇾", dial: "963" },
+  { name: "لبنان", flag: "🇱🇧", dial: "961" },
+  { name: "فلسطين", flag: "🇵🇸", dial: "970" },
+  { name: "مصر", flag: "🇪🇬", dial: "20" },
+  { name: "السودان", flag: "🇸🇩", dial: "249" },
+  { name: "ليبيا", flag: "🇱🇾", dial: "218" },
+  { name: "تونس", flag: "🇹🇳", dial: "216" },
+  { name: "الجزائر", flag: "🇩🇿", dial: "213" },
+  { name: "المغرب", flag: "🇲🇦", dial: "212" },
+  { name: "موريتانيا", flag: "🇲🇷", dial: "222" },
+  { name: "الصومال", flag: "🇸🇴", dial: "252" },
+  { name: "جيبوتي", flag: "🇩🇯", dial: "253" },
+  { name: "جزر القمر", flag: "🇰🇲", dial: "269" },
+];
+
+export const ISLAMIC_COUNTRIES = [
+  { name: "تركيا", flag: "🇹🇷", dial: "90" },
+  { name: "إيران", flag: "🇮🇷", dial: "98" },
+  { name: "باكستان", flag: "🇵🇰", dial: "92" },
+  { name: "أفغانستان", flag: "🇦🇫", dial: "93" },
+  { name: "إندونيسيا", flag: "🇮🇩", dial: "62" },
+  { name: "ماليزيا", flag: "🇲🇾", dial: "60" },
+  { name: "بنغلاديش", flag: "🇧🇩", dial: "880" },
+  { name: "نيجيريا", flag: "🇳🇬", dial: "234" },
+  { name: "أذربيجان", flag: "🇦🇿", dial: "994" },
+  { name: "كازاخستان", flag: "🇰🇿", dial: "7" },
+  { name: "أوزبكستان", flag: "🇺🇿", dial: "998" },
+  { name: "تركمانستان", flag: "🇹🇲", dial: "993" },
+  { name: "طاجيكستان", flag: "🇹🇯", dial: "992" },
+  { name: "قيرغيزستان", flag: "🇰🇬", dial: "996" },
+  { name: "السنغال", flag: "🇸🇳", dial: "221" },
+  { name: "مالي", flag: "🇲🇱", dial: "223" },
+  { name: "النيجر", flag: "🇳🇪", dial: "227" },
+  { name: "تشاد", flag: "🇹🇩", dial: "235" },
+  { name: "غينيا", flag: "🇬🇳", dial: "224" },
+  { name: "ألبانيا", flag: "🇦🇱", dial: "355" },
+  { name: "البوسنة والهرسك", flag: "🇧🇦", dial: "387" },
+];
+
+export const OTHER_COUNTRIES = [
+  { name: "أمريكا", flag: "🇺🇸", dial: "1" },
+  { name: "كندا", flag: "🇨🇦", dial: "1" },
+  { name: "المملكة المتحدة", flag: "🇬🇧", dial: "44" },
+  { name: "ألمانيا", flag: "🇩🇪", dial: "49" },
+  { name: "فرنسا", flag: "🇫🇷", dial: "33" },
+  { name: "إيطاليا", flag: "🇮🇹", dial: "39" },
+  { name: "إسبانيا", flag: "🇪🇸", dial: "34" },
+  { name: "هولندا", flag: "🇳🇱", dial: "31" },
+  { name: "بلجيكا", flag: "🇧🇪", dial: "32" },
+  { name: "السويد", flag: "🇸🇪", dial: "46" },
+  { name: "النرويج", flag: "🇳🇴", dial: "47" },
+  { name: "الدنمارك", flag: "🇩🇰", dial: "45" },
+  { name: "فنلندا", flag: "🇫🇮", dial: "358" },
+  { name: "سويسرا", flag: "🇨🇭", dial: "41" },
+  { name: "النمسا", flag: "🇦🇹", dial: "43" },
+  { name: "أيرلندا", flag: "🇮🇪", dial: "353" },
+  { name: "البرتغال", flag: "🇵🇹", dial: "351" },
+  { name: "اليونان", flag: "🇬🇷", dial: "30" },
+  { name: "بولندا", flag: "🇵🇱", dial: "48" },
+  { name: "روسيا", flag: "🇷🇺", dial: "7" },
+  { name: "أوكرانيا", flag: "🇺🇦", dial: "380" },
+  { name: "الصين", flag: "🇨🇳", dial: "86" },
+  { name: "اليابان", flag: "🇯🇵", dial: "81" },
+  { name: "كوريا الجنوبية", flag: "🇰🇷", dial: "82" },
+  { name: "الهند", flag: "🇮🇳", dial: "91" },
+  { name: "أستراليا", flag: "🇦🇺", dial: "61" },
+  { name: "نيوزيلندا", flag: "🇳🇿", dial: "64" },
+  { name: "البرازيل", flag: "🇧🇷", dial: "55" },
+  { name: "المكسيك", flag: "🇲🇽", dial: "52" },
+  { name: "الأرجنتين", flag: "🇦🇷", dial: "54" },
+  { name: "جنوب أفريقيا", flag: "🇿🇦", dial: "27" },
+  { name: "سنغافورة", flag: "🇸🇬", dial: "65" },
+  { name: "تايلاند", flag: "🇹🇭", dial: "66" },
+  { name: "الفلبين", flag: "🇵🇭", dial: "63" },
+  { name: "فيتنام", flag: "🇻🇳", dial: "84" },
+];
+
+export const COUNTRIES = [
+  ...ARAB_COUNTRIES,
+  ...ISLAMIC_COUNTRIES,
+  ...OTHER_COUNTRIES,
+];
+
+export function splitPhone(fullDigits) {
+  const digits = (fullDigits || "").replace(/[^\d]/g, "");
+  const byLength = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+  const match = byLength.find((c) => digits.startsWith(c.dial));
+  if (!match) return { dial: "964", local: digits };
+  return { dial: match.dial, local: digits.slice(match.dial.length) };
+}

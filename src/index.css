@@ -408,6 +408,21 @@ label {
   width: auto;
 }
 
+.phone-input {
+  display: flex;
+  gap: 6px;
+}
+.phone-dial {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 120px;
+}
+.phone-local {
+  flex: 1;
+  direction: ltr;
+  text-align: right;
+}
+
 .whatsapp-link {
   display: inline-flex;
   align-items: center;
