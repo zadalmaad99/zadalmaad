@@ -13,6 +13,7 @@ import {
 import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
 import SurahAyahPicker from "./SurahAyahPicker";
+import SurahProgressBar from "./SurahProgressBar";
 import { useAuth } from "../context/AuthContext";
 
 const EMPTY_FORM = {
@@ -112,9 +113,24 @@ export default function TrackingSection({ type, title }) {
     return students.find((s) => s.id === id)?.name || "—";
   }
 
+  function coveredSurahsFor(studentId) {
+    const set = new Set();
+    for (const r of records) {
+      if (r.studentId === studentId) set.add(r.surahNumber);
+    }
+    return set;
+  }
+
   return (
     <div className="panel">
       <h3 className="panel-title">{title}</h3>
+
+      {students.map((s) => (
+        <div key={s.id} className="progress-block">
+          <div className="progress-name">{s.name}</div>
+          <SurahProgressBar coveredNumbers={coveredSurahsFor(s.id)} />
+        </div>
+      ))}
 
       {isAdmin && (
         <form className="record-form" onSubmit={handleSubmit}>

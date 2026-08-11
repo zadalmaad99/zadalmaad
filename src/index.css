@@ -320,6 +320,52 @@ label {
   border: 1px solid var(--border);
 }
 
+.progress-block {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafbf9;
+}
+.progress-block + .progress-block {
+  margin-top: 10px;
+}
+.progress-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.progress-bar {
+  display: flex;
+  gap: 1.5px;
+  flex: 1;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.progress-seg {
+  width: 6px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--border);
+}
+.progress-seg.filled {
+  background: var(--primary);
+}
+.progress-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .picker-row {
   display: flex;
   gap: 12px;
