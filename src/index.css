@@ -380,6 +380,52 @@ label {
   gap: 10px;
 }
 
+.contact-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+.contact-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.contact-toggle-options {
+  display: flex;
+  gap: 14px;
+}
+.radio-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--ink);
+}
+.radio-label input {
+  width: auto;
+}
+
+.whatsapp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1f9d55;
+  font-weight: 600;
+  text-decoration: none;
+  direction: ltr;
+}
+.whatsapp-link:hover {
+  text-decoration: underline;
+}
+.whatsapp-link svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 table {
   width: 100%;
   border-collapse: separate;

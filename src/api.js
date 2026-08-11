@@ -22,15 +22,15 @@ async function authedFetch(path, options = {}) {
 }
 
 export const api = {
-  createStudent: (name, email, password) =>
+  createStudent: (payload) =>
     authedFetch("/api/students", {
       method: "POST",
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify(payload),
     }),
-  updateStudent: (id, name) =>
+  updateStudent: (id, payload) =>
     authedFetch(`/api/students/${id}`, {
       method: "PATCH",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify(payload),
     }),
   deleteStudent: (id) =>
     authedFetch(`/api/students/${id}`, { method: "DELETE" }),

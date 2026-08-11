@@ -4,11 +4,18 @@ import { requireAdmin } from "../adminAuth.js";
 
 const router = Router();
 
+function parseContact(body) {
+  const contactType = body.contactType === "phone" ? "phone" : "email";
+  const contactValue = (body.contactValue || "").trim();
+  return { contactType, contactValue };
+}
+
 router.post("/", requireAdmin, async (req, res) => {
   const { name, email, password } = req.body || {};
   if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
     return res.status(400).json({ error: "invalid name, email, or password" });
   }
+  const { contactType, contactValue } = parseContact(req.body || {});
 
   try {
     const userRecord = await adminAuth.createUser({
@@ -20,6 +27,8 @@ router.post("/", requireAdmin, async (req, res) => {
     batch.set(adminDb.collection("students").doc(userRecord.uid), {
       name: name.trim(),
       email: email.trim(),
+      contactType,
+      contactValue,
       createdAt,
     });
     batch.set(adminDb.collection("users").doc(userRecord.uid), {
@@ -42,8 +51,11 @@ router.patch("/:id", requireAdmin, async (req, res) => {
   if (!name?.trim()) {
     return res.status(400).json({ error: "invalid name" });
   }
+  const { contactType, contactValue } = parseContact(req.body || {});
   await adminDb.collection("students").doc(req.params.id).update({
     name: name.trim(),
+    contactType,
+    contactValue,
   });
   res.json({ ok: true });
 });
