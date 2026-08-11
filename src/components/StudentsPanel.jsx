@@ -89,82 +89,78 @@ export default function StudentsPanel() {
   return (
     <div className="panel">
       <form className="record-form" onSubmit={handleAdd}>
-        <div className="picker-row">
-          <div className="contact-toggle">
-            <span className="contact-toggle-label">
-              تسجيل الدخول والتواصل عن طريق
-            </span>
-            <div className="contact-toggle-options">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="contactType"
-                  checked={form.contactType === "email"}
-                  onChange={() =>
-                    setForm({ ...form, contactType: "email", contactValue: "" })
-                  }
-                />
-                بريد إلكتروني
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="contactType"
-                  checked={form.contactType === "phone"}
-                  onChange={() =>
-                    setForm({ ...form, contactType: "phone", contactValue: "" })
-                  }
-                />
-                رقم هاتف (واتساب)
-              </label>
-            </div>
-          </div>
-
-          {form.contactType === "phone" ? (
-            <label>
-              رقم الهاتف
-              <PhoneInput
-                value={form.contactValue}
-                onChange={(v) => setForm({ ...form, contactValue: v })}
-              />
-            </label>
-          ) : (
-            <label>
-              البريد الإلكتروني
+        <div className="contact-toggle">
+          <span className="contact-toggle-label">
+            تسجيل الدخول والتواصل عن طريق
+          </span>
+          <div className="contact-toggle-options">
+            <label className="radio-label">
               <input
-                type="email"
-                placeholder="student@example.com"
-                value={form.contactValue}
-                onChange={(e) => setForm({ ...form, contactValue: e.target.value })}
-                required
+                type="radio"
+                name="contactType"
+                checked={form.contactType === "email"}
+                onChange={() =>
+                  setForm({ ...form, contactType: "email", contactValue: "" })
+                }
               />
+              بريد إلكتروني
             </label>
-          )}
+            <label className="radio-label">
+              <input
+                type="radio"
+                name="contactType"
+                checked={form.contactType === "phone"}
+                onChange={() =>
+                  setForm({ ...form, contactType: "phone", contactValue: "" })
+                }
+              />
+              رقم هاتف (واتساب)
+            </label>
+          </div>
         </div>
 
-        <div className="picker-row">
+        {form.contactType === "phone" ? (
           <label>
-            اسم الطالب
+            رقم الهاتف
+            <PhoneInput
+              value={form.contactValue}
+              onChange={(v) => setForm({ ...form, contactValue: v })}
+            />
+          </label>
+        ) : (
+          <label>
+            البريد الإلكتروني
             <input
-              type="text"
-              placeholder="اسم الطالب"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              type="email"
+              placeholder="student@example.com"
+              value={form.contactValue}
+              onChange={(e) => setForm({ ...form, contactValue: e.target.value })}
               required
             />
           </label>
-          <label>
-            كلمة المرور
-            <input
-              type="password"
-              placeholder="6 أحرف على الأقل"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              minLength={6}
-              required
-            />
-          </label>
-        </div>
+        )}
+
+        <label>
+          اسم الطالب
+          <input
+            type="text"
+            placeholder="اسم الطالب"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+        </label>
+        <label>
+          كلمة المرور
+          <input
+            type="password"
+            placeholder="6 أحرف على الأقل"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            minLength={6}
+            required
+          />
+        </label>
 
         {error && <div className="error-box">{error}</div>}
 
