@@ -529,17 +529,23 @@ td.empty {
     box-shadow: none;
   }
   .logout-btn {
-    flex: 1;
+    flex: 0 0 auto;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 3px;
-    padding: 7px 2px;
-    font-size: 10.5px;
+    align-self: center;
+    gap: 2px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    margin: 0 2px;
+    border-radius: 10px;
+    font-size: 0;
+    background: rgba(255, 255, 255, 0.08);
   }
   .logout-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
 
   .content {
