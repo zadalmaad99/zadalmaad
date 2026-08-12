@@ -6,6 +6,7 @@ import { locateAyah } from "../data/quranBoundaries";
 import UnitPicker from "./UnitPicker";
 import SurahProgressBar from "./SurahProgressBar";
 import { useAuth } from "../context/AuthContext";
+import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
 
 const EMPTY_FORM = {
@@ -23,14 +24,33 @@ function unitLabel(r) {
   return base;
 }
 
-export default function TrackingSection({ type, title }) {
+export default function TrackingSection({
+  type,
+  title,
+  focusStudentId,
+  onFocusHandled,
+}) {
   const { isAdmin } = useAuth();
+  const { formatDate } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const [highlightId, setHighlightId] = useState(null);
   const formRef = useRef(null);
+
+  useEffect(() => {
+    if (!focusStudentId || students.length === 0) return;
+    const el = document.getElementById(`progress-${focusStudentId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(focusStudentId);
+      onFocusHandled?.();
+      const timer = setTimeout(() => setHighlightId(null), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [focusStudentId, students]);
 
   useEffect(() => {
     const studentsQuery = isAdmin
@@ -157,7 +177,15 @@ export default function TrackingSection({ type, title }) {
       <h3 className="panel-title">{title}</h3>
 
       {students.map((s) => (
-        <div key={s.id} className="progress-block">
+        <div
+          key={s.id}
+          id={`progress-${s.id}`}
+          className={
+            s.id === highlightId
+              ? "progress-block progress-block-focus"
+              : "progress-block"
+          }
+        >
           <div className="progress-name">{s.name}</div>
           <SurahProgressBar coveredNumbers={coveredSurahsFor(s.id)} />
         </div>
@@ -232,7 +260,7 @@ export default function TrackingSection({ type, title }) {
             <tr key={r.id}>
               <td>{studentName(r.studentId)}</td>
               <td>{unitLabel(r)}</td>
-              <td>{r.date}</td>
+              <td>{formatDate(r.date)}</td>
               <td>{r.notes || "—"}</td>
               {isAdmin && (
                 <td className="actions">

@@ -3,12 +3,19 @@ import { useAuth } from "../context/AuthContext";
 import StudentsPanel from "../components/StudentsPanel";
 import TrackingSection from "../components/TrackingSection";
 import OverviewDashboard from "../components/OverviewDashboard";
+import SettingsPanel from "../components/SettingsPanel";
 import logo from "../assets/logo.png";
 
 const ICONS = {
   overview: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M4 20V10M11 20V4M18 20v-7" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
     </svg>
   ),
   students: (
@@ -50,15 +57,29 @@ const TABS = [
   { key: "hifz", label: "حفظ القرآن يوميًا", navLabel: "حفظ", desc: "متابعة الحفظ اليومي" },
   { key: "qiraah", label: "قراءة القرآن", navLabel: "قراءة", desc: "متابعة القراءة اليومية" },
   { key: "murajaah", label: "مراجعة حفظ القرآن", navLabel: "مراجعة", desc: "متابعة المراجعة" },
+  {
+    key: "settings",
+    label: "الإعدادات",
+    navLabel: "الإعدادات",
+    desc: "تخصيص طريقة عرض التطبيق",
+  },
 ];
 
 export default function Dashboard() {
   const { logout, isAdmin } = useAuth();
   const visibleTabs = isAdmin
     ? TABS
-    : TABS.filter((t) => t.key !== "students" && t.key !== "overview");
+    : TABS.filter(
+        (t) => !["students", "overview", "settings"].includes(t.key)
+      );
   const [tab, setTab] = useState(isAdmin ? "overview" : "hifz");
+  const [focusStudentId, setFocusStudentId] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
+
+  function goToSection(sectionKey, studentId) {
+    setFocusStudentId(studentId);
+    setTab(sectionKey);
+  }
 
   return (
     <div className="dashboard">
@@ -98,16 +119,34 @@ export default function Dashboard() {
           <p>{current.desc}</p>
         </header>
 
-        {tab === "overview" && isAdmin && <OverviewDashboard />}
+        {tab === "overview" && isAdmin && (
+          <OverviewDashboard onNavigate={goToSection} />
+        )}
         {tab === "students" && isAdmin && <StudentsPanel />}
+        {tab === "settings" && isAdmin && <SettingsPanel />}
         {tab === "hifz" && (
-          <TrackingSection type="hifz" title="سجلات الحفظ اليومي" />
+          <TrackingSection
+            type="hifz"
+            title="سجلات الحفظ اليومي"
+            focusStudentId={tab === "hifz" ? focusStudentId : null}
+            onFocusHandled={() => setFocusStudentId(null)}
+          />
         )}
         {tab === "qiraah" && (
-          <TrackingSection type="qiraah" title="سجلات القراءة" />
+          <TrackingSection
+            type="qiraah"
+            title="سجلات القراءة"
+            focusStudentId={tab === "qiraah" ? focusStudentId : null}
+            onFocusHandled={() => setFocusStudentId(null)}
+          />
         )}
         {tab === "murajaah" && (
-          <TrackingSection type="murajaah" title="سجلات المراجعة" />
+          <TrackingSection
+            type="murajaah"
+            title="سجلات المراجعة"
+            focusStudentId={tab === "murajaah" ? focusStudentId : null}
+            onFocusHandled={() => setFocusStudentId(null)}
+          />
         )}
       </main>
     </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../firebase";
 import { COUNTRIES, splitPhone } from "../data/countries";
+import { useCalendar } from "../context/CalendarContext";
 
 const TOTAL_AYAHS = 6236;
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -28,12 +29,8 @@ function whatsappLink(phone) {
   return `https://wa.me/${digits}`;
 }
 
-function formatDate(ms) {
-  if (!ms) return "—";
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
-export default function OverviewDashboard() {
+export default function OverviewDashboard({ onNavigate }) {
+  const { formatDate } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
 
@@ -80,7 +77,11 @@ export default function OverviewDashboard() {
       ) : (
         <ol className="overview-list">
           {rows.map((r, i) => (
-            <li key={r.id} className="overview-card">
+            <li
+              key={r.id}
+              className="overview-card overview-card-clickable"
+              onClick={() => onNavigate?.("hifz", r.id)}
+            >
               <div className="overview-card-head">
                 <span className="overview-rank">{MEDALS[i] || `#${i + 1}`}</span>
                 <div className="overview-card-title">
@@ -96,6 +97,7 @@ export default function OverviewDashboard() {
                           href={whatsappLink(r.contactValue)}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {flagFor(r.contactValue)} +{r.contactValue}
                           <svg viewBox="0 0 24 24" fill="currentColor">
@@ -115,7 +117,14 @@ export default function OverviewDashboard() {
                   const stat = r.bySection[sec.key];
                   const pct = Math.min(100, (stat.ayahCount / TOTAL_AYAHS) * 100);
                   return (
-                    <div key={sec.key} className={`overview-section overview-${sec.key}`}>
+                    <div
+                      key={sec.key}
+                      className={`overview-section overview-${sec.key} overview-section-clickable`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate?.(sec.key, r.id);
+                      }}
+                    >
                       <div className="overview-section-label">
                         <span>{sec.label}</span>
                         <span className="overview-section-stats">
