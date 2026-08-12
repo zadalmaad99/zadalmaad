@@ -101,7 +101,31 @@ export default function TrackingSection({ type, title }) {
     if (editingId) {
       await api.updateRecord(editingId, payload);
     } else {
-      await api.createRecord(payload);
+      const existing = records.find(
+        (r) =>
+          r.studentId === payload.studentId &&
+          r.unitType === payload.unitType &&
+          (payload.unitType === "surah"
+            ? r.surahNumber === payload.surahNumber
+            : payload.unitType === "juz"
+            ? r.juzNumber === payload.juzNumber
+            : payload.unitType === "hizb"
+            ? r.hizbNumber === payload.hizbNumber
+            : true)
+      );
+
+      if (existing) {
+        if (payload.unitType === "surah") {
+          payload.ayahFrom = Math.min(existing.ayahFrom, payload.ayahFrom);
+          payload.ayahTo = Math.max(existing.ayahTo, payload.ayahTo);
+        } else if (payload.unitType === "page") {
+          payload.pageFrom = Math.min(existing.pageFrom, payload.pageFrom);
+          payload.pageTo = Math.max(existing.pageTo, payload.pageTo);
+        }
+        await api.updateRecord(existing.id, payload);
+      } else {
+        await api.createRecord(payload);
+      }
     }
     resetForm();
   }
