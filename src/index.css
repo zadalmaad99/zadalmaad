@@ -949,3 +949,99 @@ td.empty {
   flex-shrink: 0;
   color: var(--primary);
 }
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.settings-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  max-width: 460px;
+  border-top: 3px solid var(--gold);
+}
+.settings-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.settings-card-title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--primary);
+}
+.calendar-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.calendar-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: #fafbf9;
+  text-align: right;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.calendar-option:hover {
+  border-color: var(--primary);
+}
+.calendar-option-active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: none;
+}
+.calendar-option-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.calendar-option-active .calendar-option-check {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.calendar-option-check svg {
+  width: 12px;
+  height: 12px;
+}
+.calendar-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.calendar-option-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+.calendar-option-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.settings-preview {
+  font-size: 13px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
