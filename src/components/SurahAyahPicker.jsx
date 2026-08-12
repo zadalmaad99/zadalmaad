@@ -54,6 +54,7 @@ export default function SurahAyahPicker({
           max={maxAyah}
           value={ayahFrom}
           onChange={handleFromChange}
+          onFocus={(e) => e.target.select()}
           disabled={!surahNumber}
           required
         />
@@ -67,6 +68,7 @@ export default function SurahAyahPicker({
           max={maxAyah}
           value={ayahTo}
           onChange={handleToChange}
+          onFocus={(e) => e.target.select()}
           disabled={!surahNumber}
           required
         />
