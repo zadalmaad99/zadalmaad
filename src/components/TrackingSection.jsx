@@ -47,13 +47,8 @@ export default function TrackingSection({
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
-    setFormOpen(true);
     setFilterStudentId(focusStudentId);
     setForm((f) => ({ ...f, studentId: focusStudentId }));
-    setTimeout(
-      () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      50
-    );
     onFocusHandled?.();
   }, [focusStudentId, students]);
 
