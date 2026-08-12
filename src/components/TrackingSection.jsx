@@ -81,14 +81,13 @@ export default function TrackingSection({ type, title }) {
         r.surahNumber === surahNumber &&
         r.id !== editingId
     );
-    const editingRecord = editingId
-      ? records.find((r) => r.id === editingId)
-      : null;
-    const mergeBase = otherExisting || editingRecord;
 
-    if (mergeBase) {
-      ayahFrom = Math.min(mergeBase.ayahFrom, ayahFrom);
-      ayahTo = Math.max(mergeBase.ayahTo, ayahTo);
+    // Only merge when adding fresh progress for a surah that already has a
+    // record (extend coverage). Editing an existing record replaces its
+    // range with exactly what was entered - it's a correction, not a merge.
+    if (otherExisting && !editingId) {
+      ayahFrom = Math.min(otherExisting.ayahFrom, ayahFrom);
+      ayahTo = Math.max(otherExisting.ayahTo, ayahTo);
     }
 
     const location = locateAyah(surahNumber, ayahTo);
