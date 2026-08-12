@@ -4,7 +4,6 @@ import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
 import { locateAyah } from "../data/quranBoundaries";
 import UnitPicker from "./UnitPicker";
-import SurahProgressBar from "./SurahProgressBar";
 import HijriDateInput from "./HijriDateInput";
 import ReportModal from "./ReportModal";
 import { useAuth } from "../context/AuthContext";
@@ -39,21 +38,19 @@ export default function TrackingSection({
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
-  const [highlightId, setHighlightId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [reportRecord, setReportRecord] = useState(null);
   const formRef = useRef(null);
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
-    const el = document.getElementById(`progress-${focusStudentId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setHighlightId(focusStudentId);
-      onFocusHandled?.();
-      const timer = setTimeout(() => setHighlightId(null), 2500);
-      return () => clearTimeout(timer);
-    }
+    setFormOpen(true);
+    setForm((f) => ({ ...f, studentId: focusStudentId }));
+    setTimeout(
+      () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50
+    );
+    onFocusHandled?.();
   }, [focusStudentId, students]);
 
   useEffect(() => {
@@ -173,41 +170,9 @@ export default function TrackingSection({
     return students.find((s) => s.id === id)?.name || "—";
   }
 
-  function coveredSurahsFor(studentId) {
-    const set = new Set();
-    for (const r of records) {
-      if (r.studentId === studentId) set.add(r.surahNumber);
-    }
-    return set;
-  }
-
   return (
     <div className="panel">
       <h3 className="panel-title">{title}</h3>
-
-      {students.length > 0 && (
-        <div className="progress-grid">
-          {students.map((s) => (
-            <div
-              key={s.id}
-              id={`progress-${s.id}`}
-              className={
-                s.id === highlightId
-                  ? "student-card progress-card progress-card-focus"
-                  : "student-card progress-card"
-              }
-            >
-              <div className="student-card-header">
-                <div className="student-card-avatar">
-                  {s.name?.trim()?.[0] || "?"}
-                </div>
-                <div className="student-card-name">{s.name}</div>
-              </div>
-              <SurahProgressBar coveredNumbers={coveredSurahsFor(s.id)} />
-            </div>
-          ))}
-        </div>
-      )}
 
       {isAdmin && (
         <div className="collapsible">

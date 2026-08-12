@@ -3,6 +3,7 @@ import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../firebase";
 import { COUNTRIES, splitPhone } from "../data/countries";
 import { useCalendar } from "../context/CalendarContext";
+import SurahProgressBar from "./SurahProgressBar";
 
 const TOTAL_AYAHS = 6236;
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -18,8 +19,8 @@ function statsFor(records, studentId, type) {
   // reached, not the width of the entered range, since memorization is
   // cumulative from ayah 1.
   const ayahCount = own.reduce((sum, r) => sum + r.ayahTo, 0);
-  const surahCount = new Set(own.map((r) => r.surahNumber)).size;
-  return { ayahCount, surahCount };
+  const coveredSurahs = new Set(own.map((r) => r.surahNumber));
+  return { ayahCount, surahCount: coveredSurahs.size, coveredSurahs };
 }
 
 function flagFor(phone) {
@@ -140,6 +141,7 @@ export default function OverviewDashboard({ onNavigate }) {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
+                      <SurahProgressBar coveredNumbers={stat.coveredSurahs} />
                     </div>
                   );
                 })}
