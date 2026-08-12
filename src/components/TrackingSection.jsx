@@ -289,44 +289,53 @@ export default function TrackingSection({
         </div>
       )}
 
-      <table>
-        <thead>
-          <tr>
-            <th>الطالب</th>
-            <th>الوحدة</th>
-            <th>التاريخ</th>
-            <th>ملاحظات</th>
-            {isAdmin && <th>إجراءات</th>}
-          </tr>
-        </thead>
-        <tbody>
+      {records.length === 0 ? (
+        <p className="empty">لا توجد سجلات بعد</p>
+      ) : (
+        <div className="record-grid">
           {records.map((r) => (
-            <tr key={r.id}>
-              <td>{studentName(r.studentId)}</td>
-              <td>{unitLabel(r)}</td>
-              <td>{formatDate(r.date)}</td>
-              <td>{r.notes || "—"}</td>
+            <div key={r.id} className="record-card">
+              <div className="record-card-header">
+                <div className="student-card-avatar record-card-avatar">
+                  {studentName(r.studentId)?.trim()?.[0] || "?"}
+                </div>
+                <div className="record-card-title">
+                  <span className="student-card-name">
+                    {studentName(r.studentId)}
+                  </span>
+                  <span className="student-card-date">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4M8 2v4M3 10h18" />
+                    </svg>
+                    {formatDate(r.date)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="record-card-unit">{unitLabel(r)}</div>
+              {r.notes && <div className="record-card-notes">{r.notes}</div>}
+
               {isAdmin && (
-                <td className="actions">
+                <div className="student-card-actions">
                   <button className="ghost" onClick={() => startEdit(r)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
                     تعديل
                   </button>
                   <button className="danger" onClick={() => handleDelete(r.id)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+                    </svg>
                     حذف
                   </button>
-                </td>
+                </div>
               )}
-            </tr>
+            </div>
           ))}
-          {records.length === 0 && (
-            <tr>
-              <td colSpan={isAdmin ? 5 : 4} className="empty">
-                لا توجد سجلات بعد
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        </div>
+      )}
     </div>
   );
 }
