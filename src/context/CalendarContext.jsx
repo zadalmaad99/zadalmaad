@@ -32,8 +32,15 @@ export function CalendarProvider({ children }) {
       : gregorianFormatter.format(date);
   }
 
+  function formatBoth(value) {
+    if (!value) return "—";
+    const date = typeof value === "number" ? new Date(value) : new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return "—";
+    return `${gregorianFormatter.format(date)} م — ${hijriFormatter.format(date)}`;
+  }
+
   return (
-    <CalendarContext.Provider value={{ calendar, setCalendar, formatDate }}>
+    <CalendarContext.Provider value={{ calendar, setCalendar, formatDate, formatBoth }}>
       {children}
     </CalendarContext.Provider>
   );

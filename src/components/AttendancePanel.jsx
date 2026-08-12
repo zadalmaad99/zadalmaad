@@ -1,44 +1,53 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import HijriDateInput from "./HijriDateInput";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
 
-const STATUSES = [
-  { key: "present", label: "حضور", cls: "status-present" },
-  { key: "absent", label: "غياب", cls: "status-absent" },
-  { key: "excused", label: "مهلة", cls: "status-excused" },
+const DAY_NAMES = [
+  "السبت",
+  "الأحد",
+  "الاثنين",
+  "الثلاثاء",
+  "الأربعاء",
+  "الخميس",
+  "الجمعة",
 ];
 
-const EMPTY_FORM = {
-  studentId: "",
-  date: new Date().toISOString().slice(0, 10),
-  status: "present",
-  notes: "",
-};
+function pad(n) {
+  return String(n).padStart(2, "0");
+}
 
-function statusMeta(key) {
-  return STATUSES.find((s) => s.key === key) || STATUSES[0];
+function toIso(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function getWeekDates(weekOffset) {
+  const today = new Date();
+  const day = today.getDay(); // 0=Sun..6=Sat
+  const diffToSaturday = (day + 1) % 7;
+  const saturday = new Date(today);
+  saturday.setDate(today.getDate() - diffToSaturday + weekOffset * 7);
+  saturday.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(saturday);
+    d.setDate(saturday.getDate() + i);
+    return d;
+  });
 }
 
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const { isAdmin } = useAuth();
-  const { formatDate, calendar } = useCalendar();
+  const { formatBoth } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);
   const [filterStudentId, setFilterStudentId] = useState(null);
-  const formRef = useRef(null);
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
     setFilterStudentId(focusStudentId);
-    setForm((f) => ({ ...f, studentId: focusStudentId }));
     onFocusHandled?.();
   }, [focusStudentId, students]);
 
@@ -57,9 +66,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
           where("studentId", "==", auth.currentUser.uid)
         );
     const unsubAttendance = onSnapshot(attendanceQuery, (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-      setRecords(list);
+      setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
     return () => {
@@ -68,105 +75,46 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
     };
   }, [isAdmin]);
 
-  function resetForm() {
-    setForm(EMPTY_FORM);
-    setEditingId(null);
-    setError("");
-    setFormOpen(false);
-  }
+  const weekDates = getWeekDates(weekOffset);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.studentId) return;
-    setError("");
-
-    const payload = {
-      studentId: form.studentId,
-      date: form.date,
-      status: form.status,
-      notes: form.notes.trim(),
-    };
-
+  async function setStatus(studentId, dateIso, status) {
     const existing = records.find(
-      (r) =>
-        r.studentId === payload.studentId &&
-        r.date === payload.date &&
-        r.id !== editingId
+      (r) => r.studentId === studentId && r.date === dateIso
     );
-
     try {
-      if (existing) {
-        await api.updateAttendance(existing.id, payload);
-        if (editingId && editingId !== existing.id) {
-          await api.deleteAttendance(editingId);
-        }
-      } else if (editingId) {
-        await api.updateAttendance(editingId, payload);
+      if (existing && existing.status === status) {
+        await api.deleteAttendance(existing.id);
+      } else if (existing) {
+        await api.updateAttendance(existing.id, {
+          studentId,
+          date: dateIso,
+          status,
+          notes: existing.notes || "",
+        });
       } else {
-        await api.createAttendance(payload);
+        await api.createAttendance({ studentId, date: dateIso, status, notes: "" });
       }
-      resetForm();
     } catch (err) {
-      setError(err.message || "حدث خطأ أثناء الحفظ");
+      alert(err.message || "تعذّر حفظ الحضور");
     }
   }
 
-  function startEdit(r) {
-    setFormOpen(true);
-    setTimeout(
-      () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      50
-    );
-    setEditingId(r.id);
-    setForm({
-      studentId: r.studentId,
-      date: r.date,
-      status: r.status,
-      notes: r.notes || "",
-    });
+  function statusOf(studentId, dateIso) {
+    return records.find((r) => r.studentId === studentId && r.date === dateIso)
+      ?.status;
   }
 
-  async function handleDelete(id) {
-    if (!confirm("هل أنت متأكد من حذف هذا السجل؟")) return;
-    try {
-      await api.deleteAttendance(id);
-    } catch (err) {
-      alert(err.message || "تعذّر حذف السجل");
-    }
-  }
-
-  function studentName(id) {
-    return students.find((s) => s.id === id)?.name || "—";
-  }
-
-  const visibleRecords = filterStudentId
-    ? records.filter((r) => r.studentId === filterStudentId)
-    : records;
-
-  const groupedByDate = [];
-  for (const r of visibleRecords) {
-    const bucket = groupedByDate.find(([date]) => date === r.date);
-    if (bucket) bucket[1].push(r);
-    else groupedByDate.push([r.date, [r]]);
-  }
-
-  const summary = students.map((s) => {
-    const own = records.filter((r) => r.studentId === s.id);
-    return {
-      id: s.id,
-      name: s.name,
-      present: own.filter((r) => r.status === "present").length,
-      absent: own.filter((r) => r.status === "absent").length,
-      excused: own.filter((r) => r.status === "excused").length,
-    };
-  });
+  const visibleStudents = filterStudentId
+    ? students.filter((s) => s.id === filterStudentId)
+    : students;
 
   return (
     <div className="panel">
       {filterStudentId && (
         <div className="filter-banner">
           <span>
-            عرض سجلات: <strong>{studentName(filterStudentId)}</strong>
+            عرض سجلات:{" "}
+            <strong>{students.find((s) => s.id === filterStudentId)?.name}</strong>
           </span>
           <button type="button" className="ghost" onClick={() => setFilterStudentId(null)}>
             عرض كل الطلاب
@@ -174,168 +122,100 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
         </div>
       )}
 
-      {summary.length > 0 && (
-        <div className="attendance-summary">
-          {summary.map((s) => (
-            <div key={s.id} className="attendance-summary-card">
-              <span className="attendance-summary-name">{s.name}</span>
-              <div className="attendance-summary-counts">
-                <span className="status-badge status-present">{s.present} حضور</span>
-                <span className="status-badge status-absent">{s.absent} غياب</span>
-                <span className="status-badge status-excused">{s.excused} مهلة</span>
-              </div>
-            </div>
-          ))}
+      <div className="week-nav">
+        <button type="button" className="ghost" onClick={() => setWeekOffset((w) => w - 1)}>
+          الأسبوع السابق
+        </button>
+        <div className="week-range">
+          <div>{formatBoth(toIso(weekDates[0]))}</div>
+          <span>إلى</span>
+          <div>{formatBoth(toIso(weekDates[6]))}</div>
         </div>
-      )}
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => setWeekOffset((w) => w + 1)}
+          disabled={weekOffset >= 0}
+        >
+          الأسبوع التالي
+        </button>
+      </div>
 
-      {isAdmin && (
-        <div className="collapsible">
-          <button
-            type="button"
-            className="collapsible-toggle"
-            onClick={() => setFormOpen((v) => !v)}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className={formOpen ? "chevron chevron-open" : "chevron"}
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-            تسجيل حضور
-          </button>
-
-          {formOpen && (
-            <form className="record-form" onSubmit={handleSubmit} ref={formRef}>
-              <div className="picker-row">
-                <label>
-                  الطالب
-                  <select
-                    value={form.studentId}
-                    onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-                    required
-                  >
-                    <option value="">اختر الطالب</option>
-                    {students.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  التاريخ
-                  {calendar === "hijri" ? (
-                    <HijriDateInput
-                      value={form.date}
-                      onChange={(v) => setForm({ ...form, date: v })}
-                    />
-                  ) : (
-                    <input
-                      type="date"
-                      value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })}
-                      required
-                    />
-                  )}
-                </label>
-              </div>
-
-              <div className="contact-toggle">
-                <span className="contact-toggle-label">الحالة</span>
-                <div className="contact-toggle-options">
-                  {STATUSES.map((s) => (
-                    <label className="radio-label" key={s.key}>
-                      <input
-                        type="radio"
-                        name="status"
-                        checked={form.status === s.key}
-                        onChange={() => setForm({ ...form, status: s.key })}
-                      />
-                      {s.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <label>
-                ملاحظات
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={2}
-                />
-              </label>
-
-              {error && <div className="error-box">{error}</div>}
-
-              <div className="form-actions">
-                <button type="submit">{editingId ? "حفظ التعديل" : "تسجيل"}</button>
-                {editingId && (
-                  <button type="button" className="ghost" onClick={resetForm}>
-                    إلغاء
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-        </div>
-      )}
-
-      {visibleRecords.length === 0 ? (
-        <p className="empty">لا توجد سجلات حضور بعد</p>
+      {visibleStudents.length === 0 ? (
+        <p className="empty">لا يوجد طلاب</p>
       ) : (
-        <div className="day-groups">
-          {groupedByDate.map(([date, dayRecords]) => (
-            <div key={date} className="day-group">
-              <div className="day-group-header">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-                {formatDate(date)}
-                <span className="day-group-count">{dayRecords.length} طالب</span>
+        <div className="attendance-week-list">
+          {visibleStudents.map((s) => (
+            <div key={s.id} className="attendance-week-card">
+              <div className="student-card-header">
+                <div className="student-card-avatar">{s.name?.trim()?.[0] || "?"}</div>
+                <div className="student-card-name">{s.name}</div>
               </div>
 
-              <div className="day-group-rows">
-                {dayRecords.map((r) => (
-                  <div key={r.id} className="day-row">
-                    <div className="day-row-student">
-                      <div className="student-card-avatar record-card-avatar">
-                        {studentName(r.studentId)?.trim()?.[0] || "?"}
-                      </div>
-                      <span className="student-card-name">
-                        {studentName(r.studentId)}
-                      </span>
-                    </div>
-
-                    <span className={`status-badge ${statusMeta(r.status).cls}`}>
-                      {statusMeta(r.status).label}
-                    </span>
-
-                    {r.notes && <div className="day-row-notes">{r.notes}</div>}
-
-                    {isAdmin && (
-                      <div className="day-row-actions">
-                        <button className="ghost" onClick={() => startEdit(r)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                          </svg>
-                        </button>
-                        <button className="danger" onClick={() => handleDelete(r.id)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <table className="week-table">
+                <thead>
+                  <tr>
+                    <th>اليوم</th>
+                    <th>حضور</th>
+                    <th>غياب</th>
+                    <th>مهلة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weekDates.map((d, i) => {
+                    const iso = toIso(d);
+                    const status = statusOf(s.id, iso);
+                    return (
+                      <tr key={iso}>
+                        <td className="week-day-cell">
+                          <span className="week-day-name">{DAY_NAMES[i]}</span>
+                          <span className="week-day-date">{formatBoth(iso)}</span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            disabled={!isAdmin}
+                            className={
+                              status === "present"
+                                ? "week-toggle week-toggle-present-active"
+                                : "week-toggle"
+                            }
+                            onClick={() => setStatus(s.id, iso, "present")}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          </button>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            disabled={!isAdmin}
+                            className={
+                              status === "absent"
+                                ? "week-toggle week-toggle-absent-active"
+                                : "week-toggle"
+                            }
+                            onClick={() => setStatus(s.id, iso, "absent")}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </td>
+                        <td>
+                          <input
+                            type="radio"
+                            disabled={!isAdmin}
+                            checked={status === "excused"}
+                            onChange={() => setStatus(s.id, iso, "excused")}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ))}
         </div>

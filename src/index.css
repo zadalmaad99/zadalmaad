@@ -1428,3 +1428,112 @@ td.empty {
 .filter-banner button {
   flex-shrink: 0;
 }
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.week-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  text-align: center;
+}
+.week-range span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.attendance-week-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.attendance-week-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  border-top: 3px solid var(--gold);
+}
+.attendance-week-card .student-card-header {
+  margin-bottom: 14px;
+}
+
+.week-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.week-table th {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 6px 8px;
+  border-bottom: 2px solid var(--border);
+  text-align: center;
+}
+.week-table th:first-child {
+  text-align: right;
+}
+.week-table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.week-day-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: right;
+}
+.week-day-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+.week-day-date {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.week-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  color: var(--border);
+  border: 1.5px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+.week-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+.week-toggle:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--primary);
+}
+.week-toggle:disabled {
+  cursor: default;
+}
+.week-toggle-present-active {
+  background: #1f9d55;
+  border-color: #1f9d55;
+  color: #fff;
+}
+.week-toggle-absent-active {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
