@@ -19,10 +19,10 @@ const EMPTY_FORM = {
   notes: "",
 };
 
-function unitLabel(r) {
+function unitParts(r) {
   const base = `${r.surahNumber}. ${r.surahName} (${r.ayahFrom} - ${r.ayahTo})`;
-  if (r.juz) return `${base} — الجزء ${r.juz}، الحزب ${r.hizb}، صفحة ${r.page}`;
-  return base;
+  const extra = r.juz ? `الجزء ${r.juz}، الحزب ${r.hizb}، صفحة ${r.page}` : "";
+  return { base, extra };
 }
 
 export default function TrackingSection({
@@ -313,7 +313,12 @@ export default function TrackingSection({
                 </div>
               </div>
 
-              <div className="record-card-unit">{unitLabel(r)}</div>
+              <div className="record-card-unit">
+                <div>{unitParts(r).base}</div>
+                {unitParts(r).extra && (
+                  <div className="record-card-unit-extra">{unitParts(r).extra}</div>
+                )}
+              </div>
               {r.notes && <div className="record-card-notes">{r.notes}</div>}
 
               {isAdmin && (
