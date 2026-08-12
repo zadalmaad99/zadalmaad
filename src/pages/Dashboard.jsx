@@ -2,9 +2,15 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import StudentsPanel from "../components/StudentsPanel";
 import TrackingSection from "../components/TrackingSection";
+import OverviewDashboard from "../components/OverviewDashboard";
 import logo from "../assets/logo.png";
 
 const ICONS = {
+  overview: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 20V10M11 20V4M18 20v-7" />
+    </svg>
+  ),
   students: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="9" cy="7" r="3.2" />
@@ -34,6 +40,12 @@ const ICONS = {
 };
 
 const TABS = [
+  {
+    key: "overview",
+    label: "لوحة التحكم",
+    navLabel: "لوحة التحكم",
+    desc: "ترتيب الطلاب حسب التقدم في كل الأقسام",
+  },
   { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
   { key: "hifz", label: "حفظ القرآن يوميًا", navLabel: "حفظ", desc: "متابعة الحفظ اليومي" },
   { key: "qiraah", label: "قراءة القرآن", navLabel: "قراءة", desc: "متابعة القراءة اليومية" },
@@ -42,8 +54,10 @@ const TABS = [
 
 export default function Dashboard() {
   const { logout, isAdmin } = useAuth();
-  const visibleTabs = isAdmin ? TABS : TABS.filter((t) => t.key !== "students");
-  const [tab, setTab] = useState(isAdmin ? "students" : "hifz");
+  const visibleTabs = isAdmin
+    ? TABS
+    : TABS.filter((t) => t.key !== "students" && t.key !== "overview");
+  const [tab, setTab] = useState(isAdmin ? "overview" : "hifz");
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
 
   return (
@@ -84,6 +98,7 @@ export default function Dashboard() {
           <p>{current.desc}</p>
         </header>
 
+        {tab === "overview" && isAdmin && <OverviewDashboard />}
         {tab === "students" && isAdmin && <StudentsPanel />}
         {tab === "hifz" && (
           <TrackingSection type="hifz" title="سجلات الحفظ اليومي" />

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
+import { locateAyah } from "../data/quranBoundaries";
 import UnitPicker from "./UnitPicker";
 import SurahProgressBar from "./SurahProgressBar";
 import { useAuth } from "../context/AuthContext";
@@ -9,23 +10,17 @@ import { api } from "../api";
 
 const EMPTY_FORM = {
   studentId: "",
-  unitType: "surah",
   surahNumber: "",
   ayahFrom: 1,
   ayahTo: 1,
-  juzNumber: "",
-  hizbNumber: "",
-  pageFrom: "",
-  pageTo: "",
   date: new Date().toISOString().slice(0, 10),
   notes: "",
 };
 
 function unitLabel(r) {
-  if (r.unitType === "juz") return `الجزء ${r.juzNumber}`;
-  if (r.unitType === "hizb") return `الحزب ${r.hizbNumber}`;
-  if (r.unitType === "page") return `صفحة ${r.pageFrom} - ${r.pageTo}`;
-  return `${r.surahNumber}. ${r.surahName} (${r.ayahFrom} - ${r.ayahTo})`;
+  const base = `${r.surahNumber}. ${r.surahName} (${r.ayahFrom} - ${r.ayahTo})`;
+  if (r.juz) return `${base} — الجزء ${r.juz}، الحزب ${r.hizb}، صفحة ${r.page}`;
+  return base;
 }
 
 export default function TrackingSection({ type, title }) {
@@ -70,59 +65,42 @@ export default function TrackingSection({ type, title }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.studentId) return;
+    if (!form.studentId || !form.surahNumber) return;
+
+    const surah = SURAHS.find((s) => s.number === Number(form.surahNumber));
+    const surahNumber = Number(form.surahNumber);
+    const ayahFrom = Number(form.ayahFrom);
+    const ayahTo = Number(form.ayahTo);
+    const location = locateAyah(surahNumber, ayahTo);
 
     const payload = {
       type,
       studentId: form.studentId,
-      unitType: form.unitType,
+      surahNumber,
+      surahName: surah?.name || "",
+      ayahFrom,
+      ayahTo,
+      juz: location.juz,
+      hizb: location.hizb,
+      page: location.page,
       date: form.date,
       notes: form.notes.trim(),
     };
-
-    if (form.unitType === "surah") {
-      if (!form.surahNumber) return;
-      const surah = SURAHS.find((s) => s.number === Number(form.surahNumber));
-      payload.surahNumber = Number(form.surahNumber);
-      payload.surahName = surah?.name || "";
-      payload.ayahFrom = Number(form.ayahFrom);
-      payload.ayahTo = Number(form.ayahTo);
-    } else if (form.unitType === "juz") {
-      if (!form.juzNumber) return;
-      payload.juzNumber = Number(form.juzNumber);
-    } else if (form.unitType === "hizb") {
-      if (!form.hizbNumber) return;
-      payload.hizbNumber = Number(form.hizbNumber);
-    } else if (form.unitType === "page") {
-      if (!form.pageFrom || !form.pageTo) return;
-      payload.pageFrom = Number(form.pageFrom);
-      payload.pageTo = Number(form.pageTo);
-    }
 
     if (editingId) {
       await api.updateRecord(editingId, payload);
     } else {
       const existing = records.find(
-        (r) =>
-          r.studentId === payload.studentId &&
-          r.unitType === payload.unitType &&
-          (payload.unitType === "surah"
-            ? r.surahNumber === payload.surahNumber
-            : payload.unitType === "juz"
-            ? r.juzNumber === payload.juzNumber
-            : payload.unitType === "hizb"
-            ? r.hizbNumber === payload.hizbNumber
-            : true)
+        (r) => r.studentId === payload.studentId && r.surahNumber === payload.surahNumber
       );
 
       if (existing) {
-        if (payload.unitType === "surah") {
-          payload.ayahFrom = Math.min(existing.ayahFrom, payload.ayahFrom);
-          payload.ayahTo = Math.max(existing.ayahTo, payload.ayahTo);
-        } else if (payload.unitType === "page") {
-          payload.pageFrom = Math.min(existing.pageFrom, payload.pageFrom);
-          payload.pageTo = Math.max(existing.pageTo, payload.pageTo);
-        }
+        payload.ayahFrom = Math.min(existing.ayahFrom, payload.ayahFrom);
+        payload.ayahTo = Math.max(existing.ayahTo, payload.ayahTo);
+        const mergedLocation = locateAyah(surahNumber, payload.ayahTo);
+        payload.juz = mergedLocation.juz;
+        payload.hizb = mergedLocation.hizb;
+        payload.page = mergedLocation.page;
         await api.updateRecord(existing.id, payload);
       } else {
         await api.createRecord(payload);
@@ -136,14 +114,9 @@ export default function TrackingSection({ type, title }) {
     setEditingId(r.id);
     setForm({
       studentId: r.studentId,
-      unitType: r.unitType || "surah",
       surahNumber: r.surahNumber || "",
       ayahFrom: r.ayahFrom || 1,
       ayahTo: r.ayahTo || 1,
-      juzNumber: r.juzNumber || "",
-      hizbNumber: r.hizbNumber || "",
-      pageFrom: r.pageFrom || "",
-      pageTo: r.pageTo || "",
       date: r.date,
       notes: r.notes || "",
     });
@@ -161,9 +134,7 @@ export default function TrackingSection({ type, title }) {
   function coveredSurahsFor(studentId) {
     const set = new Set();
     for (const r of records) {
-      if (r.studentId === studentId && r.unitType !== "juz" && r.unitType !== "hizb" && r.unitType !== "page") {
-        set.add(r.surahNumber);
-      }
+      if (r.studentId === studentId) set.add(r.surahNumber);
     }
     return set;
   }

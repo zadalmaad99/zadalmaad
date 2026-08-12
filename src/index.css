@@ -488,6 +488,104 @@ td.empty {
   font-weight: 500;
 }
 
+.auto-location {
+  font-size: 12.5px;
+  color: var(--primary-dark);
+  background: var(--primary-light);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.leaderboard-bar {
+  height: 8px;
+  border-radius: 5px;
+  background: var(--border);
+  overflow: hidden;
+}
+.leaderboard-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--primary), var(--gold));
+  transition: width 0.4s ease;
+}
+
+.overview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.overview-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  border-top: 3px solid var(--border);
+}
+.overview-card:nth-child(1) {
+  border-top-color: #d4af37;
+  background: linear-gradient(180deg, #fffdf5, #fff);
+}
+.overview-card:nth-child(2) {
+  border-top-color: #a8a8a8;
+}
+.overview-card:nth-child(3) {
+  border-top-color: #c98a4b;
+}
+.overview-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.overview-rank {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  min-width: 32px;
+  text-align: center;
+}
+.overview-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.overview-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.overview-section-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.overview-section-stats {
+  color: var(--muted);
+  font-weight: 500;
+}
+.overview-hifz .overview-section-label span:first-child {
+  color: var(--primary-dark);
+}
+.overview-qiraah .overview-section-label span:first-child {
+  color: #2a6fb0;
+}
+.overview-murajaah .overview-section-label span:first-child {
+  color: #a5680f;
+}
+.overview-qiraah .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #2a6fb0, #6fb1e6);
+}
+.overview-murajaah .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #a5680f, var(--gold));
+}
+
 @media (max-width: 720px) {
   .dashboard {
     flex-direction: column;

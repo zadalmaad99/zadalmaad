@@ -5,42 +5,37 @@ import { requireAdmin } from "../adminAuth.js";
 const router = Router();
 
 const TYPES = ["hifz", "qiraah", "murajaah"];
-const UNIT_TYPES = ["surah", "juz", "hizb", "page"];
 
 function validatePayload(body) {
-  const { type, studentId, unitType, date, notes } = body || {};
-  if (!TYPES.includes(type)) return null;
-  if (!studentId || !date) return null;
-
-  const resolvedUnitType = UNIT_TYPES.includes(unitType) ? unitType : "surah";
-  const payload = {
+  const {
     type,
     studentId,
-    unitType: resolvedUnitType,
+    surahNumber,
+    surahName,
+    ayahFrom,
+    ayahTo,
+    juz,
+    hizb,
+    page,
+    date,
+    notes,
+  } = body || {};
+  if (!TYPES.includes(type)) return null;
+  if (!studentId || !surahNumber || !ayahFrom || !ayahTo || !date) return null;
+
+  return {
+    type,
+    studentId,
+    surahNumber: Number(surahNumber),
+    surahName: surahName || "",
+    ayahFrom: Number(ayahFrom),
+    ayahTo: Number(ayahTo),
+    juz: juz ? Number(juz) : null,
+    hizb: hizb ? Number(hizb) : null,
+    page: page ? Number(page) : null,
     date,
     notes: (notes || "").trim(),
   };
-
-  if (resolvedUnitType === "surah") {
-    const { surahNumber, surahName, ayahFrom, ayahTo } = body;
-    if (!surahNumber || !ayahFrom || !ayahTo) return null;
-    payload.surahNumber = Number(surahNumber);
-    payload.surahName = surahName || "";
-    payload.ayahFrom = Number(ayahFrom);
-    payload.ayahTo = Number(ayahTo);
-  } else if (resolvedUnitType === "juz") {
-    if (!body.juzNumber) return null;
-    payload.juzNumber = Number(body.juzNumber);
-  } else if (resolvedUnitType === "hizb") {
-    if (!body.hizbNumber) return null;
-    payload.hizbNumber = Number(body.hizbNumber);
-  } else if (resolvedUnitType === "page") {
-    if (!body.pageFrom || !body.pageTo) return null;
-    payload.pageFrom = Number(body.pageFrom);
-    payload.pageTo = Number(body.pageTo);
-  }
-
-  return payload;
 }
 
 router.post("/", requireAdmin, async (req, res) => {
