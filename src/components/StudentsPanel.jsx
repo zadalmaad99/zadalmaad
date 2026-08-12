@@ -41,6 +41,7 @@ export default function StudentsPanel({ onNavigate }) {
   const [editingName, setEditingName] = useState("");
   const [editingContactType, setEditingContactType] = useState("email");
   const [editingContactValue, setEditingContactValue] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "students"), orderBy("name"));
@@ -217,11 +218,30 @@ export default function StudentsPanel({ onNavigate }) {
         )}
       </div>
 
-      {students.length === 0 ? (
-        <p className="empty">لا يوجد طلاب بعد</p>
+      {students.length > 0 && (
+        <div className="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="ابحث عن اسم الطالب..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      )}
+
+      {students.filter((s) =>
+        s.name?.toLowerCase().includes(search.trim().toLowerCase())
+      ).length === 0 ? (
+        <p className="empty">لا يوجد طلاب</p>
       ) : (
         <div className="student-grid">
-          {students.map((s) => (
+          {students
+            .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()))
+            .map((s) => (
             <div key={s.id} className="student-card">
               {editingId === s.id ? (
                 <div className="student-card-edit">

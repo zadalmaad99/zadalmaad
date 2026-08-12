@@ -34,5 +34,11 @@ service cloud.firestore {
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
+
+    match /khatmat/{khatmId} {
+      allow read: if isAdmin() ||
+        (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin();
+    }
   }
 }

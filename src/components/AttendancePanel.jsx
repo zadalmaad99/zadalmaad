@@ -44,6 +44,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const [records, setRecords] = useState([]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [filterStudentId, setFilterStudentId] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
@@ -104,9 +105,9 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       ?.status;
   }
 
-  const visibleStudents = filterStudentId
-    ? students.filter((s) => s.id === filterStudentId)
-    : students;
+  const visibleStudents = students
+    .filter((s) => (filterStudentId ? s.id === filterStudentId : true))
+    .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
     <div className="panel">
@@ -119,6 +120,21 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
           <button type="button" className="ghost" onClick={() => setFilterStudentId(null)}>
             عرض كل الطلاب
           </button>
+        </div>
+      )}
+
+      {isAdmin && !filterStudentId && (
+        <div className="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="ابحث عن اسم الطالب..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       )}
 
@@ -204,12 +220,18 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
                           </button>
                         </td>
                         <td>
-                          <input
-                            type="radio"
+                          <button
+                            type="button"
                             disabled={!isAdmin}
-                            checked={status === "excused"}
-                            onChange={() => setStatus(s.id, iso, "excused")}
-                          />
+                            className={
+                              status === "excused"
+                                ? "week-toggle week-toggle-excused-active"
+                                : "week-toggle"
+                            }
+                            onClick={() => setStatus(s.id, iso, "excused")}
+                          >
+                            <span className="week-toggle-dot" />
+                          </button>
                         </td>
                       </tr>
                     );

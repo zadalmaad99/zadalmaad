@@ -3,14 +3,15 @@ import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../firebase";
 import { COUNTRIES, splitPhone } from "../data/countries";
 import { useCalendar } from "../context/CalendarContext";
+import { api } from "../api";
 import SurahProgressBar from "./SurahProgressBar";
 
 const TOTAL_AYAHS = 6236;
 const MEDALS = ["🥇", "🥈", "🥉"];
 const SECTIONS = [
-  { key: "hifz", label: "حفظ" },
-  { key: "qiraah", label: "قراءة" },
-  { key: "murajaah", label: "مراجعة" },
+  { key: "hifz", label: "حفظ", resettable: false },
+  { key: "qiraah", label: "قراءة", resettable: true },
+  { key: "murajaah", label: "مراجعة", resettable: true },
 ];
 
 function statsFor(records, studentId, type) {
@@ -38,6 +39,8 @@ export default function OverviewDashboard({ onNavigate }) {
   const { formatDate } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
+  const [khatmat, setKhatmat] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const unsubStudents = onSnapshot(
@@ -47,11 +50,31 @@ export default function OverviewDashboard({ onNavigate }) {
     const unsubRecords = onSnapshot(collection(db, "records"), (snap) =>
       setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
+    const unsubKhatmat = onSnapshot(collection(db, "khatmat"), (snap) =>
+      setKhatmat(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    );
     return () => {
       unsubStudents();
       unsubRecords();
+      unsubKhatmat();
     };
   }, []);
+
+  async function handleKhatm(studentId, type, studentName) {
+    if (
+      !confirm(
+        `تأكيد: سيتم تسجيل أن ${studentName} أكمل ختمة ${
+          type === "qiraah" ? "قراءة" : "مراجعة"
+        } جديدة، وستُصفَّر سجلات هذا القسم للبدء من جديد. الختمات السابقة تبقى محفوظة. متابعة؟`
+      )
+    )
+      return;
+    try {
+      await api.completeKhatm({ studentId, type });
+    } catch (err) {
+      alert(err.message || "تعذّر تسجيل الختمة");
+    }
+  }
 
   const rows = students
     .map((s) => {
@@ -62,6 +85,12 @@ export default function OverviewDashboard({ onNavigate }) {
         (sum, sec) => sum + bySection[sec.key].ayahCount,
         0
       );
+      const khatmCounts = Object.fromEntries(
+        SECTIONS.filter((sec) => sec.resettable).map((sec) => [
+          sec.key,
+          khatmat.filter((k) => k.studentId === s.id && k.type === sec.key).length,
+        ])
+      );
       return {
         id: s.id,
         name: s.name,
@@ -69,19 +98,41 @@ export default function OverviewDashboard({ onNavigate }) {
         contactValue: s.contactValue,
         createdAt: s.createdAt,
         bySection,
+        khatmCounts,
         totalAyahs,
       };
     })
     .filter((r) => r.totalAyahs > 0)
     .sort((a, b) => b.bySection.hifz.ayahCount - a.bySection.hifz.ayahCount || b.totalAyahs - a.totalAyahs);
 
+  const visibleRows = rows.filter((r) =>
+    r.name?.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
   return (
     <div className="panel">
-      {rows.length === 0 ? (
-        <p className="empty">لا توجد بيانات تقدم بعد</p>
+      {rows.length > 0 && (
+        <div className="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="ابحث عن اسم الطالب..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      )}
+
+      {visibleRows.length === 0 ? (
+        <p className="empty">لا توجد نتائج</p>
       ) : (
         <ol className="overview-list">
-          {rows.map((r, i) => (
+          {visibleRows.map((r) => {
+            const i = rows.indexOf(r);
+            return (
             <li
               key={r.id}
               className="overview-card overview-card-clickable"
@@ -121,6 +172,7 @@ export default function OverviewDashboard({ onNavigate }) {
                 {SECTIONS.map((sec) => {
                   const stat = r.bySection[sec.key];
                   const pct = Math.min(100, (stat.ayahCount / TOTAL_AYAHS) * 100);
+                  const completed = stat.maxSurah >= 114;
                   return (
                     <div
                       key={sec.key}
@@ -131,7 +183,15 @@ export default function OverviewDashboard({ onNavigate }) {
                       }}
                     >
                       <div className="overview-section-label">
-                        <span>{sec.label}</span>
+                        <span>
+                          {sec.label}
+                          {sec.resettable && r.khatmCounts[sec.key] > 0 && (
+                            <span className="khatm-count">
+                              {" "}
+                              · {r.khatmCounts[sec.key]} ختمة
+                            </span>
+                          )}
+                        </span>
                         <span className="overview-section-stats">
                           {stat.surahCount} سورة · {stat.ayahCount} آية
                         </span>
@@ -143,12 +203,31 @@ export default function OverviewDashboard({ onNavigate }) {
                         />
                       </div>
                       <SurahProgressBar maxSurah={stat.maxSurah} />
+
+                      {completed && !sec.resettable && (
+                        <div className="khatm-badge khatm-badge-permanent">
+                          ✅ ختم القرآن حفظًا
+                        </div>
+                      )}
+                      {completed && sec.resettable && (
+                        <button
+                          type="button"
+                          className="khatm-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleKhatm(r.id, sec.key, r.name);
+                          }}
+                        >
+                          🎉 ختم القرآن {sec.label} — تسجيل والبدء من جديد
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       )}
     </div>

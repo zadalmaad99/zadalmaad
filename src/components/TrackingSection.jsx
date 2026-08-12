@@ -43,6 +43,7 @@ export default function TrackingSection({
   const [reportRecord, setReportRecord] = useState(null);
   const [pageView, setPageView] = useState(null);
   const [filterStudentId, setFilterStudentId] = useState(null);
+  const [search, setSearch] = useState("");
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -173,9 +174,11 @@ export default function TrackingSection({
     return students.find((s) => s.id === id)?.name || "—";
   }
 
-  const visibleRecords = filterStudentId
-    ? records.filter((r) => r.studentId === filterStudentId)
-    : records;
+  const visibleRecords = records
+    .filter((r) => (filterStudentId ? r.studentId === filterStudentId : true))
+    .filter((r) =>
+      studentName(r.studentId).toLowerCase().includes(search.trim().toLowerCase())
+    );
 
   return (
     <div className="panel">
@@ -189,6 +192,21 @@ export default function TrackingSection({
           <button type="button" className="ghost" onClick={() => setFilterStudentId(null)}>
             عرض كل الطلاب
           </button>
+        </div>
+      )}
+
+      {!filterStudentId && records.length > 0 && (
+        <div className="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="ابحث عن اسم الطالب..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       )}
 

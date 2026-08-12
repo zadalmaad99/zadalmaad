@@ -60,4 +60,10 @@ export const api = {
     }),
   deleteAttendance: (id) =>
     authedFetch(`/api/attendance/${id}`, { method: "DELETE" }),
+
+  completeKhatm: (payload) =>
+    authedFetch("/api/khatmat", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
