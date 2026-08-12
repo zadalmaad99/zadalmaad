@@ -348,13 +348,18 @@ label {
 }
 .student-card {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   padding: 16px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: #fff;
   box-shadow: var(--shadow);
+}
+.student-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .student-card-avatar {
   width: 42px;
@@ -387,17 +392,24 @@ label {
   color: var(--muted);
 }
 .student-card-contact {
-  font-size: 12.5px;
-  margin-top: 2px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.student-card-contact .whatsapp-link {
+  white-space: nowrap;
+  direction: ltr;
+  justify-content: flex-end;
 }
 .student-card-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
 }
 .student-card-actions button {
-  padding: 5px 12px;
+  flex: 1;
+  padding: 7px 12px;
   font-size: 12.5px;
 }
 .student-card-edit {
