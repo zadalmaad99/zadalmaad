@@ -1,0 +1,19 @@
+{
+  "name": "متابعة حفظ وقراءة القرآن الكريم",
+  "short_name": "متابعة القرآن",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f6f8f5",
+  "theme_color": "#1f7a3d",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
