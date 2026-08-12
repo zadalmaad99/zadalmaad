@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import studentsRouter from "./routes/students.js";
 import recordsRouter from "./routes/records.js";
+import attendanceRouter from "./routes/attendance.js";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/students", studentsRouter);
 app.use("/api/records", recordsRouter);
+app.use("/api/attendance", attendanceRouter);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

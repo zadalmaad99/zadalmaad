@@ -4,12 +4,20 @@ import StudentsPanel from "../components/StudentsPanel";
 import TrackingSection from "../components/TrackingSection";
 import OverviewDashboard from "../components/OverviewDashboard";
 import SettingsPanel from "../components/SettingsPanel";
+import AttendancePanel from "../components/AttendancePanel";
 import logo from "../assets/logo.png";
 
 const ICONS = {
   overview: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M4 20V10M11 20V4M18 20v-7" />
+    </svg>
+  ),
+  attendance: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+      <path d="M9 16l2 2 4-4" />
     </svg>
   ),
   settings: (
@@ -57,6 +65,12 @@ const TABS = [
   { key: "hifz", label: "حفظ القرآن يوميًا", navLabel: "حفظ", desc: "متابعة الحفظ اليومي" },
   { key: "qiraah", label: "قراءة القرآن", navLabel: "قراءة", desc: "متابعة القراءة اليومية" },
   { key: "murajaah", label: "مراجعة حفظ القرآن", navLabel: "مراجعة", desc: "متابعة المراجعة" },
+  {
+    key: "attendance",
+    label: "الحضور والغياب",
+    navLabel: "الحضور",
+    desc: "تسجيل حضور وغياب ومهلة كل طالب",
+  },
   {
     key: "settings",
     label: "الإعدادات",
@@ -148,6 +162,7 @@ export default function Dashboard() {
             onFocusHandled={() => setFocusStudentId(null)}
           />
         )}
+        {tab === "attendance" && <AttendancePanel />}
       </main>
     </div>
   );

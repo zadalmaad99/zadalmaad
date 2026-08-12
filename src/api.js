@@ -47,4 +47,17 @@ export const api = {
     }),
   deleteRecord: (id) =>
     authedFetch(`/api/records/${id}`, { method: "DELETE" }),
+
+  createAttendance: (payload) =>
+    authedFetch("/api/attendance", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateAttendance: (id, payload) =>
+    authedFetch(`/api/attendance/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteAttendance: (id) =>
+    authedFetch(`/api/attendance/${id}`, { method: "DELETE" }),
 };

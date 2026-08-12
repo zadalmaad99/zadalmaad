@@ -1223,3 +1223,60 @@ td.empty {
   color: var(--primary-dark);
   font-weight: 700;
 }
+
+.attendance-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.attendance-summary-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.attendance-summary-name {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.attendance-summary-counts {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  width: fit-content;
+}
+.status-present {
+  background: var(--whatsapp-bg);
+  color: #1f9d55;
+}
+.status-absent {
+  background: var(--error-bg);
+  color: var(--danger-dark);
+}
+.status-excused {
+  background: #fdf3dd;
+  color: #9c7a15;
+}
+:root[data-theme="dark"] .status-excused {
+  background: #3a2f10;
+  color: #e0bd5a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .status-excused {
+    background: #3a2f10;
+    color: #e0bd5a;
+  }
+}
