@@ -14,7 +14,10 @@ const SECTIONS = [
 
 function statsFor(records, studentId, type) {
   const own = records.filter((r) => r.studentId === studentId && r.type === type);
-  const ayahCount = own.reduce((sum, r) => sum + (r.ayahTo - r.ayahFrom + 1), 0);
+  // Progress is counted from the start of the surah to the last ayah
+  // reached, not the width of the entered range, since memorization is
+  // cumulative from ayah 1.
+  const ayahCount = own.reduce((sum, r) => sum + r.ayahTo, 0);
   const surahCount = new Set(own.map((r) => r.surahNumber)).size;
   return { ayahCount, surahCount };
 }
