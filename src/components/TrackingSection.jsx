@@ -42,11 +42,13 @@ export default function TrackingSection({
   const [formOpen, setFormOpen] = useState(false);
   const [reportRecord, setReportRecord] = useState(null);
   const [pageView, setPageView] = useState(null);
+  const [filterStudentId, setFilterStudentId] = useState(null);
   const formRef = useRef(null);
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
     setFormOpen(true);
+    setFilterStudentId(focusStudentId);
     setForm((f) => ({ ...f, studentId: focusStudentId }));
     setTimeout(
       () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -172,9 +174,24 @@ export default function TrackingSection({
     return students.find((s) => s.id === id)?.name || "—";
   }
 
+  const visibleRecords = filterStudentId
+    ? records.filter((r) => r.studentId === filterStudentId)
+    : records;
+
   return (
     <div className="panel">
       <h3 className="panel-title">{title}</h3>
+
+      {filterStudentId && (
+        <div className="filter-banner">
+          <span>
+            عرض سجلات: <strong>{studentName(filterStudentId)}</strong>
+          </span>
+          <button type="button" className="ghost" onClick={() => setFilterStudentId(null)}>
+            عرض كل الطلاب
+          </button>
+        </div>
+      )}
 
       {isAdmin && (
         <div className="collapsible">
@@ -258,11 +275,11 @@ export default function TrackingSection({
         </div>
       )}
 
-      {records.length === 0 ? (
+      {visibleRecords.length === 0 ? (
         <p className="empty">لا توجد سجلات بعد</p>
       ) : (
         <div className="record-grid">
-          {records.map((r) => (
+          {visibleRecords.map((r) => (
             <div key={r.id} className="record-card">
               <div className="record-card-header">
                 <div className="student-card-avatar record-card-avatar">

@@ -32,11 +32,13 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [filterStudentId, setFilterStudentId] = useState(null);
   const formRef = useRef(null);
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
     setFormOpen(true);
+    setFilterStudentId(focusStudentId);
     setForm((f) => ({ ...f, studentId: focusStudentId }));
     setTimeout(
       () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -138,8 +140,12 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
     return students.find((s) => s.id === id)?.name || "—";
   }
 
+  const visibleRecords = filterStudentId
+    ? records.filter((r) => r.studentId === filterStudentId)
+    : records;
+
   const groupedByDate = [];
-  for (const r of records) {
+  for (const r of visibleRecords) {
     const bucket = groupedByDate.find(([date]) => date === r.date);
     if (bucket) bucket[1].push(r);
     else groupedByDate.push([r.date, [r]]);
@@ -158,6 +164,17 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
 
   return (
     <div className="panel">
+      {filterStudentId && (
+        <div className="filter-banner">
+          <span>
+            عرض سجلات: <strong>{studentName(filterStudentId)}</strong>
+          </span>
+          <button type="button" className="ghost" onClick={() => setFilterStudentId(null)}>
+            عرض كل الطلاب
+          </button>
+        </div>
+      )}
+
       {summary.length > 0 && (
         <div className="attendance-summary">
           {summary.map((s) => (
@@ -270,7 +287,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
         </div>
       )}
 
-      {records.length === 0 ? (
+      {visibleRecords.length === 0 ? (
         <p className="empty">لا توجد سجلات حضور بعد</p>
       ) : (
         <div className="day-groups">

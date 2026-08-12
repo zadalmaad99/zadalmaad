@@ -1411,3 +1411,20 @@ td.empty {
   height: 13px;
   display: block;
 }
+
+.filter-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.filter-banner button {
+  flex-shrink: 0;
+}
