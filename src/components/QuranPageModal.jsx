@@ -48,19 +48,19 @@ export default function QuranPageModal({ page, onClose }) {
           <button
             type="button"
             className="ghost"
-            onClick={() => go(1)}
-            disabled={current >= PAGE_COUNT}
+            onClick={() => go(-1)}
+            disabled={current <= 1}
           >
-            الصفحة التالية
+            الصفحة السابقة
           </button>
           <span className="hint-text">{current} / {PAGE_COUNT}</span>
           <button
             type="button"
             className="ghost"
-            onClick={() => go(-1)}
-            disabled={current <= 1}
+            onClick={() => go(1)}
+            disabled={current >= PAGE_COUNT}
           >
-            الصفحة السابقة
+            الصفحة التالية
           </button>
         </div>
       </div>
