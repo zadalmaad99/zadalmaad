@@ -19,8 +19,9 @@ function statsFor(records, studentId, type) {
   // reached, not the width of the entered range, since memorization is
   // cumulative from ayah 1.
   const ayahCount = own.reduce((sum, r) => sum + r.ayahTo, 0);
-  const coveredSurahs = new Set(own.map((r) => r.surahNumber));
-  return { ayahCount, surahCount: coveredSurahs.size, coveredSurahs };
+  const surahCount = new Set(own.map((r) => r.surahNumber)).size;
+  const maxSurah = own.reduce((max, r) => Math.max(max, r.surahNumber), 0);
+  return { ayahCount, surahCount, maxSurah };
 }
 
 function flagFor(phone) {
@@ -141,7 +142,7 @@ export default function OverviewDashboard({ onNavigate }) {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <SurahProgressBar coveredNumbers={stat.coveredSurahs} />
+                      <SurahProgressBar maxSurah={stat.maxSurah} />
                     </div>
                   );
                 })}
