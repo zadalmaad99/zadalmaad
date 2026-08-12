@@ -858,27 +858,25 @@ td.empty {
 
 .install-wrap {
   position: fixed;
-  bottom: 18px;
-  left: 18px;
-  z-index: 100;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
 }
 .install-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
+  padding: 9px 22px;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   box-shadow: 0 8px 20px rgba(20, 90, 45, 0.35);
-}
-.install-btn svg {
-  width: 17px;
-  height: 17px;
+  font-size: 13.5px;
 }
 .install-ios-hint {
   position: absolute;
-  bottom: 56px;
-  left: 0;
+  top: 46px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 240px;
   background: #fff;
   color: var(--ink);
@@ -890,18 +888,14 @@ td.empty {
   box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 4px;
+  text-align: center;
 }
 .install-ios-hint svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
   color: var(--primary);
-}
-
-@media (max-width: 720px) {
-  .install-wrap {
-    bottom: calc(72px + env(safe-area-inset-bottom));
-  }
 }
