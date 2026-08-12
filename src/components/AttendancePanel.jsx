@@ -126,6 +126,13 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
     return students.find((s) => s.id === id)?.name || "—";
   }
 
+  const groupedByDate = [];
+  for (const r of records) {
+    const bucket = groupedByDate.find(([date]) => date === r.date);
+    if (bucket) bucket[1].push(r);
+    else groupedByDate.push([r.date, [r]]);
+  }
+
   const summary = students.map((s) => {
     const own = records.filter((r) => r.studentId === s.id);
     return {
@@ -254,46 +261,53 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       {records.length === 0 ? (
         <p className="empty">لا توجد سجلات حضور بعد</p>
       ) : (
-        <div className="record-grid">
-          {records.map((r) => (
-            <div key={r.id} className="record-card">
-              <div className="record-card-header">
-                <div className="student-card-avatar record-card-avatar">
-                  {studentName(r.studentId)?.trim()?.[0] || "?"}
-                </div>
-                <div className="record-card-title">
-                  <span className="student-card-name">{studentName(r.studentId)}</span>
-                  <span className="student-card-date">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M16 2v4M8 2v4M3 10h18" />
-                    </svg>
-                    {formatDate(r.date)}
-                  </span>
-                </div>
+        <div className="day-groups">
+          {groupedByDate.map(([date, dayRecords]) => (
+            <div key={date} className="day-group">
+              <div className="day-group-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                {formatDate(date)}
+                <span className="day-group-count">{dayRecords.length} طالب</span>
               </div>
 
-              <span className={`status-badge ${statusMeta(r.status).cls}`}>
-                {statusMeta(r.status).label}
-              </span>
-              {r.notes && <div className="record-card-notes">{r.notes}</div>}
+              <div className="day-group-rows">
+                {dayRecords.map((r) => (
+                  <div key={r.id} className="day-row">
+                    <div className="day-row-student">
+                      <div className="student-card-avatar record-card-avatar">
+                        {studentName(r.studentId)?.trim()?.[0] || "?"}
+                      </div>
+                      <span className="student-card-name">
+                        {studentName(r.studentId)}
+                      </span>
+                    </div>
 
-              {isAdmin && (
-                <div className="student-card-actions">
-                  <button className="ghost" onClick={() => startEdit(r)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                    تعديل
-                  </button>
-                  <button className="danger" onClick={() => handleDelete(r.id)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
-                    </svg>
-                    حذف
-                  </button>
-                </div>
-              )}
+                    <span className={`status-badge ${statusMeta(r.status).cls}`}>
+                      {statusMeta(r.status).label}
+                    </span>
+
+                    {r.notes && <div className="day-row-notes">{r.notes}</div>}
+
+                    {isAdmin && (
+                      <div className="day-row-actions">
+                        <button className="ghost" onClick={() => startEdit(r)}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
+                        <button className="danger" onClick={() => handleDelete(r.id)}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
