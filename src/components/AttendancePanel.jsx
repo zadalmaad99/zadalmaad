@@ -128,7 +128,11 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
 
   async function handleDelete(id) {
     if (!confirm("هل أنت متأكد من حذف هذا السجل؟")) return;
-    await api.deleteAttendance(id);
+    try {
+      await api.deleteAttendance(id);
+    } catch (err) {
+      alert(err.message || "تعذّر حذف السجل");
+    }
   }
 
   function studentName(id) {

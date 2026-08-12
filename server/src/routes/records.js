@@ -2,6 +2,7 @@ import { Router } from "express";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin.js";
 import { requireAdmin } from "../adminAuth.js";
+import { asyncHandler } from "../asyncHandler.js";
 
 const router = Router();
 
@@ -48,37 +49,52 @@ function historyEntry(payload) {
   };
 }
 
-router.post("/", requireAdmin, async (req, res) => {
-  const payload = validatePayload(req.body);
-  if (!payload) return res.status(400).json({ error: "invalid record payload" });
+router.post(
+  "/",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const payload = validatePayload(req.body);
+    if (!payload) return res.status(400).json({ error: "invalid record payload" });
 
-  const ref = await adminDb.collection("records").add({
-    ...payload,
-    history: [historyEntry(payload)],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-  res.status(201).json({ id: ref.id });
-});
+    const ref = await adminDb.collection("records").add({
+      ...payload,
+      history: [historyEntry(payload)],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    res.status(201).json({ id: ref.id });
+  })
+);
 
-router.patch("/:id", requireAdmin, async (req, res) => {
-  const payload = validatePayload(req.body);
-  if (!payload) return res.status(400).json({ error: "invalid record payload" });
+router.patch(
+  "/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const payload = validatePayload(req.body);
+    if (!payload) return res.status(400).json({ error: "invalid record payload" });
 
-  await adminDb
-    .collection("records")
-    .doc(req.params.id)
-    .update({
+    const ref = adminDb.collection("records").doc(req.params.id);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res.status(404).json({ error: "record not found" });
+    }
+
+    await ref.update({
       ...payload,
       history: FieldValue.arrayUnion(historyEntry(payload)),
       updatedAt: Date.now(),
     });
-  res.json({ ok: true });
-});
+    res.json({ ok: true });
+  })
+);
 
-router.delete("/:id", requireAdmin, async (req, res) => {
-  await adminDb.collection("records").doc(req.params.id).delete();
-  res.json({ ok: true });
-});
+router.delete(
+  "/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await adminDb.collection("records").doc(req.params.id).delete();
+    res.json({ ok: true });
+  })
+);
 
 export default router;

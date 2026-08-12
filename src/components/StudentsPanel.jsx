@@ -83,7 +83,11 @@ export default function StudentsPanel({ onNavigate }) {
       )
     )
       return;
-    await api.deleteStudent(id);
+    try {
+      await api.deleteStudent(id);
+    } catch (err) {
+      alert(err.message || "تعذّر حذف الطالب");
+    }
   }
 
   function startEdit(s) {
@@ -95,12 +99,16 @@ export default function StudentsPanel({ onNavigate }) {
 
   async function saveEdit(id) {
     if (!editingName.trim()) return;
-    await api.updateStudent(id, {
-      name: editingName.trim(),
-      contactType: editingContactType,
-      contactValue: editingContactValue.trim(),
-    });
-    setEditingId(null);
+    try {
+      await api.updateStudent(id, {
+        name: editingName.trim(),
+        contactType: editingContactType,
+        contactValue: editingContactValue.trim(),
+      });
+      setEditingId(null);
+    } catch (err) {
+      alert(err.message || "تعذّر حفظ التعديل");
+    }
   }
 
   return (

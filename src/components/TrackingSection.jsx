@@ -162,7 +162,11 @@ export default function TrackingSection({
 
   async function handleDelete(id) {
     if (!confirm("هل أنت متأكد من حذف هذا السجل؟")) return;
-    await api.deleteRecord(id);
+    try {
+      await api.deleteRecord(id);
+    } catch (err) {
+      alert(err.message || "تعذّر حذف السجل");
+    }
   }
 
   function studentName(id) {
