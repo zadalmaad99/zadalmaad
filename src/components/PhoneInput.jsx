@@ -13,7 +13,7 @@ export default function PhoneInput({ value, onChange }) {
   }
 
   function handleLocalChange(e) {
-    const cleaned = e.target.value.replace(/[^\d]/g, "");
+    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
     onChange(`${dial}${cleaned}`);
   }
 
@@ -46,10 +46,12 @@ export default function PhoneInput({ value, onChange }) {
       </select>
       <input
         type="tel"
+        inputMode="numeric"
         className="phone-local"
         placeholder="رقم الهاتف"
         value={local}
         onChange={handleLocalChange}
+        maxLength={11}
       />
     </div>
   );
