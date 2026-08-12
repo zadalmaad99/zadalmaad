@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin.js";
 import { requireAdmin } from "../adminAuth.js";
 
@@ -38,12 +39,22 @@ function validatePayload(body) {
   };
 }
 
+function historyEntry(payload) {
+  return {
+    date: payload.date,
+    ayahFrom: payload.ayahFrom,
+    ayahTo: payload.ayahTo,
+    at: Date.now(),
+  };
+}
+
 router.post("/", requireAdmin, async (req, res) => {
   const payload = validatePayload(req.body);
   if (!payload) return res.status(400).json({ error: "invalid record payload" });
 
   const ref = await adminDb.collection("records").add({
     ...payload,
+    history: [historyEntry(payload)],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
@@ -57,7 +68,11 @@ router.patch("/:id", requireAdmin, async (req, res) => {
   await adminDb
     .collection("records")
     .doc(req.params.id)
-    .update({ ...payload, updatedAt: Date.now() });
+    .update({
+      ...payload,
+      history: FieldValue.arrayUnion(historyEntry(payload)),
+      updatedAt: Date.now(),
+    });
   res.json({ ok: true });
 });
 

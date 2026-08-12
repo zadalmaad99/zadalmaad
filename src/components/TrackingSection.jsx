@@ -6,6 +6,7 @@ import { locateAyah } from "../data/quranBoundaries";
 import UnitPicker from "./UnitPicker";
 import SurahProgressBar from "./SurahProgressBar";
 import HijriDateInput from "./HijriDateInput";
+import ReportModal from "./ReportModal";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
@@ -40,6 +41,7 @@ export default function TrackingSection({
   const [error, setError] = useState("");
   const [highlightId, setHighlightId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [reportRecord, setReportRecord] = useState(null);
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -321,25 +323,41 @@ export default function TrackingSection({
               </div>
               {r.notes && <div className="record-card-notes">{r.notes}</div>}
 
-              {isAdmin && (
-                <div className="student-card-actions">
-                  <button className="ghost" onClick={() => startEdit(r)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                    تعديل
-                  </button>
-                  <button className="danger" onClick={() => handleDelete(r.id)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
-                    </svg>
-                    حذف
-                  </button>
-                </div>
-              )}
+              <div className="student-card-actions">
+                <button className="ghost" onClick={() => setReportRecord(r)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 20V10M11 20V4M18 20v-7" />
+                  </svg>
+                  تقرير
+                </button>
+                {isAdmin && (
+                  <>
+                    <button className="ghost" onClick={() => startEdit(r)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+                      تعديل
+                    </button>
+                    <button className="danger" onClick={() => handleDelete(r.id)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+                      </svg>
+                      حذف
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>
+      )}
+
+      {reportRecord && (
+        <ReportModal
+          record={reportRecord}
+          studentName={studentName(reportRecord.studentId)}
+          onClose={() => setReportRecord(null)}
+        />
       )}
     </div>
   );
