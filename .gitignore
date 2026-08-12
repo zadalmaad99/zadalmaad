@@ -27,3 +27,4 @@ info.txt
 .env.local
 server/.env
 *serviceAccount*.json
+quran_kareem/
