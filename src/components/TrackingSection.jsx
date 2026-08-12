@@ -38,6 +38,7 @@ export default function TrackingSection({
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
   const [highlightId, setHighlightId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export default function TrackingSection({
     setForm(EMPTY_FORM);
     setEditingId(null);
     setError("");
+    setFormOpen(false);
   }
 
   async function handleSubmit(e) {
@@ -143,7 +145,11 @@ export default function TrackingSection({
   }
 
   function startEdit(r) {
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setFormOpen(true);
+    setTimeout(
+      () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50
+    );
     setEditingId(r.id);
     setForm({
       studentId: r.studentId,
@@ -192,6 +198,25 @@ export default function TrackingSection({
       ))}
 
       {isAdmin && (
+        <div className="collapsible">
+          <button
+            type="button"
+            className="collapsible-toggle"
+            onClick={() => setFormOpen((v) => !v)}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={formOpen ? "chevron chevron-open" : "chevron"}
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+            إضافة سجل
+          </button>
+
+          {formOpen && (
         <form className="record-form" onSubmit={handleSubmit} ref={formRef}>
           <div className="picker-row">
             <label>
@@ -243,6 +268,8 @@ export default function TrackingSection({
             )}
           </div>
         </form>
+          )}
+        </div>
       )}
 
       <table>
