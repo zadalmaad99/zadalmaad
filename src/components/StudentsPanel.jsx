@@ -23,7 +23,14 @@ function whatsappLink(phone) {
   return `https://wa.me/${digits}`;
 }
 
-export default function StudentsPanel() {
+const SECTIONS = [
+  { key: "hifz", label: "حفظ" },
+  { key: "qiraah", label: "قراءة" },
+  { key: "murajaah", label: "مراجعة" },
+  { key: "attendance", label: "حضور" },
+];
+
+export default function StudentsPanel({ onNavigate }) {
   const { formatDate } = useCalendar();
   const [students, setStudents] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -291,6 +298,19 @@ export default function StudentsPanel() {
                     ) : (
                       <span>{s.contactValue || "—"}</span>
                     )}
+                  </div>
+
+                  <div className="student-card-sections">
+                    {SECTIONS.map((sec) => (
+                      <button
+                        key={sec.key}
+                        type="button"
+                        className="section-pill"
+                        onClick={() => onNavigate?.(sec.key, s.id)}
+                      >
+                        {sec.label}
+                      </button>
+                    ))}
                   </div>
 
                   <div className="student-card-actions">

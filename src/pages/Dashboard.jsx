@@ -136,7 +136,9 @@ export default function Dashboard() {
         {tab === "overview" && isAdmin && (
           <OverviewDashboard onNavigate={goToSection} />
         )}
-        {tab === "students" && isAdmin && <StudentsPanel />}
+        {tab === "students" && isAdmin && (
+          <StudentsPanel onNavigate={goToSection} />
+        )}
         {tab === "settings" && isAdmin && <SettingsPanel />}
         {tab === "hifz" && (
           <TrackingSection
@@ -162,7 +164,12 @@ export default function Dashboard() {
             onFocusHandled={() => setFocusStudentId(null)}
           />
         )}
-        {tab === "attendance" && <AttendancePanel />}
+        {tab === "attendance" && (
+          <AttendancePanel
+            focusStudentId={tab === "attendance" ? focusStudentId : null}
+            onFocusHandled={() => setFocusStudentId(null)}
+          />
+        )}
       </main>
     </div>
   );

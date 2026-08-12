@@ -479,6 +479,27 @@ label {
   border-radius: 999px;
   font-weight: 600;
 }
+.student-card-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.section-pill {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.section-pill:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: none;
+  box-shadow: none;
+}
+
 .student-card-actions {
   display: flex;
   gap: 8px;
@@ -558,6 +579,41 @@ label {
   font-weight: 600;
   color: var(--muted);
   margin-top: 2px;
+}
+.record-card-unit-clickable {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.record-card-unit-clickable:hover {
+  background: color-mix(in srgb, var(--primary-light) 70%, var(--primary));
+}
+
+.quran-page-card {
+  max-width: 620px;
+  text-align: center;
+}
+.quran-page-viewer {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.quran-page-loading {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.quran-page-img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.quran-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
 }
 .record-card-notes {
   font-size: 12.5px;

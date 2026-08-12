@@ -23,7 +23,7 @@ function statusMeta(key) {
   return STATUSES.find((s) => s.key === key) || STATUSES[0];
 }
 
-export default function AttendancePanel() {
+export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const { isAdmin } = useAuth();
   const { formatDate, calendar } = useCalendar();
   const [students, setStudents] = useState([]);
@@ -33,6 +33,17 @@ export default function AttendancePanel() {
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const formRef = useRef(null);
+
+  useEffect(() => {
+    if (!focusStudentId || students.length === 0) return;
+    setFormOpen(true);
+    setForm((f) => ({ ...f, studentId: focusStudentId }));
+    setTimeout(
+      () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50
+    );
+    onFocusHandled?.();
+  }, [focusStudentId, students]);
 
   useEffect(() => {
     const studentsQuery = isAdmin

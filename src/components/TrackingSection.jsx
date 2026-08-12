@@ -6,6 +6,7 @@ import { locateAyah } from "../data/quranBoundaries";
 import UnitPicker from "./UnitPicker";
 import HijriDateInput from "./HijriDateInput";
 import ReportModal from "./ReportModal";
+import QuranPageModal from "./QuranPageModal";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
@@ -40,6 +41,7 @@ export default function TrackingSection({
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [reportRecord, setReportRecord] = useState(null);
+  const [pageView, setPageView] = useState(null);
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -280,7 +282,13 @@ export default function TrackingSection({
                 </div>
               </div>
 
-              <div className="record-card-unit">
+              <div
+                className={
+                  r.page ? "record-card-unit record-card-unit-clickable" : "record-card-unit"
+                }
+                onClick={() => r.page && setPageView(r.page)}
+                title={r.page ? "اضغط لعرض صفحة المصحف" : undefined}
+              >
                 <div>{unitParts(r).base}</div>
                 {unitParts(r).extra && (
                   <div className="record-card-unit-extra">{unitParts(r).extra}</div>
@@ -323,6 +331,10 @@ export default function TrackingSection({
           studentName={studentName(reportRecord.studentId)}
           onClose={() => setReportRecord(null)}
         />
+      )}
+
+      {pageView && (
+        <QuranPageModal page={pageView} onClose={() => setPageView(null)} />
       )}
     </div>
   );
