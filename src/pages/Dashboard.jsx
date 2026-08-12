@@ -57,8 +57,8 @@ const ICONS = {
 const TABS = [
   {
     key: "overview",
-    label: "لوحة التحكم",
-    navLabel: "لوحة التحكم",
+    label: "العام",
+    navLabel: "العام",
     desc: "ترتيب الطلاب حسب التقدم في كل الأقسام",
   },
   { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
