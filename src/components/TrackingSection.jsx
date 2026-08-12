@@ -5,6 +5,7 @@ import { SURAHS } from "../data/surahs";
 import { locateAyah } from "../data/quranBoundaries";
 import UnitPicker from "./UnitPicker";
 import SurahProgressBar from "./SurahProgressBar";
+import HijriDateInput from "./HijriDateInput";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
@@ -31,7 +32,7 @@ export default function TrackingSection({
   onFocusHandled,
 }) {
   const { isAdmin } = useAuth();
-  const { formatDate } = useCalendar();
+  const { formatDate, calendar } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -182,20 +183,29 @@ export default function TrackingSection({
     <div className="panel">
       <h3 className="panel-title">{title}</h3>
 
-      {students.map((s) => (
-        <div
-          key={s.id}
-          id={`progress-${s.id}`}
-          className={
-            s.id === highlightId
-              ? "progress-block progress-block-focus"
-              : "progress-block"
-          }
-        >
-          <div className="progress-name">{s.name}</div>
-          <SurahProgressBar coveredNumbers={coveredSurahsFor(s.id)} />
+      {students.length > 0 && (
+        <div className="progress-grid">
+          {students.map((s) => (
+            <div
+              key={s.id}
+              id={`progress-${s.id}`}
+              className={
+                s.id === highlightId
+                  ? "student-card progress-card progress-card-focus"
+                  : "student-card progress-card"
+              }
+            >
+              <div className="student-card-header">
+                <div className="student-card-avatar">
+                  {s.name?.trim()?.[0] || "?"}
+                </div>
+                <div className="student-card-name">{s.name}</div>
+              </div>
+              <SurahProgressBar coveredNumbers={coveredSurahsFor(s.id)} />
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
       {isAdmin && (
         <div className="collapsible">
@@ -237,12 +247,19 @@ export default function TrackingSection({
 
             <label>
               التاريخ
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                required
-              />
+              {calendar === "hijri" ? (
+                <HijriDateInput
+                  value={form.date}
+                  onChange={(v) => setForm({ ...form, date: v })}
+                />
+              ) : (
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  required
+                />
+              )}
             </label>
           </div>
 

@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 const CalendarContext = createContext(null);
 const STORAGE_KEY = "quran-tracker-calendar";
 
-const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
+const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-civil", {
   year: "numeric",
   month: "long",
   day: "numeric",
