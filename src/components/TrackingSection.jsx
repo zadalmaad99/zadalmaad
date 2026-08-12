@@ -29,6 +29,7 @@ export default function TrackingSection({ type, title }) {
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState("");
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -61,18 +62,36 @@ export default function TrackingSection({ type, title }) {
   function resetForm() {
     setForm(EMPTY_FORM);
     setEditingId(null);
+    setError("");
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.studentId || !form.surahNumber) return;
+    setError("");
 
     const surah = SURAHS.find((s) => s.number === Number(form.surahNumber));
     const surahNumber = Number(form.surahNumber);
-    const ayahFrom = Number(form.ayahFrom);
-    const ayahTo = Number(form.ayahTo);
-    const location = locateAyah(surahNumber, ayahTo);
+    let ayahFrom = Number(form.ayahFrom);
+    let ayahTo = Number(form.ayahTo);
 
+    const otherExisting = records.find(
+      (r) =>
+        r.studentId === form.studentId &&
+        r.surahNumber === surahNumber &&
+        r.id !== editingId
+    );
+    const editingRecord = editingId
+      ? records.find((r) => r.id === editingId)
+      : null;
+    const mergeBase = otherExisting || editingRecord;
+
+    if (mergeBase) {
+      ayahFrom = Math.min(mergeBase.ayahFrom, ayahFrom);
+      ayahTo = Math.max(mergeBase.ayahTo, ayahTo);
+    }
+
+    const location = locateAyah(surahNumber, ayahTo);
     const payload = {
       type,
       studentId: form.studentId,
@@ -87,26 +106,21 @@ export default function TrackingSection({ type, title }) {
       notes: form.notes.trim(),
     };
 
-    if (editingId) {
-      await api.updateRecord(editingId, payload);
-    } else {
-      const existing = records.find(
-        (r) => r.studentId === payload.studentId && r.surahNumber === payload.surahNumber
-      );
-
-      if (existing) {
-        payload.ayahFrom = Math.min(existing.ayahFrom, payload.ayahFrom);
-        payload.ayahTo = Math.max(existing.ayahTo, payload.ayahTo);
-        const mergedLocation = locateAyah(surahNumber, payload.ayahTo);
-        payload.juz = mergedLocation.juz;
-        payload.hizb = mergedLocation.hizb;
-        payload.page = mergedLocation.page;
-        await api.updateRecord(existing.id, payload);
+    try {
+      if (otherExisting) {
+        await api.updateRecord(otherExisting.id, payload);
+        if (editingId && editingId !== otherExisting.id) {
+          await api.deleteRecord(editingId);
+        }
+      } else if (editingId) {
+        await api.updateRecord(editingId, payload);
       } else {
         await api.createRecord(payload);
       }
+      resetForm();
+    } catch (err) {
+      setError(err.message || "حدث خطأ أثناء الحفظ");
     }
-    resetForm();
   }
 
   function startEdit(r) {
@@ -190,6 +204,8 @@ export default function TrackingSection({ type, title }) {
               rows={2}
             />
           </label>
+
+          {error && <div className="error-box">{error}</div>}
 
           <div className="form-actions">
             <button type="submit">{editingId ? "حفظ التعديل" : "إضافة سجل"}</button>
