@@ -90,8 +90,20 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       notes: form.notes.trim(),
     };
 
+    const existing = records.find(
+      (r) =>
+        r.studentId === payload.studentId &&
+        r.date === payload.date &&
+        r.id !== editingId
+    );
+
     try {
-      if (editingId) {
+      if (existing) {
+        await api.updateAttendance(existing.id, payload);
+        if (editingId && editingId !== existing.id) {
+          await api.deleteAttendance(editingId);
+        }
+      } else if (editingId) {
         await api.updateAttendance(editingId, payload);
       } else {
         await api.createAttendance(payload);
