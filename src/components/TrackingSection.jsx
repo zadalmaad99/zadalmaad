@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { SURAHS } from "../data/surahs";
@@ -34,6 +34,7 @@ export default function TrackingSection({ type, title }) {
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     const studentsQuery = isAdmin
@@ -131,6 +132,7 @@ export default function TrackingSection({ type, title }) {
   }
 
   function startEdit(r) {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     setEditingId(r.id);
     setForm({
       studentId: r.studentId,
@@ -178,7 +180,7 @@ export default function TrackingSection({ type, title }) {
       ))}
 
       {isAdmin && (
-        <form className="record-form" onSubmit={handleSubmit}>
+        <form className="record-form" onSubmit={handleSubmit} ref={formRef}>
           <div className="picker-row">
             <label>
               الطالب
