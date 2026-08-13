@@ -24,14 +24,37 @@ function daysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
 
-function addMonths(year, month, delta) {
-  const d = new Date(year, month + delta, 1);
-  return { year: d.getFullYear(), month: d.getMonth() };
+function weeksInMonth(year, month) {
+  return Math.ceil(daysInMonth(year, month) / 7);
 }
 
-function monthYearLabel(year, month) {
-  const hijri = gregorianToHijri(toIso(year, month, 1));
-  return `شهر ${month + 1} — ${year} م  —  شهر ${hijri.month} — ${hijri.year} هـ`;
+function addWeeks(year, month, week, delta) {
+  let w = week + delta;
+  let y = year;
+  let m = month;
+  while (w < 0) {
+    m -= 1;
+    if (m < 0) {
+      m = 11;
+      y -= 1;
+    }
+    w += weeksInMonth(y, m);
+  }
+  while (w >= weeksInMonth(y, m)) {
+    w -= weeksInMonth(y, m);
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return { year: y, month: m, week: w };
+}
+
+function weekLabel(year, month, week) {
+  const first = toIso(year, month, week * 7 + 1);
+  const hijri = gregorianToHijri(first);
+  return `الأسبوع ${week + 1} — شهر ${month + 1} — ${year} م  —  شهر ${hijri.month} — ${hijri.year} هـ`;
 }
 
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
@@ -42,6 +65,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const [cursor, setCursor] = useState({
     year: today.getFullYear(),
     month: today.getMonth(),
+    week: Math.floor((today.getDate() - 1) / 7),
   });
   const [filterStudentId, setFilterStudentId] = useState(null);
   const [search, setSearch] = useState("");
@@ -77,9 +101,17 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   }, [isAdmin]);
 
   const dayCount = daysInMonth(cursor.year, cursor.month);
-  const dayNumbers = Array.from({ length: dayCount }, (_, i) => i + 1);
-  const isCurrentMonth =
-    cursor.year === today.getFullYear() && cursor.month === today.getMonth();
+  const weekStart = cursor.week * 7 + 1;
+  const weekEnd = Math.min(dayCount, weekStart + 6);
+  const dayNumbers = Array.from(
+    { length: weekEnd - weekStart + 1 },
+    (_, i) => weekStart + i
+  );
+  const todayWeek = Math.floor((today.getDate() - 1) / 7);
+  const isCurrentWeek =
+    cursor.year === today.getFullYear() &&
+    cursor.month === today.getMonth() &&
+    cursor.week === todayWeek;
 
   async function setStatus(studentId, dateIso, status) {
     const existing = records.find(
@@ -145,20 +177,20 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
         <button
           type="button"
           className="ghost"
-          onClick={() => setCursor((c) => addMonths(c.year, c.month, -1))}
+          onClick={() => setCursor((c) => addWeeks(c.year, c.month, c.week, -1))}
         >
-          الشهر السابق
+          الأسبوع السابق
         </button>
         <div className="week-range">
-          <div>{monthYearLabel(cursor.year, cursor.month)}</div>
+          <div>{weekLabel(cursor.year, cursor.month, cursor.week)}</div>
         </div>
         <button
           type="button"
           className="ghost"
-          onClick={() => setCursor((c) => addMonths(c.year, c.month, 1))}
-          disabled={isCurrentMonth}
+          onClick={() => setCursor((c) => addWeeks(c.year, c.month, c.week, 1))}
+          disabled={isCurrentWeek}
         >
-          الشهر التالي
+          الأسبوع التالي
         </button>
       </div>
 
