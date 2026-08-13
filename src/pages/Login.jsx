@@ -37,12 +37,10 @@ export default function Login() {
       <form className="login-card" onSubmit={handleSubmit}>
         <img src={logo} alt="شعار التطبيق" className="login-logo" />
         <h1>زاد المعاد</h1>
-        <p className="subtitle">تسجيل دخول</p>
 
         {error && <div className="error-box">{error}</div>}
 
         <div className="contact-toggle">
-          <span className="contact-toggle-label">الدخول عن طريق</span>
           <div className="contact-toggle-options">
             <label className="radio-label">
               <input
