@@ -103,7 +103,11 @@ export default function OverviewDashboard({ onNavigate }) {
       };
     })
     .filter((r) => r.totalAyahs > 0)
-    .sort((a, b) => b.bySection.hifz.ayahCount - a.bySection.hifz.ayahCount || b.totalAyahs - a.totalAyahs);
+    .sort(
+      (a, b) =>
+        b.bySection.hifz.maxSurah - a.bySection.hifz.maxSurah ||
+        b.bySection.hifz.ayahCount - a.bySection.hifz.ayahCount
+    );
 
   const visibleRows = rows.filter((r) =>
     r.name?.toLowerCase().includes(search.trim().toLowerCase())
