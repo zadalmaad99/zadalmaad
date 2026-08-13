@@ -50,7 +50,10 @@ function saturdayOf(iso) {
 function dateBoth(iso) {
   const d = isoToDate(iso);
   const hijri = gregorianToHijri(iso);
-  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} م — ${hijri.day}/${hijri.month}/${hijri.year} هـ`;
+  return {
+    gregorian: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} م`,
+    hijri: `${hijri.day}/${hijri.month}/${hijri.year} هـ`,
+  };
 }
 
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
@@ -98,7 +101,10 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
     );
     try {
       if (!status) {
-        if (existing) await api.deleteAttendance(existing.id);
+        if (existing) {
+          await api.deleteAttendance(existing.id);
+          setRecords((rs) => rs.filter((r) => r.id !== existing.id));
+        }
       } else if (existing) {
         await api.updateAttendance(existing.id, {
           studentId,
@@ -106,8 +112,20 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
           status,
           notes: existing.notes || "",
         });
+        setRecords((rs) =>
+          rs.map((r) => (r.id === existing.id ? { ...r, status } : r))
+        );
       } else {
-        await api.createAttendance({ studentId, date: dateIso, status, notes: "" });
+        const { id } = await api.createAttendance({
+          studentId,
+          date: dateIso,
+          status,
+          notes: "",
+        });
+        setRecords((rs) => [
+          ...rs,
+          { id, studentId, date: dateIso, status, notes: "" },
+        ]);
       }
     } catch (err) {
       alert(err.message || "تعذّر حفظ الحضور");
@@ -195,8 +213,14 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
               الأسابيع السابقة
             </button>
             <div className="week-range">
-              <div>
-                {dateBoth(blockStart)} ← {dateBoth(addDaysIso(blockStart, 27))}
+              <div className="week-range-line">
+                <span>{dateBoth(blockStart).gregorian}</span>
+                <span>{dateBoth(blockStart).hijri}</span>
+              </div>
+              <span className="week-range-arrow">إلى</span>
+              <div className="week-range-line">
+                <span>{dateBoth(addDaysIso(blockStart, 27)).gregorian}</span>
+                <span>{dateBoth(addDaysIso(blockStart, 27)).hijri}</span>
               </div>
             </div>
             <button
@@ -213,20 +237,29 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
             {weeks.map((week, wi) => (
               <div key={week.weekStartIso} className="attendance-week-block">
                 <div className="attendance-week-title">
-                  الأسبوع {wi + 1}: {dateBoth(week.weekStartIso)} ← {dateBoth(week.days[6])}
+                  <span className="attendance-week-number">الأسبوع {wi + 1}</span>
+                  <span className="attendance-week-dates">
+                    {dateBoth(week.weekStartIso).gregorian} · {dateBoth(week.weekStartIso).hijri}
+                    {" "}إلى{" "}
+                    {dateBoth(week.days[6]).gregorian} · {dateBoth(week.days[6]).hijri}
+                  </span>
                 </div>
                 <div className="attendance-week-grid">
                   {week.days.map((iso, di) => {
                     const status = statusOf(selectedStudent.id, iso);
                     const d = isoToDate(iso);
+                    const isFuture = iso > todayIso;
                     return (
-                      <div key={iso} className="attendance-day-cell">
+                      <div
+                        key={iso}
+                        className={isFuture ? "attendance-day-cell attendance-day-future" : "attendance-day-cell"}
+                      >
                         <div className="attendance-day-label">
-                          {WEEKDAY_NAMES[di]}
-                          <span>{d.getDate()}/{d.getMonth() + 1}</span>
+                          <span className="attendance-day-weekday">{WEEKDAY_NAMES[di]}</span>
+                          <span className="attendance-day-date">{d.getDate()}/{d.getMonth() + 1}</span>
                         </div>
                         <select
-                          disabled={!isAdmin}
+                          disabled={!isAdmin || isFuture}
                           value={status}
                           className={status ? `month-select month-select-${status}` : "month-select"}
                           onChange={(e) => {

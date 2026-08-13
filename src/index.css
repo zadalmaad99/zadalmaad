@@ -1522,15 +1522,33 @@ td.empty {
 .week-range {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
   font-weight: 700;
   color: var(--primary-dark);
   text-align: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-.week-range span {
+.week-range-line {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.week-range-line span:first-child {
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.week-range-line span:last-child {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 11px;
+}
+.week-range-arrow {
   color: var(--muted);
   font-weight: 500;
+  font-size: 11px;
+  padding: 0 4px;
 }
 
 .attendance-week-list {
@@ -1767,10 +1785,20 @@ td.empty {
   padding: 14px;
 }
 .attendance-week-title {
-  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 12px;
+}
+.attendance-week-number {
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 10px;
+}
+.attendance-week-dates {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
 }
 .attendance-week-grid {
   display: grid;
@@ -1787,16 +1815,46 @@ td.empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--muted);
+  gap: 1px;
 }
-.attendance-day-label span {
-  font-weight: 500;
+.attendance-day-weekday {
   font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.attendance-day-date {
+  font-weight: 500;
+  font-size: 10.5px;
+  color: var(--muted);
 }
 .attendance-day-cell .month-select {
   width: 100%;
+}
+.attendance-day-future {
+  opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+  .attendance-week-block {
+    padding: 10px;
+  }
+  .attendance-week-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .attendance-day-cell {
+    flex: 0 0 62px;
+  }
+  .week-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .week-range {
+    order: -1;
+  }
 }
 
 .month-select {
