@@ -3,6 +3,7 @@ import { collection, onSnapshot, orderBy, query, where } from "firebase/firestor
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
+import { gregorianToHijri } from "../data/hijri";
 import { api } from "../api";
 
 const STATUS_LABELS = {
@@ -28,9 +29,13 @@ function addMonths(year, month, delta) {
   return { year: d.getFullYear(), month: d.getMonth() };
 }
 
+function monthYearLabel(year, month) {
+  const hijri = gregorianToHijri(toIso(year, month, 1));
+  return `شهر ${month + 1} — ${year} م  —  شهر ${hijri.month} — ${hijri.year} هـ`;
+}
+
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const { isAdmin } = useAuth();
-  const { formatBoth } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const today = new Date();
@@ -145,7 +150,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
           الشهر السابق
         </button>
         <div className="week-range">
-          <div>{formatBoth(toIso(cursor.year, cursor.month, 1))}</div>
+          <div>{monthYearLabel(cursor.year, cursor.month)}</div>
         </div>
         <button
           type="button"
