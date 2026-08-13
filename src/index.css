@@ -1678,13 +1678,25 @@ td.empty {
   font-weight: 700;
 }
 .month-select {
+  box-sizing: border-box;
   width: 56px;
+  height: 30px;
   padding: 4px 2px;
   border-radius: 6px;
   font-size: 11px;
   text-align: center;
+  text-align-last: center;
   border: 1px solid var(--border);
   background: var(--surface);
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+.month-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(31, 122, 61, 0.35);
 }
 .month-select-present {
   background: var(--whatsapp-bg);
