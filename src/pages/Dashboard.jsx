@@ -149,7 +149,7 @@ export default function Dashboard() {
           <img src={logo} alt="شعار التطبيق" className="brand-mark" />
           <div>
             <h1>زاد المعاد</h1>
-            <span className="brand-sub">حفظ وقراءة ومراجعة القرآن والحديث</span>
+            <span className="brand-sub">القرآن والسنة</span>
           </div>
         </div>
 
