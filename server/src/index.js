@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import studentsRouter from "./routes/students.js";
 import recordsRouter from "./routes/records.js";
+import hadithRecordsRouter from "./routes/hadithRecords.js";
 import attendanceRouter from "./routes/attendance.js";
 import khatmatRouter from "./routes/khatmat.js";
 
@@ -22,6 +23,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/students", studentsRouter);
 app.use("/api/records", recordsRouter);
+app.use("/api/hadith-records", hadithRecordsRouter);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/khatmat", khatmatRouter);
 

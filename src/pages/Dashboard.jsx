@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import StudentsPanel from "../components/StudentsPanel";
 import TrackingSection from "../components/TrackingSection";
+import HadithTrackingSection from "../components/HadithTrackingSection";
 import OverviewDashboard from "../components/OverviewDashboard";
 import SettingsPanel from "../components/SettingsPanel";
 import AttendancePanel from "../components/AttendancePanel";
@@ -52,7 +53,25 @@ const ICONS = {
       <path d="M4 20v-5h5" />
     </svg>
   ),
+  quran: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 4.5C4 3.7 4.7 3 5.5 3H12v18H5.5c-.8 0-1.5-.7-1.5-1.5v-15Z" />
+      <path d="M20 4.5c0-.8-.7-1.5-1.5-1.5H12v18h6.5c.8 0 1.5-.7 1.5-1.5v-15Z" />
+    </svg>
+  ),
+  hadith: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 21c-2.2-1.6-4.8-2.4-7.5-2.4V5.6C7.2 5.6 9.8 6.4 12 8c2.2-1.6 4.8-2.4 7.5-2.4v13c-2.7 0-5.3.8-7.5 2.4Z" />
+      <path d="M12 8v13" />
+    </svg>
+  ),
 };
+
+const SUB_SECTIONS = [
+  { key: "hifz", label: "حفظ" },
+  { key: "qiraah", label: "قراءة" },
+  { key: "murajaah", label: "مراجعة" },
+];
 
 const TABS = [
   {
@@ -62,9 +81,18 @@ const TABS = [
     desc: "ترتيب الطلاب حسب التقدم في كل الأقسام",
   },
   { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
-  { key: "hifz", label: "حفظ القرآن يوميًا", navLabel: "حفظ", desc: "متابعة الحفظ اليومي" },
-  { key: "qiraah", label: "قراءة القرآن", navLabel: "قراءة", desc: "متابعة القراءة اليومية" },
-  { key: "murajaah", label: "مراجعة حفظ القرآن", navLabel: "مراجعة", desc: "متابعة المراجعة" },
+  {
+    key: "quran",
+    label: "القرآن الكريم",
+    navLabel: "القرآن",
+    desc: "متابعة الحفظ والقراءة والمراجعة للقرآن الكريم",
+  },
+  {
+    key: "hadith",
+    label: "الحديث الشريف",
+    navLabel: "الحديث",
+    desc: "متابعة حفظ وقراءة ومراجعة أحاديث الكتب الستة",
+  },
   {
     key: "attendance",
     label: "الحضور والغياب",
@@ -79,6 +107,18 @@ const TABS = [
   },
 ];
 
+const QURAN_TITLES = {
+  hifz: "سجلات الحفظ اليومي",
+  qiraah: "سجلات القراءة",
+  murajaah: "سجلات المراجعة",
+};
+
+const HADITH_TITLES = {
+  hifz: "سجلات حفظ الحديث",
+  qiraah: "سجلات قراءة الحديث",
+  murajaah: "سجلات مراجعة الحديث",
+};
+
 export default function Dashboard() {
   const { logout, isAdmin } = useAuth();
   const visibleTabs = isAdmin
@@ -86,13 +126,20 @@ export default function Dashboard() {
     : TABS.filter(
         (t) => !["students", "overview", "settings"].includes(t.key)
       );
-  const [tab, setTab] = useState(isAdmin ? "overview" : "hifz");
+  const [tab, setTab] = useState(isAdmin ? "overview" : "quran");
+  const [quranSub, setQuranSub] = useState("hifz");
+  const [hadithSub, setHadithSub] = useState("hifz");
   const [focusStudentId, setFocusStudentId] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
 
   function goToSection(sectionKey, studentId) {
     setFocusStudentId(studentId);
-    setTab(sectionKey);
+    if (["hifz", "qiraah", "murajaah"].includes(sectionKey)) {
+      setTab("quran");
+      setQuranSub(sectionKey);
+    } else {
+      setTab(sectionKey);
+    }
   }
 
   return (
@@ -101,8 +148,8 @@ export default function Dashboard() {
         <div className="brand">
           <img src={logo} alt="شعار التطبيق" className="brand-mark" />
           <div>
-            <h1>لوحة المراقبة</h1>
-            <span className="brand-sub">حفظ وقراءة القرآن الكريم</span>
+            <h1>زاد المعاد</h1>
+            <span className="brand-sub">حفظ وقراءة ومراجعة القرآن والحديث</span>
           </div>
         </div>
 
@@ -133,6 +180,28 @@ export default function Dashboard() {
           <p>{current.desc}</p>
         </header>
 
+        {(tab === "quran" || tab === "hadith") && (
+          <div className="subnav">
+            {SUB_SECTIONS.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                className={
+                  (tab === "quran" ? quranSub : hadithSub) === s.key
+                    ? "subnav-btn active"
+                    : "subnav-btn"
+                }
+                onClick={() =>
+                  tab === "quran" ? setQuranSub(s.key) : setHadithSub(s.key)
+                }
+              >
+                <span className="nav-icon">{ICONS[s.key]}</span>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {tab === "overview" && isAdmin && (
           <OverviewDashboard onNavigate={goToSection} />
         )}
@@ -140,27 +209,19 @@ export default function Dashboard() {
           <StudentsPanel onNavigate={goToSection} />
         )}
         {tab === "settings" && isAdmin && <SettingsPanel />}
-        {tab === "hifz" && (
+        {tab === "quran" && (
           <TrackingSection
-            type="hifz"
-            title="سجلات الحفظ اليومي"
-            focusStudentId={tab === "hifz" ? focusStudentId : null}
+            type={quranSub}
+            title={QURAN_TITLES[quranSub]}
+            focusStudentId={focusStudentId}
             onFocusHandled={() => setFocusStudentId(null)}
           />
         )}
-        {tab === "qiraah" && (
-          <TrackingSection
-            type="qiraah"
-            title="سجلات القراءة"
-            focusStudentId={tab === "qiraah" ? focusStudentId : null}
-            onFocusHandled={() => setFocusStudentId(null)}
-          />
-        )}
-        {tab === "murajaah" && (
-          <TrackingSection
-            type="murajaah"
-            title="سجلات المراجعة"
-            focusStudentId={tab === "murajaah" ? focusStudentId : null}
+        {tab === "hadith" && (
+          <HadithTrackingSection
+            type={hadithSub}
+            title={HADITH_TITLES[hadithSub]}
+            focusStudentId={focusStudentId}
             onFocusHandled={() => setFocusStudentId(null)}
           />
         )}

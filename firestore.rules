@@ -35,6 +35,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /hadithRecords/{recordId} {
+      allow read: if isAdmin() ||
+        (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
     match /khatmat/{khatmId} {
       allow read: if isAdmin() ||
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);

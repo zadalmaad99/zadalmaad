@@ -48,6 +48,19 @@ export const api = {
   deleteRecord: (id) =>
     authedFetch(`/api/records/${id}`, { method: "DELETE" }),
 
+  createHadithRecord: (payload) =>
+    authedFetch("/api/hadith-records", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateHadithRecord: (id, payload) =>
+    authedFetch(`/api/hadith-records/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteHadithRecord: (id) =>
+    authedFetch(`/api/hadith-records/${id}`, { method: "DELETE" }),
+
   createAttendance: (payload) =>
     authedFetch("/api/attendance", {
       method: "POST",

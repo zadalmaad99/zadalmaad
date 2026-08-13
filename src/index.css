@@ -335,6 +335,41 @@ label {
   font-size: 13.5px;
 }
 
+.subnav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.subnav-btn {
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.subnav-btn .nav-icon {
+  width: 16px;
+  height: 16px;
+}
+.subnav-btn:hover {
+  color: var(--primary-dark);
+  border-color: var(--primary);
+  transform: none;
+}
+.subnav-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 6px 14px rgba(31, 122, 61, 0.28);
+}
+
 .panel {
   background: var(--surface);
   border-radius: var(--radius);

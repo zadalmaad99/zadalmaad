@@ -36,8 +36,8 @@ export default function Login() {
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
         <img src={logo} alt="شعار التطبيق" className="login-logo" />
-        <h1>تسجيل دخول</h1>
-        <p className="subtitle">متابعة حفظ وقراءة القرآن الكريم</p>
+        <h1>زاد المعاد</h1>
+        <p className="subtitle">تسجيل دخول</p>
 
         {error && <div className="error-box">{error}</div>}
 
