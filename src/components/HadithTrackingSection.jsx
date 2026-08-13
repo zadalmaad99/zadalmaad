@@ -335,14 +335,20 @@ export default function HadithTrackingSection({
                   </div>
                 </div>
 
-                <div className="record-card-unit">
+                <a
+                  className="record-card-unit record-card-unit-clickable"
+                  href={`https://sunnah.com/${r.book}:${r.hadithNumber}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="عرض الحديث على sunnah.com"
+                >
                   <div>{r.bookName} — الحديث رقم {r.hadithNumber}</div>
                   {book && (
                     <div className="record-card-unit-extra">
                       {r.hadithNumber} من {book.total} ({pct.toFixed(1)}٪)
                     </div>
                   )}
-                </div>
+                </a>
                 {r.notes && <div className="record-card-notes">{r.notes}</div>}
 
                 <div className="student-card-actions">
