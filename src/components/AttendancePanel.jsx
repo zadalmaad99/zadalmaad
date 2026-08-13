@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import { useCalendar } from "../context/CalendarContext";
 import { gregorianToHijri } from "../data/hijri";
 import { api } from "../api";
 
@@ -13,76 +12,59 @@ const STATUS_LABELS = {
 };
 
 const WEEKDAY_NAMES = [
+  "السبت",
   "الأحد",
   "الاثنين",
   "الثلاثاء",
   "الأربعاء",
   "الخميس",
   "الجمعة",
-  "السبت",
 ];
 
 function pad(n) {
   return String(n).padStart(2, "0");
 }
 
-function toIso(year, month, day) {
-  return `${year}-${pad(month + 1)}-${pad(day)}`;
+function dateToIso(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function daysInMonth(year, month) {
-  return new Date(year, month + 1, 0).getDate();
+function isoToDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
-function weeksInMonth(year, month) {
-  return Math.ceil(daysInMonth(year, month) / 7);
+function addDaysIso(iso, delta) {
+  const d = isoToDate(iso);
+  d.setDate(d.getDate() + delta);
+  return dateToIso(d);
 }
 
-function addWeeks(year, month, week, delta) {
-  let w = week + delta;
-  let y = year;
-  let m = month;
-  while (w < 0) {
-    m -= 1;
-    if (m < 0) {
-      m = 11;
-      y -= 1;
-    }
-    w += weeksInMonth(y, m);
-  }
-  while (w >= weeksInMonth(y, m)) {
-    w -= weeksInMonth(y, m);
-    m += 1;
-    if (m > 11) {
-      m = 0;
-      y += 1;
-    }
-  }
-  return { year: y, month: m, week: w };
+function saturdayOf(iso) {
+  const d = isoToDate(iso);
+  const offset = (d.getDay() + 1) % 7; // days since last Saturday
+  d.setDate(d.getDate() - offset);
+  return dateToIso(d);
 }
 
-function weekLabel(year, month, week) {
-  const first = toIso(year, month, week * 7 + 1);
-  const hijri = gregorianToHijri(first);
-  return `الأسبوع ${week + 1} — شهر ${month + 1} — ${year} م  —  شهر ${hijri.month} — ${hijri.year} هـ`;
+function dateBoth(iso) {
+  const d = isoToDate(iso);
+  const hijri = gregorianToHijri(iso);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} م — ${hijri.day}/${hijri.month}/${hijri.year} هـ`;
 }
 
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const { isAdmin } = useAuth();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
-  const today = new Date();
-  const [cursor, setCursor] = useState({
-    year: today.getFullYear(),
-    month: today.getMonth(),
-    week: Math.floor((today.getDate() - 1) / 7),
-  });
-  const [filterStudentId, setFilterStudentId] = useState(null);
+  const todayIso = dateToIso(new Date());
+  const [selectedId, setSelectedId] = useState(null);
+  const [blockStart, setBlockStart] = useState(saturdayOf(todayIso));
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!focusStudentId || students.length === 0) return;
-    setFilterStudentId(focusStudentId);
+    setSelectedId(focusStudentId);
     onFocusHandled?.();
   }, [focusStudentId, students]);
 
@@ -109,19 +91,6 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       unsubAttendance();
     };
   }, [isAdmin]);
-
-  const dayCount = daysInMonth(cursor.year, cursor.month);
-  const weekStart = cursor.week * 7 + 1;
-  const weekEnd = Math.min(dayCount, weekStart + 6);
-  const dayNumbers = Array.from(
-    { length: weekEnd - weekStart + 1 },
-    (_, i) => weekStart + i
-  );
-  const todayWeek = Math.floor((today.getDate() - 1) / 7);
-  const isCurrentWeek =
-    cursor.year === today.getFullYear() &&
-    cursor.month === today.getMonth() &&
-    cursor.week === todayWeek;
 
   async function setStatus(studentId, dateIso, status) {
     const existing = records.find(
@@ -150,95 +119,118 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       ?.status || "";
   }
 
-  const visibleStudents = students
-    .filter((s) => (filterStudentId ? s.id === filterStudentId : true))
-    .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()));
+  const visibleStudents = students.filter((s) =>
+    s.name?.toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const selectedStudent = students.find((s) => s.id === selectedId);
+
+  const todaySaturday = saturdayOf(todayIso);
+  const isCurrentBlock = blockStart === todaySaturday;
+
+  const weeks = [0, 1, 2, 3].map((w) => {
+    const weekStartIso = addDaysIso(blockStart, w * 7);
+    const days = Array.from({ length: 7 }, (_, i) => addDaysIso(weekStartIso, i));
+    return { weekStartIso, days };
+  });
 
   return (
     <div className="panel">
-      {filterStudentId && (
-        <div className="filter-banner">
-          <span>
-            عرض سجلات:{" "}
-            <strong>{students.find((s) => s.id === filterStudentId)?.name}</strong>
-          </span>
-          <button type="button" className="ghost" onClick={() => setFilterStudentId(null)}>
-            عرض كل الطلاب
-          </button>
-        </div>
-      )}
+      {!selectedStudent ? (
+        <>
+          {students.length > 0 && (
+            <div className="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                type="text"
+                placeholder="ابحث عن اسم الطالب..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          )}
 
-      {isAdmin && !filterStudentId && (
-        <div className="search-box">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <input
-            type="text"
-            placeholder="ابحث عن اسم الطالب..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      )}
-
-      <div className="week-nav">
-        <button
-          type="button"
-          className="ghost"
-          onClick={() => setCursor((c) => addWeeks(c.year, c.month, c.week, -1))}
-        >
-          الأسبوع السابق
-        </button>
-        <div className="week-range">
-          <div>{weekLabel(cursor.year, cursor.month, cursor.week)}</div>
-        </div>
-        <button
-          type="button"
-          className="ghost"
-          onClick={() => setCursor((c) => addWeeks(c.year, c.month, c.week, 1))}
-          disabled={isCurrentWeek}
-        >
-          الأسبوع التالي
-        </button>
-      </div>
-
-      {visibleStudents.length === 0 ? (
-        <p className="empty">لا يوجد طلاب</p>
-      ) : (
-        <div className="month-table-wrap">
-          <table className="month-table">
-            <thead>
-              <tr>
-                <th className="month-name-col">الاسم</th>
-                {dayNumbers.map((d) => {
-                  const weekday = new Date(cursor.year, cursor.month, d).getDay();
-                  return (
-                    <th key={d}>
-                      {WEEKDAY_NAMES[weekday]}
-                      <br />
-                      {d}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
+          {visibleStudents.length === 0 ? (
+            <p className="empty">لا يوجد طلاب</p>
+          ) : (
+            <div className="attendance-student-list">
               {visibleStudents.map((s) => (
-                <tr key={s.id}>
-                  <td className="month-name-col month-name-cell">{s.name}</td>
-                  {dayNumbers.map((d) => {
-                    const iso = toIso(cursor.year, cursor.month, d);
-                    const status = statusOf(s.id, iso);
+                <button
+                  key={s.id}
+                  type="button"
+                  className="attendance-student-item"
+                  onClick={() => setSelectedId(s.id)}
+                >
+                  <span className="student-card-avatar">
+                    {s.name?.trim()?.[0] || "?"}
+                  </span>
+                  <span className="attendance-student-name">{s.name}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="filter-banner">
+            <span>
+              سجل حضور: <strong>{selectedStudent.name}</strong>
+            </span>
+            <button type="button" className="ghost" onClick={() => setSelectedId(null)}>
+              عرض كل الطلاب
+            </button>
+          </div>
+
+          <div className="week-nav">
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => setBlockStart((b) => addDaysIso(b, -28))}
+            >
+              الأسابيع السابقة
+            </button>
+            <div className="week-range">
+              <div>
+                {dateBoth(blockStart)} ← {dateBoth(addDaysIso(blockStart, 27))}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => setBlockStart((b) => addDaysIso(b, 28))}
+              disabled={isCurrentBlock}
+            >
+              الأسابيع التالية
+            </button>
+          </div>
+
+          <div className="attendance-weeks">
+            {weeks.map((week, wi) => (
+              <div key={week.weekStartIso} className="attendance-week-block">
+                <div className="attendance-week-title">
+                  الأسبوع {wi + 1}: {dateBoth(week.weekStartIso)} ← {dateBoth(week.days[6])}
+                </div>
+                <div className="attendance-week-grid">
+                  {week.days.map((iso, di) => {
+                    const status = statusOf(selectedStudent.id, iso);
+                    const d = isoToDate(iso);
                     return (
-                      <td key={d}>
+                      <div key={iso} className="attendance-day-cell">
+                        <div className="attendance-day-label">
+                          {WEEKDAY_NAMES[di]}
+                          <span>{d.getDate()}/{d.getMonth() + 1}</span>
+                        </div>
                         <select
                           disabled={!isAdmin}
                           value={status}
                           className={status ? `month-select month-select-${status}` : "month-select"}
                           onChange={(e) => {
-                            setStatus(s.id, iso, e.target.value);
+                            setStatus(selectedStudent.id, iso, e.target.value);
                             e.target.blur();
                           }}
                           onWheel={(e) => e.target.blur()}
@@ -248,14 +240,14 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
                           <option value="absent">{STATUS_LABELS.absent}</option>
                           <option value="excused">{STATUS_LABELS.excused}</option>
                         </select>
-                      </td>
+                      </div>
                     );
                   })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
