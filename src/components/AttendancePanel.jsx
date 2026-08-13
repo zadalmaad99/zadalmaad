@@ -5,36 +5,27 @@ import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
 
-const DAY_NAMES = [
-  "السبت",
-  "الأحد",
-  "الاثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
-];
+const STATUS_LABELS = {
+  present: "حضور",
+  absent: "غياب",
+  excused: "مهلة",
+};
 
 function pad(n) {
   return String(n).padStart(2, "0");
 }
 
-function toIso(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+function toIso(year, month, day) {
+  return `${year}-${pad(month + 1)}-${pad(day)}`;
 }
 
-function getWeekDates(weekOffset) {
-  const today = new Date();
-  const day = today.getDay(); // 0=Sun..6=Sat
-  const diffToSaturday = (day + 1) % 7;
-  const saturday = new Date(today);
-  saturday.setDate(today.getDate() - diffToSaturday + weekOffset * 7);
-  saturday.setHours(0, 0, 0, 0);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(saturday);
-    d.setDate(saturday.getDate() + i);
-    return d;
-  });
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function addMonths(year, month, delta) {
+  const d = new Date(year, month + delta, 1);
+  return { year: d.getFullYear(), month: d.getMonth() };
 }
 
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
@@ -42,7 +33,11 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   const { formatBoth } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
-  const [weekOffset, setWeekOffset] = useState(0);
+  const today = new Date();
+  const [cursor, setCursor] = useState({
+    year: today.getFullYear(),
+    month: today.getMonth(),
+  });
   const [filterStudentId, setFilterStudentId] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -76,15 +71,18 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
     };
   }, [isAdmin]);
 
-  const weekDates = getWeekDates(weekOffset);
+  const dayCount = daysInMonth(cursor.year, cursor.month);
+  const dayNumbers = Array.from({ length: dayCount }, (_, i) => i + 1);
+  const isCurrentMonth =
+    cursor.year === today.getFullYear() && cursor.month === today.getMonth();
 
   async function setStatus(studentId, dateIso, status) {
     const existing = records.find(
       (r) => r.studentId === studentId && r.date === dateIso
     );
     try {
-      if (existing && existing.status === status) {
-        await api.deleteAttendance(existing.id);
+      if (!status) {
+        if (existing) await api.deleteAttendance(existing.id);
       } else if (existing) {
         await api.updateAttendance(existing.id, {
           studentId,
@@ -102,7 +100,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
 
   function statusOf(studentId, dateIso) {
     return records.find((r) => r.studentId === studentId && r.date === dateIso)
-      ?.status;
+      ?.status || "";
   }
 
   const visibleStudents = students
@@ -139,107 +137,66 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       )}
 
       <div className="week-nav">
-        <button type="button" className="ghost" onClick={() => setWeekOffset((w) => w - 1)}>
-          الأسبوع السابق
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => setCursor((c) => addMonths(c.year, c.month, -1))}
+        >
+          الشهر السابق
         </button>
         <div className="week-range">
-          <div>{formatBoth(toIso(weekDates[0]))}</div>
-          <span>إلى</span>
-          <div>{formatBoth(toIso(weekDates[6]))}</div>
+          <div>{formatBoth(toIso(cursor.year, cursor.month, 1))}</div>
         </div>
         <button
           type="button"
           className="ghost"
-          onClick={() => setWeekOffset((w) => w + 1)}
-          disabled={weekOffset >= 0}
+          onClick={() => setCursor((c) => addMonths(c.year, c.month, 1))}
+          disabled={isCurrentMonth}
         >
-          الأسبوع التالي
+          الشهر التالي
         </button>
       </div>
 
       {visibleStudents.length === 0 ? (
         <p className="empty">لا يوجد طلاب</p>
       ) : (
-        <div className="attendance-week-list">
-          {visibleStudents.map((s) => (
-            <div key={s.id} className="attendance-week-card">
-              <div className="student-card-header">
-                <div className="student-card-avatar">{s.name?.trim()?.[0] || "?"}</div>
-                <div className="student-card-name">{s.name}</div>
-              </div>
-
-              <table className="week-table">
-                <thead>
-                  <tr>
-                    <th>اليوم</th>
-                    <th>حضور</th>
-                    <th>غياب</th>
-                    <th>مهلة</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weekDates.map((d, i) => {
-                    const iso = toIso(d);
+        <div className="month-table-wrap">
+          <table className="month-table">
+            <thead>
+              <tr>
+                <th className="month-name-col">الاسم</th>
+                {dayNumbers.map((d) => (
+                  <th key={d}>{d}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {visibleStudents.map((s) => (
+                <tr key={s.id}>
+                  <td className="month-name-col month-name-cell">{s.name}</td>
+                  {dayNumbers.map((d) => {
+                    const iso = toIso(cursor.year, cursor.month, d);
                     const status = statusOf(s.id, iso);
                     return (
-                      <tr key={iso}>
-                        <td className="week-day-cell">
-                          <span className="week-day-name">{DAY_NAMES[i]}</span>
-                          <span className="week-day-date">{formatBoth(iso)}</span>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            disabled={!isAdmin}
-                            className={
-                              status === "present"
-                                ? "week-toggle week-toggle-present-active"
-                                : "week-toggle"
-                            }
-                            onClick={() => setStatus(s.id, iso, "present")}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <path d="M20 6 9 17l-5-5" />
-                            </svg>
-                          </button>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            disabled={!isAdmin}
-                            className={
-                              status === "absent"
-                                ? "week-toggle week-toggle-absent-active"
-                                : "week-toggle"
-                            }
-                            onClick={() => setStatus(s.id, iso, "absent")}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <path d="M18 6 6 18M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            disabled={!isAdmin}
-                            className={
-                              status === "excused"
-                                ? "week-toggle week-toggle-excused-active"
-                                : "week-toggle"
-                            }
-                            onClick={() => setStatus(s.id, iso, "excused")}
-                          >
-                            <span className="week-toggle-dot" />
-                          </button>
-                        </td>
-                      </tr>
+                      <td key={d}>
+                        <select
+                          disabled={!isAdmin}
+                          value={status}
+                          className={status ? `month-select month-select-${status}` : "month-select"}
+                          onChange={(e) => setStatus(s.id, iso, e.target.value)}
+                        >
+                          <option value="">—</option>
+                          <option value="present">{STATUS_LABELS.present}</option>
+                          <option value="absent">{STATUS_LABELS.absent}</option>
+                          <option value="excused">{STATUS_LABELS.excused}</option>
+                        </select>
+                      </td>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

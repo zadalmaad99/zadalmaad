@@ -1605,3 +1605,74 @@ td.empty {
 .khatm-btn:hover {
   background: linear-gradient(135deg, #b0872f, var(--gold));
 }
+
+.month-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.month-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.month-table th,
+.month-table td {
+  border: 1px solid var(--border);
+  padding: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+.month-table thead th {
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+}
+.month-name-col {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+  z-index: 1;
+  text-align: right;
+  padding: 6px 10px;
+  min-width: 130px;
+}
+.month-name-cell {
+  font-weight: 700;
+}
+.month-select {
+  width: 56px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  font-size: 11px;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.month-select-present {
+  background: var(--whatsapp-bg);
+  color: #1f9d55;
+  border-color: #1f9d55;
+}
+.month-select-absent {
+  background: var(--error-bg);
+  color: var(--danger-dark);
+  border-color: var(--danger);
+}
+.month-select-excused {
+  background: #fdf3dd;
+  color: #9c7a15;
+  border-color: var(--gold);
+}
+:root[data-theme="dark"] .month-select-excused {
+  background: #3a2f10;
+  color: #e0bd5a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .month-select-excused {
+    background: #3a2f10;
+    color: #e0bd5a;
+  }
+}
