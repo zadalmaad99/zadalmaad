@@ -12,6 +12,16 @@ const STATUS_LABELS = {
   excused: "مهلة",
 };
 
+const WEEKDAY_NAMES = [
+  "الأحد",
+  "الاثنين",
+  "الثلاثاء",
+  "الأربعاء",
+  "الخميس",
+  "الجمعة",
+  "السبت",
+];
+
 function pad(n) {
   return String(n).padStart(2, "0");
 }
@@ -202,9 +212,16 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
             <thead>
               <tr>
                 <th className="month-name-col">الاسم</th>
-                {dayNumbers.map((d) => (
-                  <th key={d}>{d}</th>
-                ))}
+                {dayNumbers.map((d) => {
+                  const weekday = new Date(cursor.year, cursor.month, d).getDay();
+                  return (
+                    <th key={d}>
+                      {WEEKDAY_NAMES[weekday]}
+                      <br />
+                      {d}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
