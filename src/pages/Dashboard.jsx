@@ -132,11 +132,16 @@ export default function Dashboard() {
   const [focusStudentId, setFocusStudentId] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
 
-  function goToSection(sectionKey, studentId) {
+  function goToSection(sectionKey, studentId, domain = "quran") {
     setFocusStudentId(studentId);
     if (["hifz", "qiraah", "murajaah"].includes(sectionKey)) {
-      setTab("quran");
-      setQuranSub(sectionKey);
+      if (domain === "hadith") {
+        setTab("hadith");
+        setHadithSub(sectionKey);
+      } else {
+        setTab("quran");
+        setQuranSub(sectionKey);
+      }
     } else {
       setTab(sectionKey);
     }

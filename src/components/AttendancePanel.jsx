@@ -188,7 +188,11 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
                           disabled={!isAdmin}
                           value={status}
                           className={status ? `month-select month-select-${status}` : "month-select"}
-                          onChange={(e) => setStatus(s.id, iso, e.target.value)}
+                          onChange={(e) => {
+                            setStatus(s.id, iso, e.target.value);
+                            e.target.blur();
+                          }}
+                          onWheel={(e) => e.target.blur()}
                         >
                           <option value="">—</option>
                           <option value="present">{STATUS_LABELS.present}</option>

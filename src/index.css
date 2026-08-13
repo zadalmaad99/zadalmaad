@@ -535,6 +535,14 @@ label {
   transform: none;
   box-shadow: none;
 }
+.domain-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.domain-picker .domain-pill {
+  flex: 1;
+}
 
 .student-card-actions {
   display: flex;
@@ -944,6 +952,45 @@ td.empty {
 .overview-meta-item.whatsapp-link svg {
   width: 13px;
   height: 13px;
+}
+.overview-domains {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+.overview-domains .domain-pill {
+  flex: 1;
+}
+.domain-pill {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.domain-pill:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: none;
+  box-shadow: none;
+}
+.domain-pill.active {
+  background: var(--primary);
+  color: #fff;
+}
+.domain-pill .chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+.domain-pill .chevron.chevron-open {
+  transform: rotate(180deg);
 }
 .overview-sections {
   display: flex;

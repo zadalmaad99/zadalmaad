@@ -5,13 +5,19 @@ import { COUNTRIES, splitPhone } from "../data/countries";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
 import SurahProgressBar from "./SurahProgressBar";
+import { HADITH_BOOKS } from "../data/hadithBooks";
 
 const TOTAL_AYAHS = 6236;
+const TOTAL_HADITHS = HADITH_BOOKS.reduce((sum, b) => sum + b.total, 0);
 const MEDALS = ["🥇", "🥈", "🥉"];
 const SECTIONS = [
   { key: "hifz", label: "حفظ", resettable: false },
   { key: "qiraah", label: "قراءة", resettable: true },
   { key: "murajaah", label: "مراجعة", resettable: true },
+];
+const DOMAINS = [
+  { key: "quran", label: "القرآن" },
+  { key: "hadith", label: "الحديث" },
 ];
 
 function statsFor(records, studentId, type) {
@@ -23,6 +29,13 @@ function statsFor(records, studentId, type) {
   const surahCount = new Set(own.map((r) => r.surahNumber)).size;
   const maxSurah = own.reduce((max, r) => Math.max(max, r.surahNumber), 0);
   return { ayahCount, surahCount, maxSurah };
+}
+
+function hadithStatsFor(hadithRecords, studentId, type) {
+  const own = hadithRecords.filter((r) => r.studentId === studentId && r.type === type);
+  const hadithCount = own.reduce((sum, r) => sum + (r.hadithNumber || 0), 0);
+  const bookCount = new Set(own.map((r) => r.book)).size;
+  return { hadithCount, bookCount };
 }
 
 function flagFor(phone) {
@@ -39,8 +52,10 @@ export default function OverviewDashboard({ onNavigate }) {
   const { formatDate } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
+  const [hadithRecords, setHadithRecords] = useState([]);
   const [khatmat, setKhatmat] = useState([]);
   const [search, setSearch] = useState("");
+  const [openDomain, setOpenDomain] = useState({});
 
   useEffect(() => {
     const unsubStudents = onSnapshot(
@@ -50,12 +65,16 @@ export default function OverviewDashboard({ onNavigate }) {
     const unsubRecords = onSnapshot(collection(db, "records"), (snap) =>
       setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
+    const unsubHadithRecords = onSnapshot(collection(db, "hadithRecords"), (snap) =>
+      setHadithRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    );
     const unsubKhatmat = onSnapshot(collection(db, "khatmat"), (snap) =>
       setKhatmat(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
     return () => {
       unsubStudents();
       unsubRecords();
+      unsubHadithRecords();
       unsubKhatmat();
     };
   }, []);
@@ -76,13 +95,27 @@ export default function OverviewDashboard({ onNavigate }) {
     }
   }
 
+  function toggleDomain(studentId, domain) {
+    setOpenDomain((o) => ({
+      ...o,
+      [studentId]: o[studentId] === domain ? null : domain,
+    }));
+  }
+
   const rows = students
     .map((s) => {
       const bySection = Object.fromEntries(
         SECTIONS.map((sec) => [sec.key, statsFor(records, s.id, sec.key)])
       );
+      const hadithBySection = Object.fromEntries(
+        SECTIONS.map((sec) => [sec.key, hadithStatsFor(hadithRecords, s.id, sec.key)])
+      );
       const totalAyahs = SECTIONS.reduce(
         (sum, sec) => sum + bySection[sec.key].ayahCount,
+        0
+      );
+      const totalHadiths = SECTIONS.reduce(
+        (sum, sec) => sum + hadithBySection[sec.key].hadithCount,
         0
       );
       const khatmCounts = Object.fromEntries(
@@ -98,11 +131,13 @@ export default function OverviewDashboard({ onNavigate }) {
         contactValue: s.contactValue,
         createdAt: s.createdAt,
         bySection,
+        hadithBySection,
         khatmCounts,
         totalAyahs,
+        totalHadiths,
       };
     })
-    .filter((r) => r.totalAyahs > 0)
+    .filter((r) => r.totalAyahs > 0 || r.totalHadiths > 0)
     .sort(
       (a, b) =>
         b.bySection.hifz.maxSurah - a.bySection.hifz.maxSurah ||
@@ -136,12 +171,9 @@ export default function OverviewDashboard({ onNavigate }) {
         <ol className="overview-list">
           {visibleRows.map((r) => {
             const i = rows.indexOf(r);
+            const active = openDomain[r.id];
             return (
-            <li
-              key={r.id}
-              className="overview-card overview-card-clickable"
-              onClick={() => onNavigate?.("hifz", r.id)}
-            >
+            <li key={r.id} className="overview-card">
               <div className="overview-card-head">
                 <span className="overview-rank">{MEDALS[i] || `#${i + 1}`}</span>
                 <div className="overview-card-title">
@@ -157,7 +189,6 @@ export default function OverviewDashboard({ onNavigate }) {
                           href={whatsappLink(r.contactValue)}
                           target="_blank"
                           rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
                         >
                           {flagFor(r.contactValue)} +{r.contactValue}
                           <svg viewBox="0 0 24 24" fill="currentColor">
@@ -172,63 +203,114 @@ export default function OverviewDashboard({ onNavigate }) {
                   </div>
                 </div>
               </div>
-              <div className="overview-sections">
-                {SECTIONS.map((sec) => {
-                  const stat = r.bySection[sec.key];
-                  const pct = Math.min(100, (stat.ayahCount / TOTAL_AYAHS) * 100);
-                  const completed = stat.maxSurah >= 114;
-                  return (
-                    <div
-                      key={sec.key}
-                      className={`overview-section overview-${sec.key} overview-section-clickable`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onNavigate?.(sec.key, r.id);
-                      }}
-                    >
-                      <div className="overview-section-label">
-                        <span>
-                          {sec.label}
-                          {sec.resettable && r.khatmCounts[sec.key] > 0 && (
-                            <span className="khatm-count">
-                              {" "}
-                              · {r.khatmCounts[sec.key]} ختمة
-                            </span>
-                          )}
-                        </span>
-                        <span className="overview-section-stats">
-                          {stat.surahCount} سورة · {stat.ayahCount} آية
-                        </span>
-                      </div>
-                      <div className="leaderboard-bar">
-                        <div
-                          className="leaderboard-bar-fill"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <SurahProgressBar maxSurah={stat.maxSurah} />
 
-                      {completed && !sec.resettable && (
-                        <div className="khatm-badge khatm-badge-permanent">
-                          ✅ ختم القرآن حفظًا
-                        </div>
-                      )}
-                      {completed && sec.resettable && (
-                        <button
-                          type="button"
-                          className="khatm-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleKhatm(r.id, sec.key, r.name);
-                          }}
-                        >
-                          🎉 ختم القرآن {sec.label} — تسجيل والبدء من جديد
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="overview-domains">
+                {DOMAINS.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    className={active === d.key ? "domain-pill active" : "domain-pill"}
+                    onClick={() => toggleDomain(r.id, d.key)}
+                  >
+                    {d.label}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className={active === d.key ? "chevron chevron-open" : "chevron"}
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                ))}
               </div>
+
+              {active === "quran" && (
+                <div className="overview-sections">
+                  {SECTIONS.map((sec) => {
+                    const stat = r.bySection[sec.key];
+                    const pct = Math.min(100, (stat.ayahCount / TOTAL_AYAHS) * 100);
+                    const completed = stat.maxSurah >= 114;
+                    return (
+                      <div
+                        key={sec.key}
+                        className={`overview-section overview-${sec.key} overview-section-clickable`}
+                        onClick={() => onNavigate?.(sec.key, r.id, "quran")}
+                      >
+                        <div className="overview-section-label">
+                          <span>
+                            {sec.label}
+                            {sec.resettable && r.khatmCounts[sec.key] > 0 && (
+                              <span className="khatm-count">
+                                {" "}
+                                · {r.khatmCounts[sec.key]} ختمة
+                              </span>
+                            )}
+                          </span>
+                          <span className="overview-section-stats">
+                            {stat.surahCount} سورة · {stat.ayahCount} آية
+                          </span>
+                        </div>
+                        <div className="leaderboard-bar">
+                          <div
+                            className="leaderboard-bar-fill"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <SurahProgressBar maxSurah={stat.maxSurah} />
+
+                        {completed && !sec.resettable && (
+                          <div className="khatm-badge khatm-badge-permanent">
+                            ✅ ختم القرآن حفظًا
+                          </div>
+                        )}
+                        {completed && sec.resettable && (
+                          <button
+                            type="button"
+                            className="khatm-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleKhatm(r.id, sec.key, r.name);
+                            }}
+                          >
+                            🎉 ختم القرآن {sec.label} — تسجيل والبدء من جديد
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {active === "hadith" && (
+                <div className="overview-sections">
+                  {SECTIONS.map((sec) => {
+                    const stat = r.hadithBySection[sec.key];
+                    const pct = Math.min(100, (stat.hadithCount / TOTAL_HADITHS) * 100);
+                    return (
+                      <div
+                        key={sec.key}
+                        className={`overview-section overview-${sec.key} overview-section-clickable`}
+                        onClick={() => onNavigate?.(sec.key, r.id, "hadith")}
+                      >
+                        <div className="overview-section-label">
+                          <span>{sec.label}</span>
+                          <span className="overview-section-stats">
+                            {stat.bookCount} كتاب · {stat.hadithCount} حديث
+                          </span>
+                        </div>
+                        <div className="leaderboard-bar">
+                          <div
+                            className="leaderboard-bar-fill"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </li>
             );
           })}

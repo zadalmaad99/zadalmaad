@@ -24,10 +24,10 @@ function whatsappLink(phone) {
 }
 
 const SECTIONS = [
-  { key: "hifz", label: "حفظ" },
-  { key: "qiraah", label: "قراءة" },
-  { key: "murajaah", label: "مراجعة" },
-  { key: "attendance", label: "حضور" },
+  { key: "hifz", label: "حفظ", hasDomain: true },
+  { key: "qiraah", label: "قراءة", hasDomain: true },
+  { key: "murajaah", label: "مراجعة", hasDomain: true },
+  { key: "attendance", label: "حضور", hasDomain: false },
 ];
 
 export default function StudentsPanel({ onNavigate }) {
@@ -42,6 +42,20 @@ export default function StudentsPanel({ onNavigate }) {
   const [editingContactType, setEditingContactType] = useState("email");
   const [editingContactValue, setEditingContactValue] = useState("");
   const [search, setSearch] = useState("");
+  const [domainPicker, setDomainPicker] = useState(null);
+
+  function toggleDomainPicker(studentId, sectionKey) {
+    setDomainPicker((p) =>
+      p && p.studentId === studentId && p.sectionKey === sectionKey
+        ? null
+        : { studentId, sectionKey }
+    );
+  }
+
+  function pickDomain(sectionKey, studentId, domain) {
+    setDomainPicker(null);
+    onNavigate?.(sectionKey, studentId, domain);
+  }
 
   useEffect(() => {
     const q = query(collection(db, "students"), orderBy("name"));
@@ -334,12 +348,35 @@ export default function StudentsPanel({ onNavigate }) {
                         key={sec.key}
                         type="button"
                         className="section-pill"
-                        onClick={() => onNavigate?.(sec.key, s.id)}
+                        onClick={() =>
+                          sec.hasDomain
+                            ? toggleDomainPicker(s.id, sec.key)
+                            : onNavigate?.(sec.key, s.id)
+                        }
                       >
                         {sec.label}
                       </button>
                     ))}
                   </div>
+
+                  {domainPicker?.studentId === s.id && (
+                    <div className="domain-picker">
+                      <button
+                        type="button"
+                        className="domain-pill"
+                        onClick={() => pickDomain(domainPicker.sectionKey, s.id, "quran")}
+                      >
+                        القرآن
+                      </button>
+                      <button
+                        type="button"
+                        className="domain-pill"
+                        onClick={() => pickDomain(domainPicker.sectionKey, s.id, "hadith")}
+                      >
+                        الحديث
+                      </button>
+                    </div>
+                  )}
 
                   <div className="student-card-actions">
                     <button className="ghost" onClick={() => startEdit(s)}>
