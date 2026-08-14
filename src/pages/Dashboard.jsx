@@ -152,7 +152,7 @@ export default function Dashboard() {
 
   function viewAdmin(adminId, adminName) {
     setFocusAdmin({ id: adminId, name: adminName });
-    setTab("overview");
+    setTab("students");
   }
 
   function goToSection(sectionKey, studentId, domain = "quran") {
@@ -319,7 +319,11 @@ export default function Dashboard() {
           <SuperadminDashboard onViewAdmin={viewAdmin} />
         )}
         {tab === "students" && isAdmin && (
-          <StudentsPanel onNavigate={goToSection} />
+          <StudentsPanel
+            onNavigate={goToSection}
+            initialTeacherId={focusAdmin?.id}
+            onTeacherFocusHandled={() => setFocusAdmin(null)}
+          />
         )}
         {tab === "settings" && isAdmin && <SettingsPanel />}
         {tab === "quran" && (

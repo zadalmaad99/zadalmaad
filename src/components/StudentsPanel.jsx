@@ -33,7 +33,7 @@ const SECTIONS = [
   { key: "attendance", label: "حضور", hasDomain: false },
 ];
 
-export default function StudentsPanel({ onNavigate }) {
+export default function StudentsPanel({ onNavigate, initialTeacherId, onTeacherFocusHandled }) {
   const { formatDate } = useCalendar();
   const { user, isSuperadmin } = useAuth();
   const [students, setStudents] = useState([]);
@@ -52,6 +52,12 @@ export default function StudentsPanel({ onNavigate }) {
   const [domainPicker, setDomainPicker] = useState(null);
   const [reportStudent, setReportStudent] = useState(null);
   const [listeningReportStudent, setListeningReportStudent] = useState(null);
+
+  useEffect(() => {
+    if (!initialTeacherId) return;
+    setTeacherFilter(initialTeacherId);
+    onTeacherFocusHandled?.();
+  }, [initialTeacherId]);
 
   function toggleDomainPicker(studentId, sectionKey) {
     setDomainPicker((p) =>

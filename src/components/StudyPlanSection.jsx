@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { STUDY_PLAN, STUDY_PLAN_CREDIT } from "../data/studyPlan";
@@ -410,18 +411,21 @@ function BookCard({ book, order }) {
 
       {showNoPdf && <NoPdfModal onClose={() => setShowNoPdf(false)} />}
 
-      {showDownloadAll && isLessonSeries && (
-        <div className="download-all-fullscreen">
-          <DownloadAllPanel
-            entry={entry}
-            book={book}
-            sheikhLabel={sheikhLabel}
-            downloadedSet={downloadedSet}
-            onClose={() => setShowDownloadAll(false)}
-            onFileDownloaded={handleFileDownloaded}
-          />
-        </div>
-      )}
+      {showDownloadAll &&
+        isLessonSeries &&
+        createPortal(
+          <div className="download-all-fullscreen">
+            <DownloadAllPanel
+              entry={entry}
+              book={book}
+              sheikhLabel={sheikhLabel}
+              downloadedSet={downloadedSet}
+              onClose={() => setShowDownloadAll(false)}
+              onFileDownloaded={handleFileDownloaded}
+            />
+          </div>,
+          document.body
+        )}
     </li>
   );
 }
