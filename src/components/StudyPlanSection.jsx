@@ -182,11 +182,13 @@ function DownloadAllPanel({ entry, book, sheikhLabel, downloadedSet, onClose, on
     };
   }, [entry]);
 
+  function isDone(i) {
+    return status[i] === "done" || downloadedSet.has(`${sheikhLabel} — ${entry[i].title}`);
+  }
+
   const totalKnownBytes = Object.values(sizes).reduce((sum, v) => sum + (v || 0), 0);
-  const doneCount = Object.values(status).filter((s) => s === "done").length;
-  const remainingIdx = entry
-    .map((_, i) => i)
-    .filter((i) => !downloadedSet.has(`${sheikhLabel} — ${entry[i].title}`));
+  const doneCount = entry.filter((_, i) => isDone(i)).length;
+  const remainingIdx = entry.map((_, i) => i).filter((i) => !isDone(i));
 
   async function startAll() {
     setRunning(true);
@@ -216,8 +218,14 @@ function DownloadAllPanel({ entry, book, sheikhLabel, downloadedSet, onClose, on
 
       <ul className="download-all-list">
         {entry.map((lesson, i) => {
-          const alreadyDone = downloadedSet.has(`${sheikhLabel} — ${lesson.title}`);
-          const st = status[i] || (alreadyDone ? "done" : "queued");
+          const st =
+            status[i] === "downloading"
+              ? "downloading"
+              : isDone(i)
+                ? "done"
+                : status[i] === "error"
+                  ? "error"
+                  : "queued";
           return (
             <li key={i} className="download-all-item">
               <span className="download-all-item-title">{lesson.title}</span>
