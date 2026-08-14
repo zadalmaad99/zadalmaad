@@ -79,4 +79,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  updateListeningProgress: (payload) =>
+    authedFetch("/api/listening-progress", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

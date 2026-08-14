@@ -6,6 +6,7 @@ import PhoneInput from "./PhoneInput";
 import { COUNTRIES, splitPhone } from "../data/countries";
 import { useCalendar } from "../context/CalendarContext";
 import AttendanceReportModal from "./AttendanceReportModal";
+import ListeningReportModal from "./ListeningReportModal";
 
 const EMPTY_FORM = {
   name: "",
@@ -45,6 +46,7 @@ export default function StudentsPanel({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [domainPicker, setDomainPicker] = useState(null);
   const [reportStudent, setReportStudent] = useState(null);
+  const [listeningReportStudent, setListeningReportStudent] = useState(null);
 
   function toggleDomainPicker(studentId, sectionKey) {
     setDomainPicker((p) =>
@@ -368,6 +370,13 @@ export default function StudentsPanel({ onNavigate }) {
                   >
                     تقرير الحضور
                   </button>
+                  <button
+                    type="button"
+                    className="section-pill attendance-report-btn"
+                    onClick={() => setListeningReportStudent(s)}
+                  >
+                    تقرير الاستماع
+                  </button>
 
                   {domainPicker?.studentId === s.id && (
                     <div className="domain-picker">
@@ -419,6 +428,14 @@ export default function StudentsPanel({ onNavigate }) {
             setReportStudent(null);
             onNavigate?.("attendance", id);
           }}
+        />
+      )}
+
+      {listeningReportStudent && (
+        <ListeningReportModal
+          studentId={listeningReportStudent.id}
+          studentName={listeningReportStudent.name}
+          onClose={() => setListeningReportStudent(null)}
         />
       )}
     </div>
