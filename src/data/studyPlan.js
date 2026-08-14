@@ -161,3 +161,26 @@ export const STUDY_PLAN = [
 ];
 
 export const STUDY_PLAN_CREDIT = "إعداد: الشيخ ريبه ر ئه‌رەدنى — أتباع السلف في القدس";
+
+function noteLines(note) {
+  return note
+    .split(/\s+ثم\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// عدد الدروس الكلي لشرح معيّن لكتاب معيّن — يُستخدم لمعرفة هل الطالب
+// خلص كل دروس الشرح استماعًا أم لا زال في بعضها فقط.
+export function getLessonCount(bookTitle, sheikhLabel) {
+  for (const section of STUDY_PLAN) {
+    for (const book of section.books) {
+      if (book.title !== bookTitle || !book.note) continue;
+      const lines = noteLines(book.note);
+      const idx = lines.indexOf(sheikhLabel);
+      if (idx === -1) continue;
+      const entry = book.audio?.[idx];
+      return Array.isArray(entry) ? entry.length : 1;
+    }
+  }
+  return 1;
+}
