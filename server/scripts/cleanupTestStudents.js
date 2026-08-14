@@ -1,7 +1,7 @@
-// يحذف كل الحسابات التي أنشأها bulkCreateTestStudents.js (المعلَّمة
-// isLoadTest: true) من Firebase Auth و Firestore معًا.
+// Deletes every account created by bulkCreateTestStudents.js (tagged
+// isLoadTest: true) from both Firebase Auth and Firestore.
 //
-// الاستخدام (من داخل مجلد server):
+// Usage (from inside the server folder):
 //   node scripts/cleanupTestStudents.js
 
 import { readFileSync } from "fs";
@@ -18,7 +18,7 @@ let serviceAccount;
 try {
   serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
 } catch {
-  console.error(`تعذّر قراءة ملف مفتاح الخدمة في: ${keyPath}`);
+  console.error(`Could not read the service account key file at: ${keyPath}`);
   process.exit(1);
 }
 
@@ -33,18 +33,18 @@ const adminDb = getFirestore();
     .get();
 
   if (snap.empty) {
-    console.log("لا توجد حسابات تجريبية لحذفها.");
+    console.log("No test accounts to delete.");
     return;
   }
 
-  console.log(`وجدت ${snap.size} حساب تجريبي، جارٍ الحذف...`);
+  console.log(`Found ${snap.size} test accounts, deleting...`);
   let done = 0;
   for (const doc of snap.docs) {
     const uid = doc.id;
     try {
       await adminAuth.deleteUser(uid);
     } catch {
-      // قد يكون الحساب محذوفًا من Auth مسبقًا، نكمل حذف بيانات Firestore على أي حال
+      // account may already be gone from Auth; continue deleting Firestore data anyway
     }
     const batch = adminDb.batch();
     batch.delete(adminDb.collection("students").doc(uid));
@@ -53,5 +53,5 @@ const adminDb = getFirestore();
     done += 1;
     process.stdout.write(`\r${done}/${snap.size}`);
   }
-  console.log("\nتم حذف كل الحسابات التجريبية.");
+  console.log("\nAll test accounts deleted.");
 })();

@@ -1,16 +1,18 @@
-// أداة تحميل تجريبي: تنشئ عددًا من حسابات الطلاب الوهمية (بريد عشوائي +
-// كلمة مرور عشوائية) في نفس مشروع Firebase الحقيقي، لغرض اختبار تحمّل
-// الخادم فقط. كل حساب يُعلَّم بوضوح (name يبدأ بـ TEST_ و isLoadTest:true)
-// حتى يسهل حذفه لاحقًا بالسكربت المرافق cleanupTestStudents.js.
+// Load-test tool: creates a number of fake student accounts (random email +
+// random password) in the same real Firebase project, purely to test server
+// load. Each account is clearly tagged (name starts with TEST_ and
+// isLoadTest:true) so it can easily be deleted later with the companion
+// cleanupTestStudents.js script.
 //
-// الاستخدام (من داخل مجلد server):
-//   1. حمّل مفتاح حساب الخدمة من Firebase Console:
+// Usage (from inside the server folder):
+//   1. Download the service account key from Firebase Console:
 //      Project Settings -> Service Accounts -> Generate new private key
-//   2. ضع الملف باسم serviceAccountKey.json داخل مجلد server (هذا الاسم
-//      مستثنى من git تلقائيًا، لن يُرفع لأي مكان)
-//   3. شغّل: node scripts/bulkCreateTestStudents.js 1000
+//   2. Save the file as serviceAccountKey.json inside the server folder
+//      (this exact name is auto-excluded from git, it will never be pushed
+//      anywhere)
+//   3. Run: node scripts/bulkCreateTestStudents.js 1000
 //
-// لا تشغّل هذا السكربت إلا من جهازك، ولا تشارك ملف المفتاح مع أحد.
+// Only run this script from your own machine, and never share the key file with anyone.
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -28,8 +30,8 @@ try {
   serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
 } catch {
   console.error(
-    `تعذّر قراءة ملف مفتاح الخدمة في: ${keyPath}\n` +
-      "حمّله من Firebase Console -> Project Settings -> Service Accounts وضعه بهذا الاسم."
+    `Could not read the service account key file at: ${keyPath}\n` +
+      "Download it from Firebase Console -> Project Settings -> Service Accounts and save it with this exact name."
   );
   process.exit(1);
 }
@@ -40,14 +42,14 @@ const adminDb = getFirestore();
 
 const count = Number(process.argv[2]);
 if (!count || count < 1 || count > 5000) {
-  console.error("الاستخدام: node scripts/bulkCreateTestStudents.js <عدد الحسابات، 1-5000>");
+  console.error("Usage: node scripts/bulkCreateTestStudents.js <account count, 1-5000>");
   process.exit(1);
 }
 
-const BATCH_SIZE = 20; // إنشاء حسابات على دفعات متوازية صغيرة بدل كلها دفعة واحدة
+const BATCH_SIZE = 20; // create accounts in small parallel batches instead of all at once
 
 function randomPassword() {
-  return crypto.randomBytes(9).toString("base64url"); // 12 حرفًا تقريبًا
+  return crypto.randomBytes(9).toString("base64url"); // ~12 characters
 }
 
 async function createOne(i) {
@@ -80,7 +82,7 @@ async function createOne(i) {
 }
 
 (async () => {
-  console.log(`إنشاء ${count} حساب تجريبي...`);
+  console.log(`Creating ${count} test accounts...`);
   const results = [];
   for (let start = 0; start < count; start += BATCH_SIZE) {
     const batchIndexes = Array.from(
@@ -95,13 +97,13 @@ async function createOne(i) {
 
   const okResults = results.filter((r) => r.ok);
   const failResults = results.filter((r) => !r.ok);
-  console.log(`نجح: ${okResults.length}  فشل: ${failResults.length}`);
+  console.log(`Succeeded: ${okResults.length}  Failed: ${failResults.length}`);
   if (failResults.length > 0) {
-    console.log("أول 5 أخطاء:", failResults.slice(0, 5));
+    console.log("First 5 errors:", failResults.slice(0, 5));
   }
 
   const outPath = join(__dirname, "loadtest-accounts.json");
   const fs = await import("fs/promises");
   await fs.writeFile(outPath, JSON.stringify(okResults, null, 2));
-  console.log(`تم حفظ بيانات الحسابات في: ${outPath}`);
+  console.log(`Account data saved to: ${outPath}`);
 })();

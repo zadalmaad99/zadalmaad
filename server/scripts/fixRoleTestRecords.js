@@ -1,14 +1,14 @@
-// يعيد كتابة سجلات القرآن (records) والمنهج (hadithRecords) للطلاب
-// التجريبيين العشرين الذين أنشأهم seedRoleTest.js سابقًا، بالشكل
-// الصحيح المطابق لما يتوقعه التطبيق (حقل type بدل domain). يُستخدم
-// بعد أن تبيّن أن seedRoleTest.js كان يكتب حقلًا خاطئًا جعل صفحة
-// "العام" تظهر فارغة رغم وجود السجلات. لا يُنشئ أي حسابات جديدة،
-// فقط يحذف السجلات القديمة الخاطئة (المعلَّمة isLoadTest:true) لهؤلاء
-// الطلاب ويكتبها من جديد بالشكل الصحيح.
+// Re-writes the Quran (records) and curriculum (hadithRecords) records for
+// the 20 test students previously created by seedRoleTest.js, using the
+// correct shape the app expects (a "type" field, not "domain"). Used after
+// discovering that seedRoleTest.js was writing the wrong field, which made
+// the "Overview" page appear empty despite records existing. Creates no new
+// accounts — it only deletes the old, incorrectly-shaped records (tagged
+// isLoadTest:true) for these students and re-writes them correctly.
 //
-// الاستخدام (من داخل مجلد server):
-//   1. ضع serviceAccountKey.json داخل مجلد server
-//   2. شغّل: node scripts/fixRoleTestRecords.js
+// Usage (from inside the server folder):
+//   1. Place serviceAccountKey.json inside the server folder
+//   2. Run: node scripts/fixRoleTestRecords.js
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -24,7 +24,7 @@ let serviceAccount;
 try {
   serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
 } catch {
-  console.error(`تعذّر قراءة ملف مفتاح الخدمة في: ${keyPath}`);
+  console.error(`Could not read the service account key file at: ${keyPath}`);
   process.exit(1);
 }
 
@@ -33,7 +33,7 @@ try {
   accounts = JSON.parse(readFileSync(accountsPath, "utf8"));
 } catch {
   console.error(
-    `تعذّر قراءة ${accountsPath}\nشغّل seedRoleTest.js أولًا لإنشاء الحسابات.`
+    `Could not read ${accountsPath}\nRun seedRoleTest.js first to create the accounts.`
   );
   process.exit(1);
 }
@@ -93,12 +93,12 @@ async function reseedStudent(student) {
 }
 
 (async () => {
-  console.log(`إعادة تهيئة سجلات ${accounts.students.length} طالب تجريبي...`);
+  console.log(`Re-seeding records for ${accounts.students.length} test students...`);
   let totalRemoved = 0;
   for (const student of accounts.students) {
     const { removedRecords, removedHadith } = await reseedStudent(student);
     totalRemoved += removedRecords + removedHadith;
     process.stdout.write(".");
   }
-  console.log(`\nتم. حُذف ${totalRemoved} سجل قديم خاطئ، وأُضيف 4 سجلات صحيحة لكل طالب.`);
+  console.log(`\nDone. Removed ${totalRemoved} old incorrect records, added 4 correct records per student.`);
 })();

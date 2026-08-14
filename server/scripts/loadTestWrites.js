@@ -1,8 +1,9 @@
-// اختبار حمل حقيقي: يسجّل دخول عدد من الحسابات التجريبية (من
-// loadtest-accounts.json) ثم يرسل طلبات كتابة فعلية (تسجيل حضور)
-// متزامنة إلى الخادم الخلفي، لقياس متى يبدأ الأداء يتدهور فعليًا.
+// Real load test: signs in a number of test accounts (from
+// loadtest-accounts.json), then sends concurrent real write requests
+// (attendance/listening-progress) to the backend, to measure at what point
+// performance actually starts to degrade.
 //
-// الاستخدام (من داخل مجلد server):
+// Usage (from inside the server folder):
 //   node scripts/loadTestWrites.js
 
 import { readFileSync } from "fs";
@@ -14,7 +15,7 @@ const accounts = JSON.parse(
   readFileSync(join(__dirname, "loadtest-accounts.json"), "utf8")
 ).filter((a) => a.ok);
 
-const API_KEY = "AIzaSyAdPQ8qaxcFqNXBAhf-sAKcxqugJE1Dw20"; // Firebase apiKey - عام وليس سريًا
+const API_KEY = "AIzaSyAdPQ8qaxcFqNXBAhf-sAKcxqugJE1Dw20"; // Firebase apiKey - public, not secret
 const API_URL = "https://quran-tracker-xh2q.onrender.com";
 const LEVELS = [10, 50, 100, 250, 500, 1000];
 
@@ -77,17 +78,17 @@ async function runLevel(n, tokens) {
   );
   if (failCount > 0) {
     const sample = results.find((r) => !r.ok);
-    console.log("   عينة فشل:", sample.status, sample.err || "");
+    console.log("   sample failure:", sample.status, sample.err || "");
   }
   return { n, okCount, failCount };
 }
 
 (async () => {
   if (accounts.length < 1000) {
-    console.log(`تحذير: عدد الحسابات المتاحة ${accounts.length} فقط (أقل من 1000)`);
+    console.log(`Warning: only ${accounts.length} accounts available (less than 1000)`);
   }
 
-  console.log("تسجيل الدخول بكل الحسابات (قد يأخذ دقيقة)...");
+  console.log("Signing in with all accounts (may take a minute)...");
   const tokens = [];
   const CHUNK = 20;
   for (let i = 0; i < accounts.length; i += CHUNK) {
@@ -100,17 +101,17 @@ async function runLevel(n, tokens) {
   }
   console.log("");
   const signedInCount = tokens.filter(Boolean).length;
-  console.log(`سُجِّل الدخول بنجاح: ${signedInCount}/${accounts.length}`);
+  console.log(`Signed in successfully: ${signedInCount}/${accounts.length}`);
 
-  console.log("\n--- بدء اختبار الكتابة المتزامنة (تسجيل حضور فعلي) ---");
+  console.log("\n--- Starting concurrent write test (real attendance writes) ---");
   for (const n of LEVELS) {
     if (n > signedInCount) {
-      console.log(`تخطي n=${n} (عدد الحسابات المسجَّلة أقل)`);
+      console.log(`Skipping n=${n} (fewer signed-in accounts available)`);
       continue;
     }
     const r = await runLevel(n, tokens);
     if (r.failCount / r.n > 0.2) {
-      console.log(`>> نسبة الفشل تجاوزت 20% عند n=${n}، إيقاف الزيادة`);
+      console.log(`>> Failure rate exceeded 20% at n=${n}, stopping ramp-up`);
       break;
     }
     await new Promise((res) => setTimeout(res, 1500));

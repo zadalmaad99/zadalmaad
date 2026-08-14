@@ -1,15 +1,18 @@
-// أداة اختبار نظام الأدوار: تنشئ 4 حسابات معلّمين (admin) و20 حساب طالب
-// (5 طلاب لكل معلّم بالتساوي)، ثم تكتب سجلاً تجريبيًا في كل قسم/فرع
-// (حفظ، قراءة، مراجعة، المنهج/الحديث، الحضور، الاستماع للمنهج، ختمة)
-// لكل طالب، للتحقق من أن كل الأقسام تعمل وأن البيانات تُعزل بشكل صحيح
-// حسب adminId. كل الحسابات تُعلَّم بوضوح (name يبدأ بـ TEST_) ليسهل
-// حذفها لاحقًا بسكربت cleanupTestStudents.js (بعد تعديله ليشمل أيضًا
-// حسابات admins/ التجريبية، أو حذفها يدويًا عبر حذف المعلم من لوحة
-// السوبرادمن، الذي يحذف تلقائيًا كل طلابه وسجلاتهم).
+// Role-system test tool: creates 4 teacher (admin) accounts and 20 student
+// accounts (5 students per teacher, evenly split), then writes one test
+// record to every section/branch (hifz, qiraah, murajaah, curriculum/hadith,
+// attendance, curriculum listening, khatm) for each student, to verify all
+// sections work and data is correctly scoped by adminId. All accounts are
+// clearly tagged (name starts with TEST_) so they're easy to remove later
+// via the cleanupTestStudents.js script (after updating it to also cover
+// test admins/ accounts), or simply by deleting the teacher from the
+// superadmin dashboard, which automatically cascades to all their students
+// and records.
 //
-// الاستخدام (من داخل مجلد server):
-//   1. ضع serviceAccountKey.json داخل مجلد server (كما في السكربتات الأخرى)
-//   2. شغّل: node scripts/seedRoleTest.js
+// Usage (from inside the server folder):
+//   1. Place serviceAccountKey.json inside the server folder (as with the
+//      other scripts)
+//   2. Run: node scripts/seedRoleTest.js
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -27,8 +30,8 @@ try {
   serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
 } catch {
   console.error(
-    `تعذّر قراءة ملف مفتاح الخدمة في: ${keyPath}\n` +
-      "حمّله من Firebase Console -> Project Settings -> Service Accounts وضعه بهذا الاسم."
+    `Could not read the service account key file at: ${keyPath}\n` +
+      "Download it from Firebase Console -> Project Settings -> Service Accounts and save it with this exact name."
   );
   process.exit(1);
 }
@@ -96,13 +99,13 @@ async function createStudent(i, adminId) {
   return { uid: userRecord.uid, email, password, adminId };
 }
 
-// كل قسم وفرع في التطبيق يُختبر بكتابة سجل واحد لكل طالب
+// Every section and branch in the app is tested by writing one record per student
 async function seedSectionsForStudent(student) {
   const { uid: studentId, adminId } = student;
   const createdAt = Date.now();
   const results = {};
 
-  // القرآن: حفظ / قراءة / مراجعة
+  // Quran: hifz / qiraah / murajaah
   for (const type of ["hifz", "qiraah", "murajaah"]) {
     try {
       await adminDb.collection("records").add({
@@ -125,7 +128,7 @@ async function seedSectionsForStudent(student) {
     }
   }
 
-  // المنهج (الحديث سابقًا)
+  // Curriculum (formerly "hadith")
   try {
     await adminDb.collection("hadithRecords").add({
       studentId,
@@ -142,7 +145,7 @@ async function seedSectionsForStudent(student) {
     results["hadithRecords"] = `fail: ${err.message}`;
   }
 
-  // الحضور
+  // Attendance
   try {
     await adminDb.collection("attendance").add({
       studentId,
@@ -156,7 +159,7 @@ async function seedSectionsForStudent(student) {
     results["attendance"] = `fail: ${err.message}`;
   }
 
-  // ختمة
+  // Khatm
   try {
     await adminDb.collection("khatmat").add({
       studentId,
@@ -169,7 +172,7 @@ async function seedSectionsForStudent(student) {
     results["khatmat"] = `fail: ${err.message}`;
   }
 
-  // الاستماع للمنهج (دراسة الكتب بالتدريج)
+  // Curriculum listening (study-plan audio)
   try {
     await adminDb.collection("listeningProgress").add({
       studentId,
@@ -191,21 +194,21 @@ async function seedSectionsForStudent(student) {
 }
 
 (async () => {
-  console.log(`إنشاء ${ADMIN_COUNT} معلّمين و${STUDENT_COUNT} طالب (${STUDENTS_PER_ADMIN} لكل معلّم)...`);
+  console.log(`Creating ${ADMIN_COUNT} teachers and ${STUDENT_COUNT} students (${STUDENTS_PER_ADMIN} per teacher)...`);
 
   const admins = [];
   for (let i = 1; i <= ADMIN_COUNT; i++) {
     try {
       const a = await createAdmin(i);
       admins.push(a);
-      console.log(`✓ معلّم ${i}: ${a.email}`);
+      console.log(`✓ Teacher ${i}: ${a.email}`);
     } catch (err) {
-      console.log(`✗ فشل إنشاء معلّم ${i}: ${err.message}`);
+      console.log(`✗ Failed to create teacher ${i}: ${err.message}`);
     }
   }
 
   if (admins.length === 0) {
-    console.error("لم يُنشأ أي معلّم، توقف.");
+    console.error("No teacher was created, stopping.");
     process.exit(1);
   }
 
@@ -216,15 +219,15 @@ async function seedSectionsForStudent(student) {
       try {
         const s = await createStudent(studentIndex, admin.uid);
         students.push(s);
-        console.log(`  ✓ طالب ${studentIndex} -> معلّم ${admin.email}`);
+        console.log(`  ✓ Student ${studentIndex} -> teacher ${admin.email}`);
       } catch (err) {
-        console.log(`  ✗ فشل إنشاء طالب ${studentIndex}: ${err.message}`);
+        console.log(`  ✗ Failed to create student ${studentIndex}: ${err.message}`);
       }
       studentIndex++;
     }
   }
 
-  console.log(`\nاختبار الكتابة في كل الأقسام لكل طالب (${students.length} طالب)...`);
+  console.log(`\nTesting writes across all sections for each student (${students.length} students)...`);
   const sectionTally = {};
   for (const student of students) {
     const results = await seedSectionsForStudent(student);
@@ -240,22 +243,22 @@ async function seedSectionsForStudent(student) {
   }
   console.log("\n");
 
-  console.log("=== النتيجة النهائية ===");
-  console.log(`المعلّمون: ${admins.length}/${ADMIN_COUNT} نجح`);
-  console.log(`الطلاب: ${students.length}/${STUDENT_COUNT} نجح`);
-  console.log("الأقسام:");
+  console.log("=== Final result ===");
+  console.log(`Teachers: ${admins.length}/${ADMIN_COUNT} succeeded`);
+  console.log(`Students: ${students.length}/${STUDENT_COUNT} succeeded`);
+  console.log("Sections:");
   for (const [section, tally] of Object.entries(sectionTally)) {
     console.log(
-      `  ${section}: نجح ${tally.ok}/${tally.ok + tally.fail}` +
-        (tally.fail > 0 ? `  — أخطاء: ${tally.errors.slice(0, 2).join(" | ")}` : "")
+      `  ${section}: succeeded ${tally.ok}/${tally.ok + tally.fail}` +
+        (tally.fail > 0 ? `  — errors: ${tally.errors.slice(0, 2).join(" | ")}` : "")
     );
   }
 
   const outPath = join(__dirname, "roletest-accounts.json");
   const fs = await import("fs/promises");
   await fs.writeFile(outPath, JSON.stringify({ admins, students }, null, 2));
-  console.log(`\nتم حفظ بيانات الحسابات (للمراجعة أو تسجيل الدخول اليدوي) في: ${outPath}`);
+  console.log(`\nAccount data saved (for review or manual login) to: ${outPath}`);
   console.log(
-    "لحذف كل هذه الحسابات لاحقًا: احذف كل معلّم تجريبي من (لوحة الإشراف -> حذف المعلم) في التطبيق، فيُحذف معه كل طلابه وسجلاتهم تلقائيًا."
+    "To delete all these accounts later: delete each test teacher from (Supervision Dashboard -> Delete Teacher) in the app, which automatically cascades to all their students and records."
   );
 })();
