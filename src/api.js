@@ -93,4 +93,5 @@ export const api = {
     }),
 
   listAdmins: () => authedFetch("/api/admins"),
+  deleteAdmin: (id) => authedFetch(`/api/admins/${id}`, { method: "DELETE" }),
 };

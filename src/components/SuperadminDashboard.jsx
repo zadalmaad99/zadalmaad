@@ -22,6 +22,21 @@ export default function SuperadminDashboard({ onViewAdmin }) {
       .finally(() => setLoading(false));
   }, []);
 
+  async function handleDeleteAdmin(a) {
+    if (
+      !confirm(
+        `تأكيد: سيتم حذف المعلم "${a.name}" نهائيًا، مع كل طلابه (${a.studentCount}) وكل سجلاتهم في جميع الأقسام (القرآن، المنهج، الحضور، الاستماع). هذا لا يمكن التراجع عنه. متابعة؟`
+      )
+    )
+      return;
+    try {
+      await api.deleteAdmin(a.id);
+      setAdmins((prev) => prev.filter((x) => x.id !== a.id));
+    } catch (err) {
+      alert(err.message || "تعذّر حذف المعلم");
+    }
+  }
+
   return (
     <div className="panel">
       <h3 className="panel-title">إجمالي المعلمين المسجّلين: {admins.length}</h3>
@@ -65,13 +80,22 @@ export default function SuperadminDashboard({ onViewAdmin }) {
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="attendance-report-btn overview-attendance-report-btn"
-                onClick={() => onViewAdmin?.(a.id, a.name)}
-              >
-                عرض لوحة المعلم بالكامل
-              </button>
+              <div className="overview-report-btns">
+                <button
+                  type="button"
+                  className="attendance-report-btn overview-attendance-report-btn"
+                  onClick={() => onViewAdmin?.(a.id, a.name)}
+                >
+                  عرض لوحة المعلم بالكامل
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => handleDeleteAdmin(a)}
+                >
+                  حذف المعلم
+                </button>
+              </div>
             </li>
           ))}
         </ol>

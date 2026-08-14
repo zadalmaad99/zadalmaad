@@ -92,11 +92,36 @@ router.patch(
   })
 );
 
+const CASCADE_COLLECTIONS = [
+  "records",
+  "hadithRecords",
+  "attendance",
+  "khatmat",
+  "listeningProgress",
+];
+
+// Deletes every doc in `collection` where studentId == id, chunked to
+// stay under Firestore's 500-operation batch limit.
+async function deleteWhereStudent(collection, studentId) {
+  const snap = await adminDb
+    .collection(collection)
+    .where("studentId", "==", studentId)
+    .get();
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += 450) {
+    const batch = adminDb.batch();
+    docs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  }
+  return docs.length;
+}
+
 router.delete(
   "/:id",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const ref = adminDb.collection("students").doc(req.params.id);
+    const studentId = req.params.id;
+    const ref = adminDb.collection("students").doc(studentId);
     const snap = await ref.get();
     if (!snap.exists) {
       return res.status(404).json({ error: "student not found" });
@@ -104,10 +129,24 @@ router.delete(
     if (!req.isSuperadmin && snap.data().adminId !== req.adminUid) {
       return res.status(403).json({ error: "not authorized" });
     }
+
+    // Cascade: remove every trace of this student across all tracking
+    // collections first, so nothing orphaned lingers in any section.
+    for (const collection of CASCADE_COLLECTIONS) {
+      await deleteWhereStudent(collection, studentId);
+    }
+
     const batch = adminDb.batch();
-    batch.delete(adminDb.collection("users").doc(req.params.id));
-    batch.delete(adminDb.collection("students").doc(req.params.id));
+    batch.delete(adminDb.collection("users").doc(studentId));
+    batch.delete(adminDb.collection("students").doc(studentId));
     await batch.commit();
+
+    try {
+      await adminAuth.deleteUser(studentId);
+    } catch {
+      // account may already be gone from Auth; Firestore cleanup above still succeeded
+    }
+
     res.json({ ok: true });
   })
 );
