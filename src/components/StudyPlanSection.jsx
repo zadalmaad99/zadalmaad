@@ -162,16 +162,19 @@ function DownloadAllPanel({ entry, book, sheikhLabel, downloadedSet, onClose, on
 
   useEffect(() => {
     let cancelled = false;
-    entry.forEach((lesson, i) => {
-      fetch(lesson.url, { method: "HEAD" })
-        .then((res) => {
-          if (cancelled) return;
-          const len = Number(res.headers.get("content-length"));
-          setSizes((s) => ({ ...s, [i]: len || null }));
-        })
-        .catch(() => {
-          if (!cancelled) setSizes((s) => ({ ...s, [i]: null }));
-        });
+    Promise.allSettled(
+      entry.map((lesson) =>
+        fetch(lesson.url, { method: "HEAD" }).then((res) =>
+          Number(res.headers.get("content-length")) || null
+        )
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      const next = {};
+      results.forEach((r, i) => {
+        next[i] = r.status === "fulfilled" ? r.value : null;
+      });
+      setSizes(next);
     });
     return () => {
       cancelled = true;
@@ -408,17 +411,15 @@ function BookCard({ book, order }) {
       {showNoPdf && <NoPdfModal onClose={() => setShowNoPdf(false)} />}
 
       {showDownloadAll && isLessonSeries && (
-        <div className="modal-overlay" onClick={() => setShowDownloadAll(false)}>
-          <div className="modal-card download-all-modal" onClick={(e) => e.stopPropagation()}>
-            <DownloadAllPanel
-              entry={entry}
-              book={book}
-              sheikhLabel={sheikhLabel}
-              downloadedSet={downloadedSet}
-              onClose={() => setShowDownloadAll(false)}
-              onFileDownloaded={handleFileDownloaded}
-            />
-          </div>
+        <div className="download-all-fullscreen">
+          <DownloadAllPanel
+            entry={entry}
+            book={book}
+            sheikhLabel={sheikhLabel}
+            downloadedSet={downloadedSet}
+            onClose={() => setShowDownloadAll(false)}
+            onFileDownloaded={handleFileDownloaded}
+          />
         </div>
       )}
     </li>
