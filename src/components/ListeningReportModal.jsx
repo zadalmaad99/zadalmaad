@@ -47,6 +47,14 @@ export default function ListeningReportModal({ studentId, studentName, onClose }
                   />
                 </div>
                 <span className="listening-report-item-pct">{p.progressPercent || 0}٪</span>
+                {p.progressPercent >= 100 && (
+                  <div className="listening-report-item-done">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    الطالب خلص هذا الكتاب استماعًا
+                  </div>
+                )}
               </li>
             ))}
           </ol>

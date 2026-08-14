@@ -1620,6 +1620,23 @@ td.empty {
   font-weight: 700;
   color: var(--primary-dark);
 }
+.listening-report-item-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.listening-report-item-done svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
 .attendance-report-section {
   margin-bottom: 14px;
 }
