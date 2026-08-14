@@ -103,21 +103,25 @@ async function seedSectionsForStudent(student) {
   const results = {};
 
   // القرآن: حفظ / قراءة / مراجعة
-  for (const domain of ["hifz", "qiraah", "murajaah"]) {
+  for (const type of ["hifz", "qiraah", "murajaah"]) {
     try {
       await adminDb.collection("records").add({
         studentId,
         adminId,
-        domain,
-        surah: 1,
+        type,
+        surahNumber: 1,
+        surahName: "الفاتحة",
         ayahFrom: 1,
         ayahTo: 7,
-        date: createdAt,
+        juz: 1,
+        hizb: 1,
+        page: 1,
+        date: new Date(createdAt).toISOString().slice(0, 10),
         isLoadTest: true,
       });
-      results[`records:${domain}`] = "ok";
+      results[`records:${type}`] = "ok";
     } catch (err) {
-      results[`records:${domain}`] = `fail: ${err.message}`;
+      results[`records:${type}`] = `fail: ${err.message}`;
     }
   }
 
@@ -126,9 +130,11 @@ async function seedSectionsForStudent(student) {
     await adminDb.collection("hadithRecords").add({
       studentId,
       adminId,
-      book: "بلوغ المرام",
+      type: "hifz",
+      book: "bulugh",
+      bookName: "بلوغ المرام",
       hadithNumber: 1,
-      date: createdAt,
+      date: new Date(createdAt).toISOString().slice(0, 10),
       isLoadTest: true,
     });
     results["hadithRecords"] = "ok";
