@@ -73,6 +73,8 @@ export default function Login() {
             البريد الإلكتروني
             <input
               type="email"
+              name="email"
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -85,6 +87,8 @@ export default function Login() {
           كلمة المرور
           <input
             type="password"
+            name="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
