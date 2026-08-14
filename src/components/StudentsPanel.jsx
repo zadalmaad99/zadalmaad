@@ -282,10 +282,13 @@ export default function StudentsPanel({ onNavigate }) {
         </div>
       )}
 
-      {isSuperadmin && admins.length > 0 && (
+      {isSuperadmin && students.length > 0 && (
         <div className="teacher-filter">
           <select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)}>
             <option value="">كل المعلمين ({students.length} طالب)</option>
+            <option value="__superadmin__">
+              superadmin ({students.filter((s) => !s.adminId).length} طالب)
+            </option>
             {admins.map((a) => {
               const count = students.filter((s) => s.adminId === a.id).length;
               return (
@@ -300,13 +303,25 @@ export default function StudentsPanel({ onNavigate }) {
 
       {students
         .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()))
-        .filter((s) => !teacherFilter || s.adminId === teacherFilter).length === 0 ? (
+        .filter((s) =>
+          !teacherFilter
+            ? true
+            : teacherFilter === "__superadmin__"
+              ? !s.adminId
+              : s.adminId === teacherFilter
+        ).length === 0 ? (
         <p className="empty">لا يوجد طلاب</p>
       ) : (
         <div className="student-grid">
           {students
             .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()))
-            .filter((s) => !teacherFilter || s.adminId === teacherFilter)
+            .filter((s) =>
+              !teacherFilter
+                ? true
+                : teacherFilter === "__superadmin__"
+                  ? !s.adminId
+                  : s.adminId === teacherFilter
+            )
             .map((s) => (
             <div key={s.id} className="student-card">
               {editingId === s.id ? (
