@@ -1108,6 +1108,43 @@ td.empty {
   transform: translateX(-50%);
   z-index: 200;
 }
+.scroll-buttons {
+  position: fixed;
+  bottom: 24px;
+  inset-inline-end: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 150;
+}
+.scroll-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--primary-dark);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scroll-btn svg {
+  width: 20px;
+  height: 20px;
+}
+.scroll-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: translateY(-2px);
+}
+@media (max-width: 720px) {
+  .scroll-buttons {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    inset-inline-end: 14px;
+  }
+}
+
 .install-btn {
   display: inline-flex;
   align-items: center;

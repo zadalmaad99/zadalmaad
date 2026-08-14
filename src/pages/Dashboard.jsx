@@ -7,6 +7,7 @@ import OverviewDashboard from "../components/OverviewDashboard";
 import SettingsPanel from "../components/SettingsPanel";
 import AttendancePanel from "../components/AttendancePanel";
 import StudyPlanSection from "../components/StudyPlanSection";
+import ScrollButtons from "../components/ScrollButtons";
 import logo from "../assets/logo.png";
 
 const ICONS = {
@@ -309,6 +310,7 @@ export default function Dashboard() {
         )}
       </main>
 
+      <ScrollButtons />
     </div>
   );
 }
