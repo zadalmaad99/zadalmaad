@@ -4,51 +4,71 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-    function isAdmin() {
+    function isSuperadmin() {
       return isSignedIn() && request.auth.token.email in ["mathelove2@gmail.com"];
+    }
+    function myRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdminRole() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        myRole() == "admin";
+    }
+    function isAdmin() {
+      return isSuperadmin() || isAdminRole();
     }
     function isAuthorizedStudent() {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
+    function ownsDoc() {
+      return isSuperadmin() ||
+        (isAdminRole() && resource.data.adminId == request.auth.uid);
+    }
 
     match /users/{uid} {
       allow read: if isAdmin() || request.auth.uid == uid;
-      allow write: if isAdmin();
+      allow write: if isSuperadmin();
+    }
+
+    match /admins/{uid} {
+      allow read: if isSuperadmin() || request.auth.uid == uid;
+      allow write: if isSuperadmin();
     }
 
     match /students/{studentId} {
-      allow read: if isAdmin() ||
+      allow read: if ownsDoc() ||
         (isAuthorizedStudent() && request.auth.uid == studentId);
       allow write: if isAdmin();
     }
 
     match /records/{recordId} {
-      allow read: if isAdmin() ||
+      allow read: if ownsDoc() ||
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
 
     match /attendance/{attendanceId} {
-      allow read: if isAdmin() ||
+      allow read: if ownsDoc() ||
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
 
     match /hadithRecords/{recordId} {
-      allow read: if isAdmin() ||
+      allow read: if ownsDoc() ||
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
 
     match /khatmat/{khatmId} {
-      allow read: if isAdmin() ||
+      allow read: if ownsDoc() ||
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
 
     match /listeningProgress/{progressId} {
-      allow read: if isAdmin() ||
+      allow read: if ownsDoc() ||
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }

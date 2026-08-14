@@ -7,6 +7,7 @@ import OverviewDashboard from "../components/OverviewDashboard";
 import SettingsPanel from "../components/SettingsPanel";
 import AttendancePanel from "../components/AttendancePanel";
 import StudyPlanSection from "../components/StudyPlanSection";
+import SuperadminDashboard from "../components/SuperadminDashboard";
 import ScrollButtons from "../components/ScrollButtons";
 import logo from "../assets/logo.png";
 
@@ -82,6 +83,12 @@ const TABS = [
     navLabel: "العام",
     desc: "ترتيب الطلاب حسب التقدم في كل الأقسام",
   },
+  {
+    key: "superadmin",
+    label: "لوحة الإشراف",
+    navLabel: "المعلّمون",
+    desc: "متابعة كل المعلمين المسجّلين وعدد طلابهم ونشاطهم",
+  },
   { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
   {
     key: "quran",
@@ -122,11 +129,11 @@ const HADITH_TITLES = {
 };
 
 export default function Dashboard() {
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, isSuperadmin } = useAuth();
   const visibleTabs = isAdmin
-    ? TABS
+    ? TABS.filter((t) => t.key !== "superadmin" || isSuperadmin)
     : TABS.filter(
-        (t) => !["students", "overview", "settings"].includes(t.key)
+        (t) => !["students", "overview", "settings", "superadmin"].includes(t.key)
       );
   const [tab, setTab] = useState(isAdmin ? "overview" : "quran");
   const [quranSub, setQuranSub] = useState("hifz");
@@ -290,6 +297,7 @@ export default function Dashboard() {
         {tab === "overview" && isAdmin && (
           <OverviewDashboard onNavigate={goToSection} />
         )}
+        {tab === "superadmin" && isSuperadmin && <SuperadminDashboard />}
         {tab === "students" && isAdmin && (
           <StudentsPanel onNavigate={goToSection} />
         )}

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { api } from "../api";
 import PhoneInput from "./PhoneInput";
 import { COUNTRIES, splitPhone } from "../data/countries";
 import { useCalendar } from "../context/CalendarContext";
+import { useAuth } from "../context/AuthContext";
 import AttendanceReportModal from "./AttendanceReportModal";
 import ListeningReportModal from "./ListeningReportModal";
 
@@ -34,6 +35,7 @@ const SECTIONS = [
 
 export default function StudentsPanel({ onNavigate }) {
   const { formatDate } = useCalendar();
+  const { user, isSuperadmin } = useAuth();
   const [students, setStudents] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -62,11 +64,17 @@ export default function StudentsPanel({ onNavigate }) {
   }
 
   useEffect(() => {
-    const q = query(collection(db, "students"), orderBy("name"));
+    const q = isSuperadmin
+      ? query(collection(db, "students"), orderBy("name"))
+      : query(
+          collection(db, "students"),
+          where("adminId", "==", user.uid),
+          orderBy("name")
+        );
     return onSnapshot(q, (snap) => {
       setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
-  }, []);
+  }, [user, isSuperadmin]);
 
   async function handleAdd(e) {
     e.preventDefault();

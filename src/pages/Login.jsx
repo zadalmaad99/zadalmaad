@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PhoneInput from "../components/PhoneInput";
 import logo from "../assets/logo.png";
@@ -98,6 +98,10 @@ export default function Login() {
         <button type="submit" disabled={loading}>
           {loading ? "جارٍ الدخول..." : "دخول"}
         </button>
+
+        <Link to="/register" className="register-link">
+          معلّم جديد؟ إنشاء حساب
+        </Link>
       </form>
     </div>
   );

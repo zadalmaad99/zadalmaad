@@ -2,6 +2,7 @@ import { Router } from "express";
 import { adminDb } from "../firebaseAdmin.js";
 import { requireAdmin } from "../adminAuth.js";
 import { asyncHandler } from "../asyncHandler.js";
+import { getStudentAdminId, ownsResource } from "../ownership.js";
 
 const router = Router();
 
@@ -14,6 +15,11 @@ router.post(
     const { studentId, type } = req.body || {};
     if (!studentId || !RESETTABLE_TYPES.includes(type)) {
       return res.status(400).json({ error: "invalid khatm payload" });
+    }
+
+    const studentAdminId = await getStudentAdminId(studentId);
+    if (!ownsResource(req, studentAdminId)) {
+      return res.status(403).json({ error: "not authorized" });
     }
 
     const existingSnap = await adminDb
@@ -34,6 +40,7 @@ router.post(
       studentId,
       type,
       khatmNumber,
+      adminId: studentAdminId,
       date: new Date().toISOString().slice(0, 10),
       createdAt: Date.now(),
     });

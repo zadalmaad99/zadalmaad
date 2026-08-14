@@ -22,7 +22,7 @@ export default function HadithTrackingSection({
   focusStudentId,
   onFocusHandled,
 }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperadmin, user } = useAuth();
   const { formatDate, calendar } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
@@ -43,20 +43,28 @@ export default function HadithTrackingSection({
   }, [focusStudentId, students]);
 
   useEffect(() => {
-    const studentsQuery = isAdmin
+    const studentsQuery = isSuperadmin
       ? query(collection(db, "students"), orderBy("name"))
-      : query(collection(db, "students"), where("__name__", "==", auth.currentUser.uid));
+      : isAdmin
+        ? query(collection(db, "students"), where("adminId", "==", user.uid), orderBy("name"))
+        : query(collection(db, "students"), where("__name__", "==", auth.currentUser.uid));
     const unsubStudents = onSnapshot(studentsQuery, (snap) =>
       setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    const recordsQuery = isAdmin
+    const recordsQuery = isSuperadmin
       ? query(collection(db, "hadithRecords"), where("type", "==", type))
-      : query(
-          collection(db, "hadithRecords"),
-          where("type", "==", type),
-          where("studentId", "==", auth.currentUser.uid)
-        );
+      : isAdmin
+        ? query(
+            collection(db, "hadithRecords"),
+            where("type", "==", type),
+            where("adminId", "==", user.uid)
+          )
+        : query(
+            collection(db, "hadithRecords"),
+            where("type", "==", type),
+            where("studentId", "==", auth.currentUser.uid)
+          );
     const unsubRecords = onSnapshot(recordsQuery, (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
@@ -67,7 +75,7 @@ export default function HadithTrackingSection({
       unsubStudents();
       unsubRecords();
     };
-  }, [type, isAdmin]);
+  }, [type, isAdmin, isSuperadmin, user]);
 
   function resetForm() {
     setForm(EMPTY_FORM);

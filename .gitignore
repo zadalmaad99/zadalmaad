@@ -28,3 +28,4 @@ info.txt
 server/.env
 *serviceAccount*.json
 quran_kareem/
+server/scripts/loadtest-accounts.json

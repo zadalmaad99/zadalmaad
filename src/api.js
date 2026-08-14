@@ -85,4 +85,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  registerAdmin: (payload) =>
+    authedFetch("/api/register-admin", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  listAdmins: () => authedFetch("/api/admins"),
 };

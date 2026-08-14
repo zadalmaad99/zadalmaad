@@ -1,20 +1,51 @@
-import { adminAuth } from "./firebaseAdmin.js";
+import { adminAuth, adminDb } from "./firebaseAdmin.js";
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
-  .split(",")
-  .map((e) => e.trim())
-  .filter(Boolean);
+export const SUPERADMIN_EMAIL = "mathelove2@gmail.com";
 
-export async function requireAdmin(req, res, next) {
+function bearerToken(req) {
   const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) {
-    return res.status(401).json({ error: "missing bearer token" });
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+}
+
+async function resolveRole(decoded) {
+  if (decoded.email === SUPERADMIN_EMAIL) {
+    return { role: "superadmin", isSuperadmin: true };
   }
+  const snap = await adminDb.collection("users").doc(decoded.uid).get();
+  const role = snap.exists ? snap.data().role : null;
+  return { role, isSuperadmin: false };
+}
+
+// Any admin (teacher) or the superadmin. Attaches req.adminUid (the
+// acting admin's own uid — used to scope student ownership) and
+// req.isSuperadmin (bypasses ownership checks, sees everything).
+export async function requireAdmin(req, res, next) {
+  const token = bearerToken(req);
+  if (!token) return res.status(401).json({ error: "missing bearer token" });
 
   try {
     const decoded = await adminAuth.verifyIdToken(token);
-    if (!decoded.email || !ADMIN_EMAILS.includes(decoded.email)) {
+    const { role, isSuperadmin } = await resolveRole(decoded);
+    if (role !== "admin" && !isSuperadmin) {
+      return res.status(403).json({ error: "not authorized" });
+    }
+    req.admin = decoded;
+    req.adminUid = decoded.uid;
+    req.isSuperadmin = isSuperadmin;
+    next();
+  } catch {
+    return res.status(401).json({ error: "invalid token" });
+  }
+}
+
+// Superadmin-only routes (admin oversight/stats).
+export async function requireSuperadmin(req, res, next) {
+  const token = bearerToken(req);
+  if (!token) return res.status(401).json({ error: "missing bearer token" });
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
+    if (decoded.email !== SUPERADMIN_EMAIL) {
       return res.status(403).json({ error: "not authorized" });
     }
     req.admin = decoded;
@@ -24,26 +55,22 @@ export async function requireAdmin(req, res, next) {
   }
 }
 
-export function isAdminEmail(email) {
-  return !!email && ADMIN_EMAILS.includes(email);
-}
-
-// Allows either the admin or the student writing their own record
-// (identified by req.body.studentId matching the token's uid) — needed
-// for listening progress, which students record themselves as they
-// listen, unlike every other admin-entered tracking collection.
+// Allows either any admin/superadmin, or the student writing their own
+// record (identified by req.body.studentId matching the token's uid) —
+// needed for listening progress, which students record themselves as
+// they listen, unlike every other admin-entered tracking collection.
 export async function requireSelfOrAdmin(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) {
-    return res.status(401).json({ error: "missing bearer token" });
-  }
+  const token = bearerToken(req);
+  if (!token) return res.status(401).json({ error: "missing bearer token" });
 
   try {
     const decoded = await adminAuth.verifyIdToken(token);
+    const { role, isSuperadmin } = await resolveRole(decoded);
     const studentId = req.body?.studentId;
-    if (isAdminEmail(decoded.email) || decoded.uid === studentId) {
+    if (role === "admin" || isSuperadmin || decoded.uid === studentId) {
       req.user = decoded;
+      req.adminUid = decoded.uid;
+      req.isSuperadmin = isSuperadmin;
       return next();
     }
     return res.status(403).json({ error: "not authorized" });

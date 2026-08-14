@@ -2,6 +2,7 @@ import { Router } from "express";
 import { adminDb } from "../firebaseAdmin.js";
 import { requireSelfOrAdmin } from "../adminAuth.js";
 import { asyncHandler } from "../asyncHandler.js";
+import { getStudentAdminId } from "../ownership.js";
 
 const router = Router();
 
@@ -34,6 +35,8 @@ router.post(
     const payload = validatePayload(req.body);
     if (!payload) return res.status(400).json({ error: "invalid listening progress payload" });
 
+    const studentAdminId = await getStudentAdminId(payload.studentId);
+
     const ref = adminDb.collection("listeningProgress").doc(docId(payload));
     const snap = await ref.get();
     const existing = snap.exists ? snap.data() : null;
@@ -41,6 +44,7 @@ router.post(
     await ref.set(
       {
         ...payload,
+        adminId: studentAdminId,
         // never let a smaller progress value overwrite a larger one
         // (e.g. re-listening from the start shouldn't erase past progress)
         progressPercent: Math.max(payload.progressPercent, existing?.progressPercent || 0),

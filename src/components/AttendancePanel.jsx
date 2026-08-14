@@ -57,7 +57,7 @@ function dateBoth(iso) {
 }
 
 export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperadmin, user } = useAuth();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const todayIso = dateToIso(new Date());
@@ -72,19 +72,23 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
   }, [focusStudentId, students]);
 
   useEffect(() => {
-    const studentsQuery = isAdmin
+    const studentsQuery = isSuperadmin
       ? query(collection(db, "students"), orderBy("name"))
-      : query(collection(db, "students"), where("__name__", "==", auth.currentUser.uid));
+      : isAdmin
+        ? query(collection(db, "students"), where("adminId", "==", user.uid), orderBy("name"))
+        : query(collection(db, "students"), where("__name__", "==", auth.currentUser.uid));
     const unsubStudents = onSnapshot(studentsQuery, (snap) =>
       setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    const attendanceQuery = isAdmin
+    const attendanceQuery = isSuperadmin
       ? collection(db, "attendance")
-      : query(
-          collection(db, "attendance"),
-          where("studentId", "==", auth.currentUser.uid)
-        );
+      : isAdmin
+        ? query(collection(db, "attendance"), where("adminId", "==", user.uid))
+        : query(
+            collection(db, "attendance"),
+            where("studentId", "==", auth.currentUser.uid)
+          );
     const unsubAttendance = onSnapshot(attendanceQuery, (snap) => {
       setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
@@ -93,7 +97,7 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
       unsubStudents();
       unsubAttendance();
     };
-  }, [isAdmin]);
+  }, [isAdmin, isSuperadmin, user]);
 
   async function setStatus(studentId, dateIso, status) {
     const existing = records.find(

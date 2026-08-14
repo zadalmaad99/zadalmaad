@@ -5,6 +5,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import InstallButton from "./components/InstallButton";
 import Login from "./pages/Login";
+import Registration from "./pages/Registration";
 import Dashboard from "./pages/Dashboard";
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
           <HashRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Registration />} />
               <Route
                 path="/"
                 element={

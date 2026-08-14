@@ -44,11 +44,13 @@ router.post(
         contactType: identifier.contactType,
         contactValue: identifier.contactValue,
         loginEmail: identifier.loginEmail,
+        adminId: req.adminUid,
         createdAt,
       });
       batch.set(adminDb.collection("users").doc(userRecord.uid), {
         role: "student",
         loginEmail: identifier.loginEmail,
+        adminId: req.adminUid,
         createdAt,
       });
       await batch.commit();
@@ -82,6 +84,9 @@ router.patch(
     if (!snap.exists) {
       return res.status(404).json({ error: "student not found" });
     }
+    if (!req.isSuperadmin && snap.data().adminId !== req.adminUid) {
+      return res.status(403).json({ error: "not authorized" });
+    }
     await ref.update(update);
     res.json({ ok: true });
   })
@@ -91,6 +96,14 @@ router.delete(
   "/:id",
   requireAdmin,
   asyncHandler(async (req, res) => {
+    const ref = adminDb.collection("students").doc(req.params.id);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res.status(404).json({ error: "student not found" });
+    }
+    if (!req.isSuperadmin && snap.data().adminId !== req.adminUid) {
+      return res.status(403).json({ error: "not authorized" });
+    }
     const batch = adminDb.batch();
     batch.delete(adminDb.collection("users").doc(req.params.id));
     batch.delete(adminDb.collection("students").doc(req.params.id));

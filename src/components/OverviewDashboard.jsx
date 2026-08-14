@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { COUNTRIES, splitPhone } from "../data/countries";
 import { useCalendar } from "../context/CalendarContext";
+import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 import SurahProgressBar from "./SurahProgressBar";
 import { HADITH_BOOKS } from "../data/hadithBooks";
@@ -52,6 +53,7 @@ function whatsappLink(phone) {
 
 export default function OverviewDashboard({ onNavigate }) {
   const { formatDate } = useCalendar();
+  const { user, isSuperadmin } = useAuth();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const [hadithRecords, setHadithRecords] = useState([]);
@@ -62,17 +64,24 @@ export default function OverviewDashboard({ onNavigate }) {
   const [listeningReportStudent, setListeningReportStudent] = useState(null);
 
   useEffect(() => {
+    const scoped = (col) =>
+      isSuperadmin
+        ? collection(db, col)
+        : query(collection(db, col), where("adminId", "==", user.uid));
+
     const unsubStudents = onSnapshot(
-      query(collection(db, "students"), orderBy("name")),
+      isSuperadmin
+        ? query(collection(db, "students"), orderBy("name"))
+        : query(collection(db, "students"), where("adminId", "==", user.uid), orderBy("name")),
       (snap) => setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const unsubRecords = onSnapshot(collection(db, "records"), (snap) =>
+    const unsubRecords = onSnapshot(scoped("records"), (snap) =>
       setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const unsubHadithRecords = onSnapshot(collection(db, "hadithRecords"), (snap) =>
+    const unsubHadithRecords = onSnapshot(scoped("hadithRecords"), (snap) =>
       setHadithRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const unsubKhatmat = onSnapshot(collection(db, "khatmat"), (snap) =>
+    const unsubKhatmat = onSnapshot(scoped("khatmat"), (snap) =>
       setKhatmat(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
     return () => {
@@ -81,7 +90,7 @@ export default function OverviewDashboard({ onNavigate }) {
       unsubHadithRecords();
       unsubKhatmat();
     };
-  }, []);
+  }, [user, isSuperadmin]);
 
   async function handleKhatm(studentId, type, studentName) {
     if (

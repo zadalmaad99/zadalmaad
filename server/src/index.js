@@ -6,6 +6,8 @@ import hadithRecordsRouter from "./routes/hadithRecords.js";
 import attendanceRouter from "./routes/attendance.js";
 import khatmatRouter from "./routes/khatmat.js";
 import listeningProgressRouter from "./routes/listeningProgress.js";
+import registerAdminRouter from "./routes/registerAdmin.js";
+import adminsRouter from "./routes/admins.js";
 
 const app = express();
 
@@ -28,6 +30,8 @@ app.use("/api/hadith-records", hadithRecordsRouter);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/khatmat", khatmatRouter);
 app.use("/api/listening-progress", listeningProgressRouter);
+app.use("/api/register-admin", registerAdminRouter);
+app.use("/api/admins", adminsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: "not found" });
