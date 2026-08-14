@@ -46,6 +46,7 @@ export default function StudentsPanel({ onNavigate }) {
   const [editingContactType, setEditingContactType] = useState("email");
   const [editingContactValue, setEditingContactValue] = useState("");
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [domainPicker, setDomainPicker] = useState(null);
   const [reportStudent, setReportStudent] = useState(null);
   const [listeningReportStudent, setListeningReportStudent] = useState(null);
@@ -71,9 +72,14 @@ export default function StudentsPanel({ onNavigate }) {
           where("adminId", "==", user.uid),
           orderBy("name")
         );
-    return onSnapshot(q, (snap) => {
-      setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        setLoadError("");
+        setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => setLoadError(err.message || "تعذّر تحميل قائمة الطلاب")
+    );
   }, [user, isSuperadmin]);
 
   async function handleAdd(e) {
@@ -243,6 +249,12 @@ export default function StudentsPanel({ onNavigate }) {
           </form>
         )}
       </div>
+
+      {loadError && (
+        <div className="error-box">
+          تعذّر تحميل الطلاب: {loadError}
+        </div>
+      )}
 
       {students.length > 0 && (
         <div className="search-box">
