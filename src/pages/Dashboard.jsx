@@ -6,6 +6,7 @@ import HadithTrackingSection from "../components/HadithTrackingSection";
 import OverviewDashboard from "../components/OverviewDashboard";
 import SettingsPanel from "../components/SettingsPanel";
 import AttendancePanel from "../components/AttendancePanel";
+import StudyPlanModal from "../components/StudyPlanModal";
 import logo from "../assets/logo.png";
 
 const ICONS = {
@@ -130,6 +131,7 @@ export default function Dashboard() {
   const [quranSub, setQuranSub] = useState("hifz");
   const [hadithSub, setHadithSub] = useState("hifz");
   const [focusStudentId, setFocusStudentId] = useState(null);
+  const [studyPlanOpen, setStudyPlanOpen] = useState(false);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
 
   function goToSection(sectionKey, studentId, domain = "quran") {
@@ -185,6 +187,20 @@ export default function Dashboard() {
           <p>{current.desc}</p>
         </header>
 
+        {tab === "hadith" && (
+          <button
+            type="button"
+            className="study-plan-btn"
+            onClick={() => setStudyPlanOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+            </svg>
+            دراسة الكتب بالتدريج
+          </button>
+        )}
+
         {(tab === "quran" || tab === "hadith") && (
           <div className="subnav">
             {SUB_SECTIONS.map((s) => (
@@ -237,6 +253,8 @@ export default function Dashboard() {
           />
         )}
       </main>
+
+      {studyPlanOpen && <StudyPlanModal onClose={() => setStudyPlanOpen(false)} />}
     </div>
   );
 }
