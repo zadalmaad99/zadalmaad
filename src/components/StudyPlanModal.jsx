@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { STUDY_PLAN, STUDY_PLAN_CREDIT } from "../data/studyPlan";
 
 function noteLines(note) {
@@ -5,6 +6,64 @@ function noteLines(note) {
     .split(/\s+ثم\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function BookCard({ book, order }) {
+  const lines = book.note ? noteLines(book.note) : [];
+  const [selected, setSelected] = useState("");
+  const idx = selected === "" ? null : Number(selected);
+  const audioUrl = idx !== null ? book.audio?.[idx] : null;
+
+  return (
+    <li className="study-plan-book">
+      <span className="study-plan-book-order">{order}</span>
+      <span className="study-plan-book-title">{book.title}</span>
+      {book.author && (
+        <span className="study-plan-book-author">{book.author}</span>
+      )}
+
+      {lines.length > 0 && (
+        <select
+          className="study-plan-book-select"
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+        >
+          <option value="" disabled>
+            الشرح
+          </option>
+          {lines.map((line, li) => (
+            <option key={li} value={li}>
+              {line}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {idx !== null && (
+        <div className="study-plan-audio">
+          {audioUrl ? (
+            <>
+              <audio controls src={audioUrl} className="study-plan-audio-player" />
+              <a
+                href={audioUrl}
+                download
+                className="study-plan-audio-download"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16" />
+                </svg>
+                تنزيل
+              </a>
+            </>
+          ) : (
+            <span className="study-plan-audio-missing">الصوت غير متوفر بعد</span>
+          )}
+        </div>
+      )}
+    </li>
+  );
 }
 
 export default function StudyPlanModal({ onClose }) {
@@ -26,25 +85,7 @@ export default function StudyPlanModal({ onClose }) {
               <h4 className="study-plan-section-title">{section.title}</h4>
               <ol className="study-plan-books">
                 {section.books.map((b, i) => (
-                  <li key={i} className="study-plan-book">
-                    <span className="study-plan-book-order">{i + 1}</span>
-                    <span className="study-plan-book-title">{b.title}</span>
-                    {b.author && (
-                      <span className="study-plan-book-author">{b.author}</span>
-                    )}
-                    {b.note && (
-                      <select className="study-plan-book-select" defaultValue="">
-                        <option value="" disabled>
-                          الشرح
-                        </option>
-                        {noteLines(b.note).map((line, li) => (
-                          <option key={li} value={line}>
-                            {line}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </li>
+                  <BookCard key={i} book={b} order={i + 1} />
                 ))}
               </ol>
             </div>
