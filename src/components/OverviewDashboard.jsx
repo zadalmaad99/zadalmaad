@@ -18,7 +18,7 @@ const SECTIONS = [
 ];
 const DOMAINS = [
   { key: "quran", label: "القرآن" },
-  { key: "hadith", label: "الحديث" },
+  { key: "hadith", label: "المنهج" },
 ];
 
 function statsFor(records, studentId, type) {

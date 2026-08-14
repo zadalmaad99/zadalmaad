@@ -383,7 +383,7 @@ export default function StudentsPanel({ onNavigate }) {
                         className="domain-pill"
                         onClick={() => pickDomain(domainPicker.sectionKey, s.id, "hadith")}
                       >
-                        الحديث
+                        المنهج
                       </button>
                     </div>
                   )}

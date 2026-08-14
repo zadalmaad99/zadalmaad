@@ -90,8 +90,8 @@ const TABS = [
   },
   {
     key: "hadith",
-    label: "الحديث الشريف",
-    navLabel: "الحديث",
+    label: "المنهج",
+    navLabel: "المنهج",
     desc: "متابعة حفظ وقراءة ومراجعة أحاديث الكتب الستة",
   },
   {
@@ -115,9 +115,9 @@ const QURAN_TITLES = {
 };
 
 const HADITH_TITLES = {
-  hifz: "سجلات حفظ الحديث",
-  qiraah: "سجلات قراءة الحديث",
-  murajaah: "سجلات مراجعة الحديث",
+  hifz: "سجلات حفظ المنهج",
+  qiraah: "سجلات قراءة المنهج",
+  murajaah: "سجلات مراجعة المنهج",
 };
 
 export default function Dashboard() {
