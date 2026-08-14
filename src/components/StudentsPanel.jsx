@@ -368,7 +368,7 @@ export default function StudentsPanel({ onNavigate }) {
                       <div className="student-card-name">{s.name}</div>
                       {isSuperadmin && (
                         <div className="student-card-teacher">
-                          المعلم: {adminNameById[s.adminId] || "—"}
+                          المعلم: {adminNameById[s.adminId] || (s.adminId ? "—" : "superadmin")}
                         </div>
                       )}
                       <div className="student-card-date">

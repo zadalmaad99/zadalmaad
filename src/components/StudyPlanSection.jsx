@@ -10,9 +10,19 @@ function noteLines(note) {
     .filter(Boolean);
 }
 
+function fileNameFromUrl(url) {
+  try {
+    const last = decodeURIComponent(url.split("/").pop().split("?")[0]);
+    return last || "audio.mp3";
+  } catch {
+    return "audio.mp3";
+  }
+}
+
 function AudioPlayer({ url, label, isAdmin, user, book, sheikhLabel }) {
   const [percent, setPercent] = useState(0);
   const [audioError, setAudioError] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const audioRef = useRef(null);
   const lastSentRef = useRef(0);
 
@@ -45,6 +55,28 @@ function AudioPlayer({ url, label, isAdmin, user, book, sheikhLabel }) {
     audioRef.current.play();
   }
 
+  async function handleDownload() {
+    reportProgress({ progressPercent: percent, downloaded: true });
+    setDownloading(true);
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileNameFromUrl(url);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // fallback: at least open it so the student can save it manually
+      window.open(url, "_blank", "noreferrer");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="study-plan-audio">
       <audio
@@ -73,19 +105,17 @@ function AudioPlayer({ url, label, isAdmin, user, book, sheikhLabel }) {
           </svg>
           إعادة التشغيل
         </button>
-        <a
-          href={url}
-          download
+        <button
+          type="button"
           className="study-plan-audio-download"
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => reportProgress({ progressPercent: percent, downloaded: true })}
+          onClick={handleDownload}
+          disabled={downloading}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16" />
           </svg>
-          تنزيل
-        </a>
+          {downloading ? "جارٍ التنزيل..." : "تنزيل"}
+        </button>
       </div>
 
       {!isAdmin && percent > 0 && (
