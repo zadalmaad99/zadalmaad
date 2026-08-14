@@ -75,16 +75,14 @@ export default function StudentsPanel({ onNavigate, initialTeacherId, onTeacherF
   useEffect(() => {
     const q = isSuperadmin
       ? query(collection(db, "students"), orderBy("name"))
-      : query(
-          collection(db, "students"),
-          where("adminId", "==", user.uid),
-          orderBy("name")
-        );
+      : query(collection(db, "students"), where("adminId", "==", user.uid));
     return onSnapshot(
       q,
       (snap) => {
         setLoadError("");
-        setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (!isSuperadmin) rows.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        setStudents(rows);
       },
       (err) => setLoadError(err.message || "تعذّر تحميل قائمة الطلاب")
     );

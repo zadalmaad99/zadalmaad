@@ -75,8 +75,12 @@ export default function OverviewDashboard({ onNavigate, focusAdminId, focusAdmin
     const unsubStudents = onSnapshot(
       isSuperadmin
         ? query(collection(db, "students"), orderBy("name"))
-        : query(collection(db, "students"), where("adminId", "==", user.uid), orderBy("name")),
-      (snap) => setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+        : query(collection(db, "students"), where("adminId", "==", user.uid)),
+      (snap) => {
+        const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (!isSuperadmin) rows.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        setStudents(rows);
+      },
       onErr("الطلاب")
     );
     const unsubRecords = onSnapshot(

@@ -75,11 +75,13 @@ export default function AttendancePanel({ focusStudentId, onFocusHandled }) {
     const studentsQuery = isSuperadmin
       ? query(collection(db, "students"), orderBy("name"))
       : isAdmin
-        ? query(collection(db, "students"), where("adminId", "==", user.uid), orderBy("name"))
+        ? query(collection(db, "students"), where("adminId", "==", user.uid))
         : query(collection(db, "students"), where("__name__", "==", auth.currentUser.uid));
-    const unsubStudents = onSnapshot(studentsQuery, (snap) =>
-      setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
+    const unsubStudents = onSnapshot(studentsQuery, (snap) => {
+      const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (isAdmin && !isSuperadmin) rows.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      setStudents(rows);
+    });
 
     const attendanceQuery = isSuperadmin
       ? collection(db, "attendance")
