@@ -20,7 +20,11 @@ function groupProgress(progress) {
         updatedAt: 0,
       };
     }
-    groups[key].lessons.push({ title: lessonTitle, percent: p.progressPercent || 0 });
+    groups[key].lessons.push({
+      title: lessonTitle,
+      percent: p.progressPercent || 0,
+      downloaded: !!p.downloaded,
+    });
     groups[key].downloaded = groups[key].downloaded || !!p.downloaded;
     groups[key].replayCount += p.replayCount || 0;
     groups[key].updatedAt = Math.max(groups[key].updatedAt, p.updatedAt || 0);
@@ -29,10 +33,11 @@ function groupProgress(progress) {
   return Object.values(groups).map((g) => {
     const totalLessons = getLessonCount(g.book, g.sheikh);
     const doneLessons = g.lessons.filter((l) => l.percent >= 100).length;
+    const downloadedLessons = g.lessons.filter((l) => l.downloaded).length;
     const sumPercent = g.lessons.reduce((s, l) => s + l.percent, 0);
     const overallPercent = totalLessons > 0 ? Math.round(sumPercent / totalLessons) : 0;
     const isComplete = totalLessons > 0 && doneLessons >= totalLessons;
-    return { ...g, totalLessons, doneLessons, overallPercent, isComplete };
+    return { ...g, totalLessons, doneLessons, downloadedLessons, overallPercent, isComplete };
   });
 }
 
@@ -82,9 +87,14 @@ export default function ListeningReportModal({ studentId, studentName, onClose }
                 </div>
                 <span className="listening-report-item-pct">
                   {g.totalLessons > 1
-                    ? `${g.doneLessons}/${g.totalLessons} دروس — ${g.overallPercent}٪`
+                    ? `استماع: ${g.doneLessons}/${g.totalLessons} دروس — ${g.overallPercent}٪`
                     : `${g.overallPercent}٪`}
                 </span>
+                {g.totalLessons > 1 && g.downloadedLessons > 0 && (
+                  <span className="listening-report-item-pct">
+                    تنزيل: {g.downloadedLessons}/{g.totalLessons} دروس
+                  </span>
+                )}
                 {g.replayCount > 0 && (
                   <span className="listening-report-item-replays">
                     أعاد التشغيل {g.replayCount} مرة
