@@ -1,5 +1,12 @@
 import { STUDY_PLAN, STUDY_PLAN_CREDIT } from "../data/studyPlan";
 
+function noteLines(note) {
+  return note
+    .split(/\s+ثم\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export default function StudyPlanModal({ onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -23,16 +30,19 @@ export default function StudyPlanModal({ onClose }) {
                     <span className="study-plan-book-order">{i + 1}</span>
                     <span className="study-plan-book-title">{b.title}</span>
                     {b.author && (
-                      <span className="study-plan-book-author">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="8" r="3.2" />
-                          <path d="M4.5 20c.7-3.6 3.4-5.6 7.5-5.6s6.8 2 7.5 5.6" />
-                        </svg>
-                        {b.author}
-                      </span>
+                      <span className="study-plan-book-author">{b.author}</span>
                     )}
                     {b.note && (
-                      <span className="study-plan-book-note">{b.note}</span>
+                      <select className="study-plan-book-select" defaultValue="">
+                        <option value="" disabled>
+                          الشرح
+                        </option>
+                        {noteLines(b.note).map((line, li) => (
+                          <option key={li} value={line}>
+                            {line}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </li>
                 ))}
