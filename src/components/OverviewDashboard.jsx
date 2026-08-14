@@ -6,6 +6,7 @@ import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
 import SurahProgressBar from "./SurahProgressBar";
 import { HADITH_BOOKS } from "../data/hadithBooks";
+import AttendanceReportModal from "./AttendanceReportModal";
 
 const TOTAL_AYAHS = 6236;
 const TOTAL_HADITHS = HADITH_BOOKS.reduce((sum, b) => sum + b.total, 0);
@@ -56,6 +57,7 @@ export default function OverviewDashboard({ onNavigate }) {
   const [khatmat, setKhatmat] = useState([]);
   const [search, setSearch] = useState("");
   const [openDomain, setOpenDomain] = useState({});
+  const [reportStudent, setReportStudent] = useState(null);
 
   useEffect(() => {
     const unsubStudents = onSnapshot(
@@ -204,6 +206,14 @@ export default function OverviewDashboard({ onNavigate }) {
                 </div>
               </div>
 
+              <button
+                type="button"
+                className="attendance-report-btn overview-attendance-report-btn"
+                onClick={() => setReportStudent({ id: r.id, name: r.name })}
+              >
+                تقرير الحضور
+              </button>
+
               <div className="overview-domains">
                 {DOMAINS.map((d) => (
                   <button
@@ -315,6 +325,19 @@ export default function OverviewDashboard({ onNavigate }) {
             );
           })}
         </ol>
+      )}
+
+      {reportStudent && (
+        <AttendanceReportModal
+          studentId={reportStudent.id}
+          studentName={reportStudent.name}
+          onClose={() => setReportStudent(null)}
+          onViewDetails={() => {
+            const id = reportStudent.id;
+            setReportStudent(null);
+            onNavigate?.("attendance", id);
+          }}
+        />
       )}
     </div>
   );
