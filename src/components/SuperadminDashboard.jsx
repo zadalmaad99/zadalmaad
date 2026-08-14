@@ -8,7 +8,7 @@ function flagFor(phone) {
   return COUNTRIES.find((c) => c.dial === dial)?.flag || "🌐";
 }
 
-export default function SuperadminDashboard() {
+export default function SuperadminDashboard({ onViewAdmin }) {
   const { formatDate } = useCalendar();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +64,14 @@ export default function SuperadminDashboard() {
                   <span className="superadmin-stat-label">سجل مضاف (نشاط)</span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                className="attendance-report-btn overview-attendance-report-btn"
+                onClick={() => onViewAdmin?.(a.id, a.name)}
+              >
+                عرض لوحة المعلم بالكامل
+              </button>
             </li>
           ))}
         </ol>

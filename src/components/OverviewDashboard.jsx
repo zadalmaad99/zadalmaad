@@ -51,7 +51,7 @@ function whatsappLink(phone) {
   return `https://wa.me/${digits}`;
 }
 
-export default function OverviewDashboard({ onNavigate }) {
+export default function OverviewDashboard({ onNavigate, focusAdminId, focusAdminName, onClearFocusAdmin }) {
   const { formatDate } = useCalendar();
   const { user, isSuperadmin } = useAuth();
   const [students, setStudents] = useState([]);
@@ -143,6 +143,7 @@ export default function OverviewDashboard({ onNavigate }) {
         contactType: s.contactType,
         contactValue: s.contactValue,
         createdAt: s.createdAt,
+        adminId: s.adminId || null,
         bySection,
         hadithBySection,
         khatmCounts,
@@ -151,6 +152,7 @@ export default function OverviewDashboard({ onNavigate }) {
       };
     })
     .filter((r) => r.totalAyahs > 0 || r.totalHadiths > 0)
+    .filter((r) => !focusAdminId || r.adminId === focusAdminId)
     .sort(
       (a, b) =>
         b.bySection.hifz.maxSurah - a.bySection.hifz.maxSurah ||
@@ -163,6 +165,17 @@ export default function OverviewDashboard({ onNavigate }) {
 
   return (
     <div className="panel">
+      {focusAdminId && (
+        <div className="filter-banner">
+          <span>
+            عرض بيانات المعلم: <strong>{focusAdminName}</strong>
+          </span>
+          <button type="button" className="ghost" onClick={onClearFocusAdmin}>
+            عرض كل الطلاب
+          </button>
+        </div>
+      )}
+
       {rows.length > 0 && (
         <div className="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

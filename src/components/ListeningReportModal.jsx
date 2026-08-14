@@ -16,11 +16,13 @@ function groupProgress(progress) {
         sheikh: base,
         lessons: [],
         downloaded: false,
+        replayCount: 0,
         updatedAt: 0,
       };
     }
     groups[key].lessons.push({ title: lessonTitle, percent: p.progressPercent || 0 });
     groups[key].downloaded = groups[key].downloaded || !!p.downloaded;
+    groups[key].replayCount += p.replayCount || 0;
     groups[key].updatedAt = Math.max(groups[key].updatedAt, p.updatedAt || 0);
   });
 
@@ -83,6 +85,11 @@ export default function ListeningReportModal({ studentId, studentName, onClose }
                     ? `${g.doneLessons}/${g.totalLessons} دروس — ${g.overallPercent}٪`
                     : `${g.overallPercent}٪`}
                 </span>
+                {g.replayCount > 0 && (
+                  <span className="listening-report-item-replays">
+                    أعاد التشغيل {g.replayCount} مرة
+                  </span>
+                )}
                 {g.isComplete && (
                   <div className="listening-report-item-done">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

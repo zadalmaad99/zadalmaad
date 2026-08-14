@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin.js";
 import { requireSelfOrAdmin } from "../adminAuth.js";
 import { asyncHandler } from "../asyncHandler.js";
@@ -7,7 +8,7 @@ import { getStudentAdminId } from "../ownership.js";
 const router = Router();
 
 function validatePayload(body) {
-  const { studentId, book, sheikh, progressPercent, downloaded } = body || {};
+  const { studentId, book, sheikh, progressPercent, downloaded, replay } = body || {};
   if (!studentId || !book || !sheikh) return null;
   const pct = Number(progressPercent);
   if (Number.isNaN(pct)) return null;
@@ -18,6 +19,7 @@ function validatePayload(body) {
     sheikh,
     progressPercent: Math.max(0, Math.min(100, pct)),
     downloaded: !!downloaded,
+    replay: !!replay,
   };
 }
 
@@ -41,14 +43,18 @@ router.post(
     const snap = await ref.get();
     const existing = snap.exists ? snap.data() : null;
 
+    const { replay, ...rest } = payload;
     await ref.set(
       {
-        ...payload,
+        ...rest,
         adminId: studentAdminId,
         // never let a smaller progress value overwrite a larger one
         // (e.g. re-listening from the start shouldn't erase past progress)
-        progressPercent: Math.max(payload.progressPercent, existing?.progressPercent || 0),
-        downloaded: payload.downloaded || existing?.downloaded || false,
+        progressPercent: Math.max(rest.progressPercent, existing?.progressPercent || 0),
+        downloaded: rest.downloaded || existing?.downloaded || false,
+        replayCount: replay
+          ? FieldValue.increment(1)
+          : existing?.replayCount || 0,
         updatedAt: Date.now(),
         createdAt: existing?.createdAt || Date.now(),
       },

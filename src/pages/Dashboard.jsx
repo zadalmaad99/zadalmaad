@@ -147,7 +147,13 @@ export default function Dashboard() {
   const [hadithSub, setHadithSub] = useState("hifz");
   const [focusStudentId, setFocusStudentId] = useState(null);
   const [menhajSection, setMenhajSection] = useState(null);
+  const [focusAdmin, setFocusAdmin] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
+
+  function viewAdmin(adminId, adminName) {
+    setFocusAdmin({ id: adminId, name: adminName });
+    setTab("overview");
+  }
 
   function goToSection(sectionKey, studentId, domain = "quran") {
     setFocusStudentId(studentId);
@@ -302,9 +308,16 @@ export default function Dashboard() {
         )}
 
         {tab === "overview" && isAdmin && (
-          <OverviewDashboard onNavigate={goToSection} />
+          <OverviewDashboard
+            onNavigate={goToSection}
+            focusAdminId={focusAdmin?.id}
+            focusAdminName={focusAdmin?.name}
+            onClearFocusAdmin={() => setFocusAdmin(null)}
+          />
         )}
-        {tab === "superadmin" && isSuperadmin && <SuperadminDashboard />}
+        {tab === "superadmin" && isSuperadmin && (
+          <SuperadminDashboard onViewAdmin={viewAdmin} />
+        )}
         {tab === "students" && isAdmin && (
           <StudentsPanel onNavigate={goToSection} />
         )}

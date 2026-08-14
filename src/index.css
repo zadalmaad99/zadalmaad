@@ -1717,6 +1717,12 @@ td.empty {
   font-weight: 700;
   color: var(--primary-dark);
 }
+.listening-report-item-replays {
+  align-self: flex-end;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-style: italic;
+}
 .listening-report-item-done {
   display: flex;
   align-items: center;

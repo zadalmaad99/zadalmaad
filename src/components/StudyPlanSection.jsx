@@ -53,6 +53,7 @@ function AudioPlayer({ url, label, isAdmin, user, book, sheikhLabel }) {
     if (!audioRef.current) return;
     audioRef.current.currentTime = 0;
     audioRef.current.play();
+    reportProgress({ progressPercent: percent, replay: true });
   }
 
   async function handleDownload() {
