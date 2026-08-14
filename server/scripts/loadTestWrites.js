@@ -39,7 +39,7 @@ async function signIn(account) {
 async function writeAttendance(account, token) {
   const start = Date.now();
   try {
-    const res = await fetch(`${API_URL}/api/attendance`, {
+    const res = await fetch(`${API_URL}/api/listening-progress`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -47,9 +47,10 @@ async function writeAttendance(account, token) {
       },
       body: JSON.stringify({
         studentId: account.uid,
-        date: new Date().toISOString().slice(0, 10),
-        status: "present",
-        notes: "loadtest",
+        book: "loadtest-book",
+        sheikh: "loadtest-sheikh",
+        progressPercent: Math.floor(Math.random() * 100),
+        downloaded: false,
       }),
     });
     const ms = Date.now() - start;
