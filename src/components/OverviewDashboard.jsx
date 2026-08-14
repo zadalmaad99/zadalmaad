@@ -62,27 +62,37 @@ export default function OverviewDashboard({ onNavigate, focusAdminId, focusAdmin
   const [openDomain, setOpenDomain] = useState({});
   const [reportStudent, setReportStudent] = useState(null);
   const [listeningReportStudent, setListeningReportStudent] = useState(null);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     const scoped = (col) =>
       isSuperadmin
         ? collection(db, col)
         : query(collection(db, col), where("adminId", "==", user.uid));
+    const onErr = (label) => (err) =>
+      setLoadError(`(${label}) ${err.message || "تعذّر التحميل"}`);
 
     const unsubStudents = onSnapshot(
       isSuperadmin
         ? query(collection(db, "students"), orderBy("name"))
         : query(collection(db, "students"), where("adminId", "==", user.uid), orderBy("name")),
-      (snap) => setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      (snap) => setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      onErr("الطلاب")
     );
-    const unsubRecords = onSnapshot(scoped("records"), (snap) =>
-      setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const unsubRecords = onSnapshot(
+      scoped("records"),
+      (snap) => setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      onErr("سجلات القرآن")
     );
-    const unsubHadithRecords = onSnapshot(scoped("hadithRecords"), (snap) =>
-      setHadithRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const unsubHadithRecords = onSnapshot(
+      scoped("hadithRecords"),
+      (snap) => setHadithRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      onErr("سجلات المنهج")
     );
-    const unsubKhatmat = onSnapshot(scoped("khatmat"), (snap) =>
-      setKhatmat(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const unsubKhatmat = onSnapshot(
+      scoped("khatmat"),
+      (snap) => setKhatmat(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      onErr("الختمات")
     );
     return () => {
       unsubStudents();
@@ -165,6 +175,8 @@ export default function OverviewDashboard({ onNavigate, focusAdminId, focusAdmin
 
   return (
     <div className="panel">
+      {loadError && <div className="error-box">تعذّر تحميل البيانات: {loadError}</div>}
+
       {focusAdminId && (
         <div className="filter-banner">
           <span>
