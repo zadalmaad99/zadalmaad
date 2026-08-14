@@ -95,11 +95,28 @@ function AudioPlayer({ url, label, isAdmin, user, book, sheikhLabel }) {
   );
 }
 
+function NoPdfModal({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card no-pdf-modal" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="modal-close" onClick={onClose}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+        <p className="no-pdf-title">أهلًا وسهلًا أخي الكريم</p>
+        <p className="no-pdf-text">لم يتم رفع أي ملف بعد، يرجى إخبار المعلم أو الشيخ</p>
+      </div>
+    </div>
+  );
+}
+
 function BookCard({ book, order }) {
   const { user, isAdmin } = useAuth();
   const lines = book.note ? noteLines(book.note) : [];
   const [selected, setSelected] = useState("");
   const [lessonIdx, setLessonIdx] = useState("");
+  const [showNoPdf, setShowNoPdf] = useState(false);
 
   const idx = selected === "" ? null : Number(selected);
   const entry = idx !== null ? book.audio?.[idx] : null;
@@ -107,6 +124,14 @@ function BookCard({ book, order }) {
   const isLessonSeries = Array.isArray(entry);
   const singleUrl = !isLessonSeries ? entry : null;
   const lesson = isLessonSeries && lessonIdx !== "" ? entry[Number(lessonIdx)] : null;
+
+  function handlePdfClick() {
+    if (book.pdfUrl) {
+      window.open(book.pdfUrl, "_blank", "noreferrer");
+    } else {
+      setShowNoPdf(true);
+    }
+  }
 
   return (
     <li className="study-plan-book">
@@ -116,25 +141,35 @@ function BookCard({ book, order }) {
         <span className="study-plan-book-author">{book.author}</span>
       )}
 
-      {lines.length > 0 && (
-        <select
-          className="study-plan-book-select"
-          value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
-            setLessonIdx("");
-          }}
-        >
-          <option value="" disabled>
-            الشرح
-          </option>
-          {lines.map((line, li) => (
-            <option key={li} value={li}>
-              {line}
+      <div className="study-plan-book-actions-row">
+        {lines.length > 0 ? (
+          <select
+            className="study-plan-book-select"
+            value={selected}
+            onChange={(e) => {
+              setSelected(e.target.value);
+              setLessonIdx("");
+            }}
+          >
+            <option value="" disabled>
+              شرح بالصوت
             </option>
-          ))}
-        </select>
-      )}
+            {lines.map((line, li) => (
+              <option key={li} value={li}>
+                {line}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="study-plan-book-select study-plan-book-select-disabled">
+            شرح بالصوت
+          </span>
+        )}
+
+        <button type="button" className="study-plan-book-select study-plan-pdf-btn" onClick={handlePdfClick}>
+          كتاب PDF
+        </button>
+      </div>
 
       {idx !== null && isLessonSeries && (
         <select
@@ -184,6 +219,8 @@ function BookCard({ book, order }) {
           )}
         </>
       )}
+
+      {showNoPdf && <NoPdfModal onClose={() => setShowNoPdf(false)} />}
     </li>
   );
 }

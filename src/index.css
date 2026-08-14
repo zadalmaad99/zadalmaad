@@ -1490,6 +1490,51 @@ td.empty {
 .study-plan-book-select:hover {
   border-color: var(--gold);
 }
+.study-plan-book-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+}
+.study-plan-book-actions-row .study-plan-book-select {
+  margin-top: 0;
+  width: 100%;
+}
+.study-plan-book-select-disabled {
+  opacity: 0.5;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.study-plan-pdf-btn {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-color: var(--primary);
+}
+.study-plan-pdf-btn:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.no-pdf-modal {
+  max-width: 380px;
+  text-align: center;
+  padding: 30px 24px;
+}
+.no-pdf-title {
+  margin: 8px 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+.no-pdf-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
 .study-plan-audio {
   width: 100%;
   margin-top: 8px;
