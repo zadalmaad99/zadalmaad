@@ -2,6 +2,7 @@ import { Router } from "express";
 import { adminAuth, adminDb } from "../firebaseAdmin.js";
 import { requireAdmin } from "../adminAuth.js";
 import { asyncHandler } from "../asyncHandler.js";
+import { normalizePhoneDigits } from "../phone.js";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ function resolveIdentifier(body) {
 
   const loginEmail =
     contactType === "phone"
-      ? `${contactValue.replace(/[^\d]/g, "")}@${PHONE_DOMAIN}`
+      ? `${normalizePhoneDigits(contactValue)}@${PHONE_DOMAIN}`
       : contactValue;
 
   return { contactType, contactValue, loginEmail };

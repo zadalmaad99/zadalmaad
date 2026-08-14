@@ -13,7 +13,10 @@ export default function PhoneInput({ value, onChange }) {
   }
 
   function handleLocalChange(e) {
-    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
+    const cleaned = e.target.value
+      .replace(/[^0-9]/g, "")
+      .replace(/^0+/, "")
+      .slice(0, 11);
     onChange(`${dial}${cleaned}`);
   }
 
