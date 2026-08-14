@@ -21,15 +21,19 @@ export default function StudyPlanModal({ onClose }) {
                 {section.books.map((b, i) => (
                   <li key={i} className="study-plan-book">
                     <span className="study-plan-book-order">{i + 1}</span>
-                    <div className="study-plan-book-body">
-                      <span className="study-plan-book-title">{b.title}</span>
-                      {b.author && (
-                        <span className="study-plan-book-author">{b.author}</span>
-                      )}
-                      {b.note && (
-                        <span className="study-plan-book-note">{b.note}</span>
-                      )}
-                    </div>
+                    <span className="study-plan-book-title">{b.title}</span>
+                    {b.author && (
+                      <span className="study-plan-book-author">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="8" r="3.2" />
+                          <path d="M4.5 20c.7-3.6 3.4-5.6 7.5-5.6s6.8 2 7.5 5.6" />
+                        </svg>
+                        {b.author}
+                      </span>
+                    )}
+                    {b.note && (
+                      <span className="study-plan-book-note">{b.note}</span>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -37,7 +41,12 @@ export default function StudyPlanModal({ onClose }) {
           ))}
         </div>
 
-        <p className="study-plan-credit">{STUDY_PLAN_CREDIT}</p>
+        <p className="study-plan-credit">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z" />
+          </svg>
+          {STUDY_PLAN_CREDIT}
+        </p>
       </div>
     </div>
   );
