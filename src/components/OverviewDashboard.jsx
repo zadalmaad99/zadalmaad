@@ -19,7 +19,7 @@ const SECTIONS = [
 ];
 const DOMAINS = [
   { key: "quran", label: "القرآن" },
-  { key: "hadith", label: "المنهج" },
+  { key: "hadith", label: "الكتب الستة" },
 ];
 
 function statsFor(records, studentId, type) {
@@ -221,7 +221,7 @@ export default function OverviewDashboard({ onNavigate }) {
                   className="attendance-report-btn overview-attendance-report-btn"
                   onClick={() => setListeningReportStudent({ id: r.id, name: r.name })}
                 >
-                  تقرير الاستماع
+                  تقرير الاستماع للمنهج
                 </button>
               </div>
 

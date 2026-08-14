@@ -375,7 +375,7 @@ export default function StudentsPanel({ onNavigate }) {
                     className="section-pill attendance-report-btn"
                     onClick={() => setListeningReportStudent(s)}
                   >
-                    تقرير الاستماع
+                    تقرير الاستماع للمنهج
                   </button>
 
                   {domainPicker?.studentId === s.id && (
@@ -392,7 +392,7 @@ export default function StudentsPanel({ onNavigate }) {
                         className="domain-pill"
                         onClick={() => pickDomain(domainPicker.sectionKey, s.id, "hadith")}
                       >
-                        المنهج
+                        الكتب الستة
                       </button>
                     </div>
                   )}

@@ -19,7 +19,7 @@ export default function ListeningReportModal({ studentId, studentName, onClose }
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>تقرير الاستماع — {studentName}</h3>
+          <h3>تقرير الاستماع للمنهج — {studentName}</h3>
           <button type="button" className="modal-close" onClick={onClose}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6 6 18M6 6l12 12" />
