@@ -47,6 +47,8 @@ export default function StudentsPanel({ onNavigate }) {
   const [editingContactValue, setEditingContactValue] = useState("");
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [admins, setAdmins] = useState([]);
+  const [teacherFilter, setTeacherFilter] = useState("");
   const [domainPicker, setDomainPicker] = useState(null);
   const [reportStudent, setReportStudent] = useState(null);
   const [listeningReportStudent, setListeningReportStudent] = useState(null);
@@ -81,6 +83,15 @@ export default function StudentsPanel({ onNavigate }) {
       (err) => setLoadError(err.message || "تعذّر تحميل قائمة الطلاب")
     );
   }, [user, isSuperadmin]);
+
+  useEffect(() => {
+    if (!isSuperadmin) return;
+    return onSnapshot(collection(db, "admins"), (snap) => {
+      setAdmins(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+  }, [isSuperadmin]);
+
+  const adminNameById = Object.fromEntries(admins.map((a) => [a.id, a.name]));
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -271,14 +282,31 @@ export default function StudentsPanel({ onNavigate }) {
         </div>
       )}
 
-      {students.filter((s) =>
-        s.name?.toLowerCase().includes(search.trim().toLowerCase())
-      ).length === 0 ? (
+      {isSuperadmin && admins.length > 0 && (
+        <div className="teacher-filter">
+          <select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)}>
+            <option value="">كل المعلمين ({students.length} طالب)</option>
+            {admins.map((a) => {
+              const count = students.filter((s) => s.adminId === a.id).length;
+              return (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({count} طالب)
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      )}
+
+      {students
+        .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()))
+        .filter((s) => !teacherFilter || s.adminId === teacherFilter).length === 0 ? (
         <p className="empty">لا يوجد طلاب</p>
       ) : (
         <div className="student-grid">
           {students
             .filter((s) => s.name?.toLowerCase().includes(search.trim().toLowerCase()))
+            .filter((s) => !teacherFilter || s.adminId === teacherFilter)
             .map((s) => (
             <div key={s.id} className="student-card">
               {editingId === s.id ? (
@@ -338,6 +366,11 @@ export default function StudentsPanel({ onNavigate }) {
                     </div>
                     <div className="student-card-body">
                       <div className="student-card-name">{s.name}</div>
+                      {isSuperadmin && (
+                        <div className="student-card-teacher">
+                          المعلم: {adminNameById[s.adminId] || "—"}
+                        </div>
+                      )}
                       <div className="student-card-date">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="4" width="18" height="18" rx="2" />

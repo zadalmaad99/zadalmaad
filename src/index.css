@@ -489,6 +489,24 @@ label {
   font-size: 16px;
   color: var(--ink);
 }
+.teacher-filter {
+  margin-bottom: 16px;
+}
+.teacher-filter select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.student-card-teacher {
+  font-size: 11px;
+  color: var(--primary-dark);
+  font-weight: 700;
+}
 .student-card-date {
   display: inline-flex;
   align-items: center;
