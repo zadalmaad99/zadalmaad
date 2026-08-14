@@ -293,7 +293,7 @@ export default function StudentsPanel({ onNavigate, initialTeacherId, onTeacherF
           <select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)}>
             <option value="">كل المعلمين ({students.length} طالب)</option>
             <option value="__superadmin__">
-              superadmin ({students.filter((s) => !s.adminId).length} طالب)
+              superadmin ({students.filter((s) => !s.adminId || s.adminId === user.uid).length} طالب)
             </option>
             {admins.map((a) => {
               const count = students.filter((s) => s.adminId === a.id).length;
@@ -313,7 +313,7 @@ export default function StudentsPanel({ onNavigate, initialTeacherId, onTeacherF
           !teacherFilter
             ? true
             : teacherFilter === "__superadmin__"
-              ? !s.adminId
+              ? !s.adminId || s.adminId === user.uid
               : s.adminId === teacherFilter
         ).length === 0 ? (
         <p className="empty">لا يوجد طلاب</p>
@@ -325,7 +325,7 @@ export default function StudentsPanel({ onNavigate, initialTeacherId, onTeacherF
               !teacherFilter
                 ? true
                 : teacherFilter === "__superadmin__"
-                  ? !s.adminId
+                  ? !s.adminId || s.adminId === user.uid
                   : s.adminId === teacherFilter
             )
             .map((s) => (
@@ -389,7 +389,10 @@ export default function StudentsPanel({ onNavigate, initialTeacherId, onTeacherF
                       <div className="student-card-name">{s.name}</div>
                       {isSuperadmin && (
                         <div className="student-card-teacher">
-                          المعلم: {adminNameById[s.adminId] || (s.adminId ? "—" : "superadmin")}
+                          المعلم:{" "}
+                          {!s.adminId || s.adminId === user.uid
+                            ? "superadmin"
+                            : adminNameById[s.adminId] || "—"}
                         </div>
                       )}
                       <div className="student-card-date">
