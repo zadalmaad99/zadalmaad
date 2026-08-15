@@ -41,3 +41,4 @@ android/gradle/wrapper/gradle-wrapper.jar
 *.keystore
 *.jks
 android/keystore.properties
+android/*.png
