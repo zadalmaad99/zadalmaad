@@ -10,4 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping health endpoint
-        run: curl -fsS https://quran-tracker-xh2q.onrender.com/api/health
+        run: curl -fsS https://zadalmaad.onrender.com/api/health
