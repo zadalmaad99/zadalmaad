@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
+import { HADITH_STUDY_SECTION } from "../data/hadithStudyPlan";
+
+const HADITH_PLAN_SECTIONS = [HADITH_STUDY_SECTION];
 
 // Arabic file names arrive percent-encoded (%D8%B4...), which is unreadable in
 // the review box. We show them decoded and re-encode on save, so what actually
@@ -35,7 +38,10 @@ function normalizeAudioUrl(raw) {
 }
 
 export default function CurriculumAudioSettings() {
-  const { allBooks: BOOKS } = useCurriculumPlan();
+  const { allBooks: studyBooks } = useCurriculumPlan();
+  const { allBooks: hadithBooks } = useCurriculumPlan(HADITH_PLAN_SECTIONS, "hadithBooks");
+  const [bookSource, setBookSource] = useState("study");
+  const BOOKS = bookSource === "hadith" ? hadithBooks : studyBooks;
   const [bookTitle, setBookTitle] = useState("");
   const [sheikh, setSheikh] = useState("");
   const [bySheikh, setBySheikh] = useState({});
@@ -306,6 +312,23 @@ export default function CurriculumAudioSettings() {
   return (
     <div className="curriculum-settings-group">
       <div className="curriculum-settings-book-picker">
+        <div className="curriculum-settings-source-toggle">
+          <button
+            type="button"
+            className={bookSource === "study" ? "subnav-btn active" : "subnav-btn"}
+            onClick={() => setBookSource("study")}
+          >
+            المنهج ({studyBooks.length} كتابًا)
+          </button>
+          <button
+            type="button"
+            className={bookSource === "hadith" ? "subnav-btn active" : "subnav-btn"}
+            onClick={() => setBookSource("hadith")}
+          >
+            الحديث ({hadithBooks.length} كتب)
+          </button>
+        </div>
+
         <label className="curriculum-settings-field">
           <span>الكتاب (يُطبَّق على البطاقتين أدناه)</span>
           <select value={bookTitle} onChange={(e) => setBookTitle(e.target.value)}>
