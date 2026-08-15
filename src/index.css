@@ -2909,7 +2909,7 @@ td.empty {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  padding: 20px 26px;
+  padding: 20px 0 0;
   border-top: 1px solid var(--border);
   background: var(--surface-alt);
 }
