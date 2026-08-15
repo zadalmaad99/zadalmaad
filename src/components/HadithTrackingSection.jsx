@@ -4,6 +4,7 @@ import { auth, db } from "../firebase";
 import { HADITH_BOOKS } from "../data/hadithBooks";
 import HijriDateInput from "./HijriDateInput";
 import HadithReportModal from "./HadithReportModal";
+import SelectPickerModal from "./SelectPickerModal";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
 import { api } from "../api";
@@ -33,6 +34,7 @@ export default function HadithTrackingSection({
   const [reportRecord, setReportRecord] = useState(null);
   const [filterStudentId, setFilterStudentId] = useState(null);
   const [search, setSearch] = useState("");
+  const [showBookPicker, setShowBookPicker] = useState(false);
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -258,20 +260,13 @@ export default function HadithTrackingSection({
               <div className="picker-row">
                 <label>
                   الكتاب
-                  <select
-                    value={form.book}
-                    onChange={(e) =>
-                      setForm({ ...form, book: e.target.value, hadithNumber: 1 })
-                    }
-                    required
+                  <button
+                    type="button"
+                    className="book-picker-trigger"
+                    onClick={() => setShowBookPicker(true)}
                   >
-                    <option value="">اختر الكتاب</option>
-                    {HADITH_BOOKS.map((b) => (
-                      <option key={b.key} value={b.key}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                    {selectedBook ? selectedBook.name : "اختر الكتاب"}
+                  </button>
                 </label>
 
                 <label>
@@ -396,6 +391,16 @@ export default function HadithTrackingSection({
           record={reportRecord}
           studentName={studentName(reportRecord.studentId)}
           onClose={() => setReportRecord(null)}
+        />
+      )}
+
+      {showBookPicker && (
+        <SelectPickerModal
+          title="اختر الكتاب"
+          options={HADITH_BOOKS.map((b) => ({ value: b.key, label: b.name }))}
+          selectedValue={form.book}
+          onSelect={(v) => setForm((f) => ({ ...f, book: v, hadithNumber: 1 }))}
+          onClose={() => setShowBookPicker(false)}
         />
       )}
     </div>

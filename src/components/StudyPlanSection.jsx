@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { collection, deleteDoc, doc, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { db } from "../firebase";
-import { STUDY_PLAN_CREDIT } from "../data/studyPlan";
+import {
+  STUDY_PLAN_CREDIT_NAME,
+  STUDY_PLAN_CREDIT_ROLE,
+  STUDY_PLAN_DEVELOPER_LABEL,
+  STUDY_PLAN_DEVELOPER_NAME,
+  STUDY_PLAN_DEVELOPER_ROLE,
+} from "../data/studyPlan";
+import SelectPickerModal from "./SelectPickerModal";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
@@ -994,6 +1001,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook }) {
   const [pdfList, setPdfList] = useState([]);
   const [showPdfPicker, setShowPdfPicker] = useState(false);
   const [showPdfManager, setShowPdfManager] = useState(false);
+  const [showSheikhPicker, setShowSheikhPicker] = useState(false);
 
   const idx = selected === "" ? null : Number(selected);
   const staticEntry = idx !== null ? book.audio?.[idx] : null;
@@ -1229,23 +1237,13 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook }) {
 
       <div className="study-plan-book-actions-row">
         {lines.length > 0 ? (
-          <select
+          <button
+            type="button"
             className="study-plan-book-select"
-            value={selected}
-            onChange={(e) => {
-              setSelected(e.target.value);
-              setLessonIdx("");
-            }}
+            onClick={() => setShowSheikhPicker(true)}
           >
-            <option value="" disabled>
-              شرح بالصوت
-            </option>
-            {lines.map((line, li) => (
-              <option key={li} value={li}>
-                {line}
-              </option>
-            ))}
-          </select>
+            {selected !== "" ? lines[Number(selected)] : "شرح بالصوت"}
+          </button>
         ) : (
           <span className="study-plan-book-select study-plan-book-select-disabled">
             شرح بالصوت
@@ -1347,6 +1345,19 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook }) {
             <span className="study-plan-audio-missing">الصوت غير متوفر بعد</span>
           )}
         </>
+      )}
+
+      {showSheikhPicker && (
+        <SelectPickerModal
+          title="شرح بالصوت"
+          options={lines.map((line, li) => ({ value: String(li), label: line }))}
+          selectedValue={selected}
+          onSelect={(v) => {
+            setSelected(v);
+            setLessonIdx("");
+          }}
+          onClose={() => setShowSheikhPicker(false)}
+        />
       )}
 
       {showNoPdf && <NoPdfModal onClose={() => setShowNoPdf(false)} />}
@@ -1817,12 +1828,31 @@ export default function StudyPlanSection() {
         ))}
       </div>
 
-      <p className="study-plan-credit">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z" />
-        </svg>
-        {STUDY_PLAN_CREDIT}
-      </p>
+      <div className="study-plan-credit">
+        <span className="study-plan-credit-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z" />
+          </svg>
+        </span>
+        <span className="study-plan-credit-text">
+          <span className="study-plan-credit-label">إعداد</span>
+          <span className="study-plan-credit-name">{STUDY_PLAN_CREDIT_NAME}</span>
+          <span className="study-plan-credit-role">{STUDY_PLAN_CREDIT_ROLE}</span>
+        </span>
+      </div>
+
+      <div className="study-plan-credit study-plan-credit-dev">
+        <span className="study-plan-credit-icon dev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="m8 9-3 3 3 3m8-6 3 3-3 3M13 6l-2 12" />
+          </svg>
+        </span>
+        <span className="study-plan-credit-text">
+          <span className="study-plan-credit-label">{STUDY_PLAN_DEVELOPER_LABEL}</span>
+          <span className="study-plan-credit-name">{STUDY_PLAN_DEVELOPER_NAME}</span>
+          <span className="study-plan-credit-role">{STUDY_PLAN_DEVELOPER_ROLE}</span>
+        </span>
+      </div>
     </div>
   );
 }

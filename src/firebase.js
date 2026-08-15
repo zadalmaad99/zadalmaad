@@ -12,7 +12,7 @@ const firebaseConfig = {
   appId: "1:887321813302:web:f8f80a242eda8e597fd397",
 };
 
-export const SUPERADMIN_EMAIL = "mathelove2@gmail.com";
+export const SUPERADMIN_EMAILS = ["mathelove2@gmail.com", "admin.zadalmaad@admin.com"];
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);

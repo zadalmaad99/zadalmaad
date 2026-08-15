@@ -5,7 +5,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
-import { auth, db, SUPERADMIN_EMAIL } from "../firebase";
+import { auth, db, SUPERADMIN_EMAILS } from "../firebase";
 
 const AuthContext = createContext(null);
 
@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
       setRole(null);
       return;
     }
-    if (user.email === SUPERADMIN_EMAIL) {
+    if (SUPERADMIN_EMAILS.includes(user.email)) {
       setRole("superadmin");
       return;
     }

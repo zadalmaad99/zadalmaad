@@ -5,7 +5,7 @@ service firebase.storage {
       return request.auth != null;
     }
     function isSuperadmin() {
-      return isSignedIn() && request.auth.token.email in ["mathelove2@gmail.com"];
+      return isSignedIn() && request.auth.token.email in ["mathelove2@gmail.com", "admin.zadalmaad@admin.com"];
     }
 
     match /curriculum/{fileName} {

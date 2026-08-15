@@ -1,6 +1,6 @@
 import { adminAuth, adminDb } from "./firebaseAdmin.js";
 
-export const SUPERADMIN_EMAIL = "mathelove2@gmail.com";
+export const SUPERADMIN_EMAILS = ["mathelove2@gmail.com", "admin.zadalmaad@admin.com"];
 
 function bearerToken(req) {
   const header = req.headers.authorization || "";
@@ -8,7 +8,7 @@ function bearerToken(req) {
 }
 
 async function resolveRole(decoded) {
-  if (decoded.email === SUPERADMIN_EMAIL) {
+  if (SUPERADMIN_EMAILS.includes(decoded.email)) {
     return { role: "superadmin", isSuperadmin: true };
   }
   const snap = await adminDb.collection("users").doc(decoded.uid).get();
@@ -45,7 +45,7 @@ export async function requireSuperadmin(req, res, next) {
 
   try {
     const decoded = await adminAuth.verifyIdToken(token);
-    if (decoded.email !== SUPERADMIN_EMAIL) {
+    if (!SUPERADMIN_EMAILS.includes(decoded.email)) {
       return res.status(403).json({ error: "not authorized" });
     }
     req.admin = decoded;

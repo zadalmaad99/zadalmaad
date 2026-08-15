@@ -780,6 +780,36 @@ label {
 .picker-row label {
   min-width: 170px;
 }
+.book-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+  text-align: right;
+}
+.book-picker-trigger::after {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-inline-end: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+}
+.book-picker-trigger:hover {
+  border-color: var(--primary);
+  transform: none;
+  box-shadow: none;
+}
 
 .form-actions {
   display: flex;
@@ -2203,6 +2233,57 @@ td.empty {
 .lesson-picker-card {
   max-width: 380px;
 }
+.picker-modal-card {
+  max-width: 380px;
+}
+.picker-modal-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  text-align: center;
+  margin: 0 0 16px;
+}
+.picker-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+.picker-modal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  background: var(--surface-alt);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: none;
+  text-align: right;
+}
+.picker-modal-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  transform: none;
+  box-shadow: none;
+}
+.picker-modal-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+.picker-modal-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--primary);
+}
 .lesson-picker-title {
   font-size: 15px;
   font-weight: 800;
@@ -2826,23 +2907,63 @@ td.empty {
 
 .study-plan-credit {
   margin: 0;
-  padding: 16px 26px;
+  padding: 18px 26px;
   border-top: 1px solid var(--border);
   background: var(--surface-alt);
-  text-align: center;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--primary-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
 }
-.study-plan-credit svg {
-  width: 15px;
-  height: 15px;
-  color: var(--gold);
+.study-plan-credit-icon {
   flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--gold) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.study-plan-credit-icon svg {
+  width: 17px;
+  height: 17px;
+  color: var(--gold);
+}
+.study-plan-credit-dev {
+  border-top: none;
+  padding-top: 0;
+}
+.study-plan-credit-icon.dev {
+  background: var(--primary-light);
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.study-plan-credit-icon.dev svg {
+  color: var(--primary-dark);
+}
+.study-plan-credit-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.study-plan-credit-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.study-plan-credit-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+.study-plan-credit-role {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
 }
 .modal-header {
   display: flex;
