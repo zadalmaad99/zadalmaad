@@ -161,6 +161,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState(savedNav.tab || (isAdmin ? "overview" : "quran"));
   const [quranSub, setQuranSub] = useState(savedNav.quranSub || "hifz");
   const [hadithSub, setHadithSub] = useState(savedNav.hadithSub || "hifz");
+  const [hadithBook, setHadithBook] = useState(savedNav.hadithBook || null);
   const [focusStudentId, setFocusStudentId] = useState(null);
   const [menhajSection, setMenhajSection] = useState(savedNav.menhajSection ?? null);
   const [focusAdmin, setFocusAdmin] = useState(null);
@@ -178,9 +179,9 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem(
       NAV_STORAGE_KEY,
-      JSON.stringify({ tab, quranSub, hadithSub, menhajSection })
+      JSON.stringify({ tab, quranSub, hadithSub, menhajSection, hadithBook })
     );
-  }, [tab, quranSub, hadithSub, menhajSection]);
+  }, [tab, quranSub, hadithSub, menhajSection, hadithBook]);
 
   // Once the role resolves, drop a restored tab this user isn't allowed to see.
   useEffect(() => {
@@ -304,25 +305,60 @@ export default function Dashboard() {
             />
             {menhajSection === "sixBooks" && (
               <div className="menhaj-accordion-content">
-                <div className="subnav">
-                  {SUB_SECTIONS.map((s) => (
+                {!hadithBook ? (
+                  <div className="hadith-book-grid">
+                    {HADITH_BOOKS.map((b) => (
+                      <button
+                        key={b.key}
+                        type="button"
+                        className="hadith-book-card"
+                        onClick={() => setHadithBook(b.key)}
+                      >
+                        <span className="hadith-book-card-icon">{ICONS.hadith}</span>
+                        <span className="hadith-book-card-name">{b.name}</span>
+                        <span className="hadith-book-card-total">
+                          {b.total.toLocaleString("en-US")} حديثًا
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
                     <button
-                      key={s.key}
                       type="button"
-                      className={hadithSub === s.key ? "subnav-btn active" : "subnav-btn"}
-                      onClick={() => setHadithSub(s.key)}
+                      className="hadith-book-back"
+                      onClick={() => setHadithBook(null)}
                     >
-                      <span className="nav-icon">{ICONS[s.key]}</span>
-                      {s.label}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="m15 6-6 6 6 6" />
+                      </svg>
+                      كل الكتب الستة
                     </button>
-                  ))}
-                </div>
-                <HadithTrackingSection
-                  type={hadithSub}
-                  title={HADITH_TITLES[hadithSub]}
-                  focusStudentId={focusStudentId}
-                  onFocusHandled={() => setFocusStudentId(null)}
-                />
+                    <h4 className="hadith-book-heading">
+                      {HADITH_BOOKS.find((b) => b.key === hadithBook)?.name}
+                    </h4>
+                    <div className="subnav">
+                      {SUB_SECTIONS.map((s) => (
+                        <button
+                          key={s.key}
+                          type="button"
+                          className={hadithSub === s.key ? "subnav-btn active" : "subnav-btn"}
+                          onClick={() => setHadithSub(s.key)}
+                        >
+                          <span className="nav-icon">{ICONS[s.key]}</span>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                    <HadithTrackingSection
+                      type={hadithSub}
+                      bookFilter={hadithBook}
+                      title={HADITH_TITLES[hadithSub]}
+                      focusStudentId={focusStudentId}
+                      onFocusHandled={() => setFocusStudentId(null)}
+                    />
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -20,6 +20,7 @@ const EMPTY_FORM = {
 export default function HadithTrackingSection({
   type,
   title,
+  bookFilter,
   focusStudentId,
   onFocusHandled,
 }) {
@@ -27,7 +28,7 @@ export default function HadithTrackingSection({
   const { formatDate, calendar } = useCalendar();
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, book: bookFilter || "" }));
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -82,7 +83,7 @@ export default function HadithTrackingSection({
   }, [type, isAdmin, isSuperadmin, user]);
 
   function resetForm() {
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, book: bookFilter || "" });
     setEditingId(null);
     setError("");
     setFormOpen(false);
@@ -166,6 +167,7 @@ export default function HadithTrackingSection({
   const selectedBook = HADITH_BOOKS.find((b) => b.key === form.book);
 
   const visibleRecords = records
+    .filter((r) => (bookFilter ? r.book === bookFilter : true))
     .filter((r) => (filterStudentId ? r.studentId === filterStudentId : true))
     .filter((r) =>
       studentName(r.studentId).toLowerCase().includes(search.trim().toLowerCase())
@@ -258,16 +260,18 @@ export default function HadithTrackingSection({
               </div>
 
               <div className="picker-row">
-                <label>
-                  الكتاب
-                  <button
-                    type="button"
-                    className="book-picker-trigger"
-                    onClick={() => setShowBookPicker(true)}
-                  >
-                    {selectedBook ? selectedBook.name : "اختر الكتاب"}
-                  </button>
-                </label>
+                {!bookFilter && (
+                  <label>
+                    الكتاب
+                    <button
+                      type="button"
+                      className="book-picker-trigger"
+                      onClick={() => setShowBookPicker(true)}
+                    >
+                      {selectedBook ? selectedBook.name : "اختر الكتاب"}
+                    </button>
+                  </label>
+                )}
 
                 <label>
                   رقم الحديث
