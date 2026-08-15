@@ -1,0 +1,535 @@
+import { useEffect, useRef, useState } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { noteLines, useCurriculumPlan } from "../data/curriculum";
+
+// Arabic file names arrive percent-encoded (%D8%B4...), which is unreadable in
+// the review box. We show them decoded and re-encode on save, so what actually
+// gets stored is byte-for-byte the same working URL either way.
+function readableUrl(url) {
+  try {
+    return decodeURIComponent(url);
+  } catch {
+    return url;
+  }
+}
+
+function normalizeAudioUrl(raw) {
+  const trimmed = String(raw).trim();
+  try {
+    const u = new URL(trimmed);
+    u.pathname = u.pathname
+      .split("/")
+      .map((seg) => {
+        try {
+          return encodeURIComponent(decodeURIComponent(seg));
+        } catch {
+          return encodeURIComponent(seg);
+        }
+      })
+      .join("/");
+    return u.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+export default function CurriculumAudioSettings() {
+  const { allBooks: BOOKS } = useCurriculumPlan();
+  const [bookTitle, setBookTitle] = useState("");
+  const [sheikh, setSheikh] = useState("");
+  const [bySheikh, setBySheikh] = useState({});
+  const [savedPdfUrl, setSavedPdfUrl] = useState("");
+  const [pdfUrlInput, setPdfUrlInput] = useState("");
+  const [savingPdf, setSavingPdf] = useState(false);
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [playlistUrl, setPlaylistUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [preview, setPreview] = useState([]); // {title, sourceName, url}
+  const [savingPreview, setSavingPreview] = useState(false);
+  const bulkDetailsRef = useRef(null);
+
+  const book = BOOKS.find((b) => b.title === bookTitle);
+  const sheikhOptions = book?.note ? noteLines(book.note) : [];
+
+  // The book list arrives asynchronously (static plan + live overrides), so
+  // pick the first book once it's available, and drop the selection if that
+  // book later gets deleted by the superadmin.
+  useEffect(() => {
+    if (!BOOKS.length) return;
+    if (!BOOKS.some((b) => b.title === bookTitle)) {
+      setBookTitle(BOOKS[0].title);
+    }
+  }, [BOOKS, bookTitle]);
+
+  // Keep the sheikh valid whenever the book — or its edited note — changes.
+  useEffect(() => {
+    if (!sheikhOptions.includes(sheikh)) {
+      setSheikh(sheikhOptions[0] || "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookTitle, book?.note]);
+
+  useEffect(() => {
+    if (!bookTitle) return;
+    const unsub = onSnapshot(doc(db, "curriculumAudio", bookTitle), (snap) => {
+      const data = snap.data();
+      setBySheikh(data?.bySheikh || {});
+      setSavedPdfUrl(data?.pdfUrl || "");
+      setPdfUrlInput(data?.pdfUrl || "");
+    });
+    return unsub;
+  }, [bookTitle]);
+
+  const lessons = sheikh ? bySheikh[sheikh] || [] : [];
+
+  async function saveLessons(nextLessons) {
+    setSaving(true);
+    try {
+      await setDoc(
+        doc(db, "curriculumAudio", bookTitle),
+        { bySheikh: { ...bySheikh, [sheikh]: nextLessons } },
+        { merge: true }
+      );
+    } catch {
+      window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAdd() {
+    const t = title.trim();
+    const u = url.trim();
+    if (!t || !u || !sheikh) return;
+    await saveLessons([...lessons, { title: t, url: normalizeAudioUrl(u) }]);
+    setTitle("");
+    setUrl("");
+  }
+
+  async function handleRemove(i) {
+    await saveLessons(lessons.filter((_, li) => li !== i));
+  }
+
+  function parseBulkLines(text) {
+    const nextTitles = [];
+    let autoIndex = lessons.length + 1;
+    text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        // Allow spaces inside the URL — decoded Arabic names contain them.
+        const sepMatch = line.match(/^(.*?)\s*[|\t]\s*(https?:\/\/.+)$/);
+        if (sepMatch) {
+          nextTitles.push({
+            title: sepMatch[1].trim() || `الدرس ${autoIndex}`,
+            url: normalizeAudioUrl(sepMatch[2]),
+          });
+        } else {
+          nextTitles.push({ title: `الدرس ${autoIndex}`, url: normalizeAudioUrl(line) });
+        }
+        autoIndex += 1;
+      });
+    return nextTitles;
+  }
+
+  async function handleBulkAdd() {
+    const parsed = parseBulkLines(bulkText).filter((l) => /^https?:\/\//.test(l.url));
+    if (!parsed.length || !sheikh) return;
+    setBulkSaving(true);
+    try {
+      await saveLessons([...lessons, ...parsed]);
+      setBulkText("");
+    } finally {
+      setBulkSaving(false);
+    }
+  }
+
+  function extractArchiveIdentifier(input) {
+    const trimmed = input.trim();
+    // archive.org URLs are consistently archive.org/<action>/<identifier>/...
+    // (details, download, manage, edit, embed, stream, ...) so just grab the
+    // path segment right after the first one instead of hardcoding actions.
+    const match = trimmed.match(/archive\.org\/[a-z-]+\/([^/?#]+)/i);
+    if (match) return decodeURIComponent(match[1]);
+    if (/^[^\s/]+$/.test(trimmed)) return trimmed; // bare identifier
+    return null;
+  }
+
+  async function handleImportPlaylist() {
+    const identifier = extractArchiveIdentifier(playlistUrl);
+    if (!identifier) {
+      window.alert("تعذّر التعرّف على معرّف العنصر — تأكد أن الرابط من archive.org/details/...");
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(identifier)}`);
+      const data = await res.json();
+      // Uploads aren't always MP3 — archive.org labels m4a as "MPEG-4 Audio",
+      // and also stores torrents/artwork/metadata alongside the audio. When it
+      // has generated MP3 derivatives prefer those (widest playback support),
+      // otherwise fall back to whatever audio the item actually holds.
+      const audioFiles = (data.files || []).filter(
+        (f) =>
+          /(mp3|mpeg-4 audio|ogg|vorbis|flac|wave|aiff|opus|aac)/i.test(f.format || "") ||
+          /\.(mp3|m4a|mp4|ogg|oga|opus|flac|wav|aac)$/i.test(f.name || "")
+      );
+      const mp3Files = audioFiles.filter((f) => /mp3/i.test(f.format || f.name || ""));
+      const files = mp3Files.length ? mp3Files : audioFiles;
+      if (!files.length) {
+        window.alert("لم يُعثر على أي ملفات صوتية في هذا العنصر — قد يكون ما زال قيد المعالجة");
+        return;
+      }
+      // Order the lessons as the sheikh published them. Trust the embedded
+      // track number first; otherwise fall back to the lesson number written
+      // in the title/file name. Both comparisons must be NUMERIC — a plain
+      // string sort puts "الدرس 10" before "الدرس 2".
+      const lessonNumber = (f) => {
+        const track = Number(String(f.track || "").match(/\d+/)?.[0]);
+        if (track) return track;
+        const text = String(f.title || f.name);
+        const fromText = text.match(/(?:الدرس|درس|الحلقة|المجلس)\s*(\d+)/);
+        if (fromText) return Number(fromText[1]);
+        // "3_12" / "3/12" / "3-12" / "3 من 12" — common when the number sits at
+        // the end of the file name, where a plain name sort would compare the
+        // lesson topic first and shuffle the order. Sanity-check the pair so
+        // dates like "06-04-1444" aren't mistaken for a lesson number.
+        const partOf = text.match(/(\d+)\s*(?:_|\/|-|من)\s*(\d+)/);
+        if (partOf) {
+          const index = Number(partOf[1]);
+          const total = Number(partOf[2]);
+          if (index >= 1 && index <= total && total <= 300) return index;
+        }
+        // A bare number in brackets, e.g. "... آل الشيخ (7) - عقيدة".
+        const inBrackets = text.match(/[([](\d+)[)\]]/);
+        if (inBrackets) {
+          const index = Number(inBrackets[1]);
+          if (index >= 1 && index <= 300) return index;
+        }
+        // Unnumbered openers/closers still have an obvious position.
+        if (/(مقدمة|المقدمة|تمهيد)/.test(text)) return -Infinity;
+        if (/(الأخير|الاخير|الختام|الخاتمة)/.test(text)) return Infinity;
+        return null;
+      };
+      files.sort((a, b) => {
+        const na = lessonNumber(a);
+        const nb = lessonNumber(b);
+        if (na !== null && nb !== null && na !== nb) return na - nb;
+        if (na !== null && nb === null) return -1; // unnumbered items last
+        if (na === null && nb !== null) return 1;
+        return String(a.name).localeCompare(String(b.name), undefined, { numeric: true });
+      });
+      // Skip duplicate uploads: archive.org items sometimes contain the same
+      // lesson uploaded more than once under a different file name, but the
+      // embedded title metadata is identical — keep only the first copy.
+      const seenTitles = new Set();
+      const uniqueFiles = files.filter((f) => {
+        // Collapse whitespace too — re-uploads of the same lesson often differ
+        // only by stray spaces in the embedded title.
+        const key = (f.title || f.name).trim().toLowerCase().replace(/\s+/g, " ");
+        if (seenTitles.has(key)) return false;
+        seenTitles.add(key);
+        return true;
+      });
+      const skipped = files.length - uniqueFiles.length;
+      // Show a readable review list — the Arabic name of each file next to the
+      // number it will be saved under — instead of a wall of percent-encoded
+      // URLs. The URL rides along invisibly on each row.
+      const startAt = lessons.length + 1;
+      setPreview(
+        uniqueFiles.map((f, i) => ({
+          title: `الدرس ${startAt + i}`,
+          sourceName: (f.title || f.name.split("/").pop() || f.name).replace(/\.[^.]+$/, ""),
+          url: `https://archive.org/download/${identifier}/${encodeURIComponent(f.name)}`,
+        }))
+      );
+      if (skipped > 0) {
+        window.alert(`تم جلب ${uniqueFiles.length} درسًا، وتجاهلت ${skipped} ملفًا مكررًا (نفس العنوان).`);
+      }
+    } catch {
+      window.alert("تعذّر جلب القائمة — تحقّق من اتصال الإنترنت أو صحة الرابط");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function confirmPreview() {
+    if (!preview.length || !sheikh) return;
+    setSavingPreview(true);
+    try {
+      await saveLessons([
+        ...lessons,
+        ...preview.map((p) => ({ title: p.title.trim() || p.sourceName, url: p.url })),
+      ]);
+      setPreview([]);
+      setPlaylistUrl("");
+    } finally {
+      setSavingPreview(false);
+    }
+  }
+
+  function updatePreviewTitle(i, value) {
+    setPreview((rows) => rows.map((r, ri) => (ri === i ? { ...r, title: value } : r)));
+  }
+
+  function removePreviewRow(i) {
+    setPreview((rows) => rows.filter((_, ri) => ri !== i));
+  }
+
+  async function savePdfUrl(value) {
+    setSavingPdf(true);
+    try {
+      await setDoc(doc(db, "curriculumAudio", bookTitle), { pdfUrl: value || null }, { merge: true });
+    } catch {
+      window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
+    } finally {
+      setSavingPdf(false);
+    }
+  }
+
+  function handleSavePdf() {
+    return savePdfUrl(pdfUrlInput.trim());
+  }
+
+  function handleDeletePdf() {
+    if (!window.confirm("هل تريد حذف رابط PDF المحفوظ لهذا الكتاب؟")) return;
+    setPdfUrlInput("");
+    return savePdfUrl("");
+  }
+
+  return (
+    <div className="curriculum-settings-group">
+      <div className="curriculum-settings-book-picker">
+        <label className="curriculum-settings-field">
+          <span>الكتاب (يُطبَّق على البطاقتين أدناه)</span>
+          <select value={bookTitle} onChange={(e) => setBookTitle(e.target.value)}>
+            {BOOKS.map((b) => (
+              <option key={b.title} value={b.title}>
+                {b.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="settings-card curriculum-settings-card">
+        <div className="settings-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+            <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" />
+            <path d="M9 13h6M9 17h6M9 9h1" />
+          </svg>
+          رفع ملف PDF
+        </div>
+        <p className="hint-text">
+          رابط ملف PDF لهذا الكتاب (مثلًا من archive.org) — يظهر مباشرة عند ضغط زر
+          "كتاب PDF" في قسم المنهج لكل المستخدمين.
+        </p>
+
+        <div className="curriculum-settings-pdf">
+          <label className="curriculum-settings-field">
+            <span>رابط ملف PDF</span>
+            <input
+              type="url"
+              placeholder="مثلًا رابط من archive.org"
+              value={pdfUrlInput}
+              onChange={(e) => setPdfUrlInput(e.target.value)}
+            />
+          </label>
+          <div className="curriculum-settings-pdf-actions">
+            <button
+              type="button"
+              onClick={handleSavePdf}
+              disabled={savingPdf || pdfUrlInput.trim() === savedPdfUrl}
+            >
+              {savingPdf ? "جارٍ الحفظ..." : "حفظ رابط PDF"}
+            </button>
+            {savedPdfUrl && (
+              <button
+                type="button"
+                className="curriculum-settings-pdf-clear"
+                onClick={handleDeletePdf}
+                disabled={savingPdf}
+              >
+                حذف الرابط المحفوظ
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-card curriculum-settings-card">
+        <div className="settings-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+          رفع الصوتيات والروابط
+        </div>
+        <p className="hint-text">
+          أضف روابط دروس صوتية (من archive.org أو أي موقع آخر) لكتاب وشيخ محددين،
+          وستظهر مباشرة في قسم المنهج دون الحاجة لنشر تحديث للتطبيق.
+        </p>
+
+        <label className="curriculum-settings-field">
+          <span>الشيخ</span>
+          {sheikhOptions.length > 0 ? (
+            <select value={sheikh} onChange={(e) => setSheikh(e.target.value)}>
+              {sheikhOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="curriculum-settings-empty">
+              لا يوجد شرح مسجّل لهذا الكتاب في المنهج
+            </span>
+          )}
+        </label>
+
+        {sheikh && (
+          <>
+            {lessons.length > 0 && (
+              <ul className="curriculum-settings-list">
+                {lessons.map((l, i) => (
+                  <li key={i}>
+                    <span className="curriculum-settings-lesson-title">{l.title}</span>
+                    <button
+                      type="button"
+                      className="curriculum-settings-remove"
+                      onClick={() => handleRemove(i)}
+                      aria-label="حذف الدرس"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="curriculum-settings-add">
+              <input
+                type="text"
+                placeholder="عنوان الدرس (مثلًا: الدرس 11)"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <input
+                type="url"
+                placeholder="رابط ملف الصوت (mp3)"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={saving || !title.trim() || !url.trim()}
+              >
+                {saving ? "جارٍ الحفظ..." : "إضافة الدرس"}
+              </button>
+            </div>
+
+            <div className="curriculum-settings-playlist">
+              <label className="curriculum-settings-field">
+                <span>رابط قائمة الدروس (playlist) من archive.org</span>
+                <input
+                  type="url"
+                  placeholder="مثلًا: archive.org/details/4-_20260814"
+                  value={playlistUrl}
+                  onChange={(e) => setPlaylistUrl(e.target.value)}
+                />
+              </label>
+              <button type="button" onClick={handleImportPlaylist} disabled={importing || !playlistUrl.trim()}>
+                {importing ? "جارٍ الجلب..." : "جلب كل الدروس تلقائيًا من الأرشيف"}
+              </button>
+              <p className="hint-text">
+                يجلب كل الدروس الصوتية من صفحة العنصر ويعرضها للمراجعة قبل الحفظ.
+              </p>
+            </div>
+
+            {preview.length > 0 && (
+              <div className="import-preview">
+                <p className="import-preview-title">
+                  مراجعة قبل الإضافة ({preview.length} درسًا)
+                </p>
+                <p className="hint-text">
+                  تأكّد من مطابقة الترقيم لاسم الدرس، وعدّل أي رقم أو احذف أي سطر قبل الحفظ.
+                </p>
+                <ul className="import-preview-list">
+                  {preview.map((row, i) => (
+                    <li key={i} className="import-preview-row">
+                      <input
+                        className="import-preview-num"
+                        type="text"
+                        value={row.title}
+                        onChange={(e) => updatePreviewTitle(i, e.target.value)}
+                        aria-label="رقم الدرس"
+                      />
+                      <span className="import-preview-name" title={row.sourceName}>
+                        {row.sourceName}
+                      </span>
+                      <button
+                        type="button"
+                        className="import-preview-remove"
+                        onClick={() => removePreviewRow(i)}
+                        aria-label="حذف هذا الدرس"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 6 6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="import-preview-actions">
+                  <button type="button" onClick={confirmPreview} disabled={savingPreview}>
+                    {savingPreview ? "جارٍ الحفظ..." : `إضافة كل الدروس (${preview.length})`}
+                  </button>
+                  <button
+                    type="button"
+                    className="import-preview-cancel"
+                    onClick={() => setPreview([])}
+                    disabled={savingPreview}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <details className="curriculum-settings-bulk" ref={bulkDetailsRef}>
+              <summary>إضافة عدة دروس دفعة واحدة (للقوائم الطويلة)</summary>
+              <p className="hint-text">
+                الصق رابطًا واحدًا في كل سطر (سيُرقَّم الدرس تلقائيًا)، أو اكتب
+                <code>العنوان | الرابط</code> في نفس السطر لتحديد عنوان مخصّص لكل درس.
+              </p>
+              <textarea
+                rows={6}
+                placeholder={"https://archive.org/download/.../1.mp3\nhttps://archive.org/download/.../2.mp3\nالدرس 3 | https://archive.org/download/.../3.mp3"}
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleBulkAdd}
+                disabled={bulkSaving || !bulkText.trim()}
+              >
+                {bulkSaving ? "جارٍ الحفظ..." : "إضافة كل الروابط"}
+              </button>
+            </details>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

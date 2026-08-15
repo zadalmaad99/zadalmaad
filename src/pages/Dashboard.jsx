@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import StudentsPanel from "../components/StudentsPanel";
 import TrackingSection from "../components/TrackingSection";
@@ -9,7 +9,22 @@ import AttendancePanel from "../components/AttendancePanel";
 import StudyPlanSection from "../components/StudyPlanSection";
 import SuperadminDashboard from "../components/SuperadminDashboard";
 import ScrollButtons from "../components/ScrollButtons";
+import MenhajCard from "../components/MenhajCard";
+import { useCurriculumPlan } from "../data/curriculum";
+import { HADITH_BOOKS } from "../data/hadithBooks";
 import logo from "../assets/logo.png";
+
+const TOTAL_HADITH = HADITH_BOOKS.reduce((sum, b) => sum + b.total, 0);
+
+const NAV_STORAGE_KEY = "quran-tracker-nav";
+
+function readNav() {
+  try {
+    return JSON.parse(localStorage.getItem(NAV_STORAGE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
 
 const ICONS = {
   overview: (
@@ -93,7 +108,7 @@ const TABS = [
   {
     key: "superadmin",
     label: "لوحة الإشراف",
-    navLabel: "المعلّمون",
+    navLabel: "المعلّم",
     desc: "متابعة كل المعلمين المسجّلين وعدد طلابهم ونشاطهم",
   },
   { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
@@ -136,19 +151,43 @@ const HADITH_TITLES = {
 };
 
 export default function Dashboard() {
-  const { logout, isAdmin, isSuperadmin } = useAuth();
+  const { logout, isAdmin, isSuperadmin, role } = useAuth();
   const visibleTabs = isAdmin
     ? TABS.filter((t) => t.key !== "superadmin" || isSuperadmin)
     : TABS.filter(
         (t) => !["students", "overview", "settings", "superadmin"].includes(t.key)
       );
-  const [tab, setTab] = useState(isAdmin ? "overview" : "quran");
-  const [quranSub, setQuranSub] = useState("hifz");
-  const [hadithSub, setHadithSub] = useState("hifz");
+  const savedNav = readNav();
+  const [tab, setTab] = useState(savedNav.tab || (isAdmin ? "overview" : "quran"));
+  const [quranSub, setQuranSub] = useState(savedNav.quranSub || "hifz");
+  const [hadithSub, setHadithSub] = useState(savedNav.hadithSub || "hifz");
   const [focusStudentId, setFocusStudentId] = useState(null);
-  const [menhajSection, setMenhajSection] = useState(null);
+  const [menhajSection, setMenhajSection] = useState(savedNav.menhajSection ?? null);
   const [focusAdmin, setFocusAdmin] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
+
+  // Live counts so the cards stay accurate after a superadmin adds/removes books.
+  const { sections } = useCurriculumPlan();
+  const sectionCount = sections.length;
+  const bookCount = sections.reduce((sum, s) => sum + s.books.length + s.added.length, 0);
+  const totalHadith = TOTAL_HADITH;
+
+  // Remember where the user was so a refresh doesn't drop them back on the
+  // default tab (the role loads asynchronously, so the initial state above
+  // can't know yet whether this is an admin).
+  useEffect(() => {
+    localStorage.setItem(
+      NAV_STORAGE_KEY,
+      JSON.stringify({ tab, quranSub, hadithSub, menhajSection })
+    );
+  }, [tab, quranSub, hadithSub, menhajSection]);
+
+  // Once the role resolves, drop a restored tab this user isn't allowed to see.
+  useEffect(() => {
+    if (!role) return;
+    if (!visibleTabs.some((t) => t.key === tab)) setTab(visibleTabs[0].key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, tab]);
 
   function viewAdmin(adminId, adminName) {
     setFocusAdmin({ id: adminId, name: adminName });
@@ -194,7 +233,13 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <button className="logout-btn" onClick={logout}>
+        <button
+          className="logout-btn"
+          onClick={() => {
+            localStorage.removeItem(NAV_STORAGE_KEY);
+            logout();
+          }}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
           </svg>
@@ -226,61 +271,37 @@ export default function Dashboard() {
 
         {tab === "hadith" && (
           <div className="menhaj-accordion">
-            <button
-              type="button"
-              className={
-                menhajSection === "sunnah"
-                  ? "menhaj-accordion-btn active"
-                  : "menhaj-accordion-btn"
+            <MenhajCard
+              active={menhajSection === "sunnah"}
+              onClick={() => setMenhajSection((s) => (s === "sunnah" ? null : "sunnah"))}
+              title="دراسة كتب السنة على منهاج النبوة"
+              subtitle="منهج متدرّج في العقيدة والفقه والحديث واللغة، مع الشروح الصوتية وملفات PDF"
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+                </svg>
               }
-              onClick={() =>
-                setMenhajSection((s) => (s === "sunnah" ? null : "sunnah"))
-              }
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
-              </svg>
-              دراسة كتب السنة على منهاج النبوة
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={
-                  menhajSection === "sunnah" ? "chevron chevron-open" : "chevron"
-                }
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+              stats={[
+                { value: sectionCount, label: "بابًا علميًا" },
+                { value: bookCount, label: "كتابًا" },
+                { value: "صوت + PDF", label: "لكل كتاب" },
+              ]}
+            />
             {menhajSection === "sunnah" && <StudyPlanSection />}
 
-            <button
-              type="button"
-              className={
-                menhajSection === "sixBooks"
-                  ? "menhaj-accordion-btn active"
-                  : "menhaj-accordion-btn"
-              }
-              onClick={() =>
-                setMenhajSection((s) => (s === "sixBooks" ? null : "sixBooks"))
-              }
-            >
-              <span className="nav-icon">{ICONS.hadith}</span>
-              دراسة الكتب الستة في الحديث
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={
-                  menhajSection === "sixBooks" ? "chevron chevron-open" : "chevron"
-                }
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+            <MenhajCard
+              active={menhajSection === "sixBooks"}
+              onClick={() => setMenhajSection((s) => (s === "sixBooks" ? null : "sixBooks"))}
+              title="دراسة الكتب الستة في الحديث"
+              subtitle="متابعة حفظ وقراءة ومراجعة أحاديث الكتب الستة مع تتبّع التقدّم"
+              icon={ICONS.hadith}
+              stats={[
+                { value: HADITH_BOOKS.length, label: "كتب" },
+                { value: totalHadith.toLocaleString("en-US"), label: "حديثًا" },
+                { value: "حفظ · قراءة · مراجعة", label: "أقسام المتابعة" },
+              ]}
+            />
             {menhajSection === "sixBooks" && (
               <div className="menhaj-accordion-content">
                 <div className="subnav">

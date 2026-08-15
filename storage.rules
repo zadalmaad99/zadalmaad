@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isSuperadmin() {
+      return isSignedIn() && request.auth.token.email in ["mathelove2@gmail.com"];
+    }
+
+    match /curriculum/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSuperadmin();
+    }
+  }
+}

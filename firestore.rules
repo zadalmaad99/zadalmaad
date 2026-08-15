@@ -72,5 +72,20 @@ service cloud.firestore {
         (isAuthorizedStudent() && resource.data.studentId == request.auth.uid);
       allow write: if isAdmin();
     }
+
+    match /curriculumAudio/{bookId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperadmin();
+    }
+
+    match /curriculumOverrides/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperadmin();
+    }
+
+    match /curriculumMeta/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperadmin();
+    }
   }
 }

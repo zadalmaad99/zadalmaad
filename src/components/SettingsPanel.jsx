@@ -1,5 +1,7 @@
 import { useCalendar } from "../context/CalendarContext";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
+import CurriculumAudioSettings from "./CurriculumAudioSettings";
 
 const CALENDAR_OPTIONS = [
   { key: "gregorian", label: "ميلادي", desc: "التقويم الميلادي القياسي" },
@@ -46,6 +48,7 @@ function OptionList({ options, value, onChange }) {
 export default function SettingsPanel() {
   const { calendar, setCalendar, formatDate } = useCalendar();
   const { theme, setTheme } = useTheme();
+  const { isSuperadmin } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -85,6 +88,8 @@ export default function SettingsPanel() {
           بطاقات السجلات)، ولا يغيّر البيانات نفسها المخزّنة.
         </p>
       </div>
+
+      {isSuperadmin && <CurriculumAudioSettings />}
     </div>
   );
 }

@@ -23,9 +23,13 @@
 
 ### 3. نشر قواعد الحماية
 ```bash
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules,storage
 ```
-(أو انسخ محتوى [firestore.rules](firestore.rules) يدويًا في Firebase Console > Firestore > Rules)
+(أو انسخ محتوى [firestore.rules](firestore.rules) و [storage.rules](storage.rules) يدويًا في Firebase Console > Firestore/Storage > Rules)
+
+بديل بدون Firebase CLI: `node server/scripts/deploy-firestore-rules.cjs` (يستخدم `server/serviceAccountKey.json` لنشر قواعد Firestore وStorage مباشرة عبر Admin SDK).
+
+ملف خطة الدراسة (PDF) يُرفع عبر Firebase Storage — يتطلب تفعيل **Storage** من Firebase Console (Build > Storage > Get started)، وقد يتطلب ترقية المشروع لخطة **Blaze** (الدفع حسب الاستخدام) حسب سياسة Google الحالية لمشاريع Storage الجديدة.
 
 ### 4. التشغيل محليًا
 ```bash
