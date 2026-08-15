@@ -1828,30 +1828,32 @@ export default function StudyPlanSection() {
         ))}
       </div>
 
-      <div className="study-plan-credit">
-        <span className="study-plan-credit-icon">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z" />
-          </svg>
-        </span>
-        <span className="study-plan-credit-text">
-          <span className="study-plan-credit-label">إعداد</span>
-          <span className="study-plan-credit-name">{STUDY_PLAN_CREDIT_NAME}</span>
-          <span className="study-plan-credit-role">{STUDY_PLAN_CREDIT_ROLE}</span>
-        </span>
-      </div>
+      <div className="study-plan-credits">
+        <div className="study-plan-credit">
+          <span className="study-plan-credit-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z" />
+            </svg>
+          </span>
+          <span className="study-plan-credit-text">
+            <span className="study-plan-credit-label">إعداد</span>
+            <span className="study-plan-credit-name">{STUDY_PLAN_CREDIT_NAME}</span>
+            <span className="study-plan-credit-role">{STUDY_PLAN_CREDIT_ROLE}</span>
+          </span>
+        </div>
 
-      <div className="study-plan-credit study-plan-credit-dev">
-        <span className="study-plan-credit-icon dev">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="m8 9-3 3 3 3m8-6 3 3-3 3M13 6l-2 12" />
-          </svg>
-        </span>
-        <span className="study-plan-credit-text">
-          <span className="study-plan-credit-label">{STUDY_PLAN_DEVELOPER_LABEL}</span>
-          <span className="study-plan-credit-name">{STUDY_PLAN_DEVELOPER_NAME}</span>
-          <span className="study-plan-credit-role">{STUDY_PLAN_DEVELOPER_ROLE}</span>
-        </span>
+        <div className="study-plan-credit study-plan-credit-dev">
+          <span className="study-plan-credit-icon dev">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m8 9-3 3 3 3m8-6 3 3-3 3M13 6l-2 12" />
+            </svg>
+          </span>
+          <span className="study-plan-credit-text">
+            <span className="study-plan-credit-label">{STUDY_PLAN_DEVELOPER_LABEL}</span>
+            <span className="study-plan-credit-name">{STUDY_PLAN_DEVELOPER_NAME}</span>
+            <span className="study-plan-credit-role">{STUDY_PLAN_DEVELOPER_ROLE}</span>
+          </span>
+        </div>
       </div>
     </div>
   );

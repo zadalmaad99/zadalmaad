@@ -2905,20 +2905,35 @@ td.empty {
   height: 15px;
 }
 
-.study-plan-credit {
-  margin: 0;
-  padding: 18px 26px;
+.study-plan-credits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 20px 26px;
   border-top: 1px solid var(--border);
   background: var(--surface-alt);
+}
+.study-plan-credit {
+  flex: 1 1 240px;
+  margin: 0;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
 }
+.study-plan-credit-dev {
+  border-top-color: var(--primary);
+}
 .study-plan-credit-icon {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2927,13 +2942,9 @@ td.empty {
   border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
 }
 .study-plan-credit-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   color: var(--gold);
-}
-.study-plan-credit-dev {
-  border-top: none;
-  padding-top: 0;
 }
 .study-plan-credit-icon.dev {
   background: var(--primary-light);
@@ -2945,9 +2956,9 @@ td.empty {
 .study-plan-credit-text {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 2px;
-  text-align: center;
+  text-align: right;
 }
 .study-plan-credit-label {
   font-size: 10.5px;
@@ -2956,14 +2967,18 @@ td.empty {
   color: var(--muted);
 }
 .study-plan-credit-name {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 800;
   color: var(--primary-dark);
+}
+.study-plan-credit-dev .study-plan-credit-name {
+  color: var(--primary);
 }
 .study-plan-credit-role {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
+  line-height: 1.5;
 }
 .modal-header {
   display: flex;
