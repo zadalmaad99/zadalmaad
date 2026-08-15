@@ -18,11 +18,11 @@ const EMPTY_OVERRIDES = { hidden: [], edits: {}, added: {} };
  * Both the المنهج section and the settings panel read from this so an edit made
  * in one place shows up everywhere immediately.
  */
-export function useCurriculumPlan() {
+export function useCurriculumPlan(planSections = STUDY_PLAN, overridesDocId = "global") {
   const [overrides, setOverrides] = useState(EMPTY_OVERRIDES);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "curriculumOverrides", "global"), (snap) => {
+    const unsub = onSnapshot(doc(db, "curriculumOverrides", overridesDocId), (snap) => {
       const data = snap.data();
       setOverrides({
         hidden: data?.hidden || [],
@@ -31,17 +31,17 @@ export function useCurriculumPlan() {
       });
     });
     return unsub;
-  }, []);
+  }, [overridesDocId]);
 
   async function saveOverrides(patch) {
     try {
-      await setDoc(doc(db, "curriculumOverrides", "global"), patch, { merge: true });
+      await setDoc(doc(db, "curriculumOverrides", overridesDocId), patch, { merge: true });
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
     }
   }
 
-  const sections = STUDY_PLAN.map((section) => {
+  const sections = planSections.map((section) => {
     const staticBooks = section.books
       .filter((b) => !overrides.hidden.includes(b.title))
       .map((b) => ({ ...b, isAdded: false }));

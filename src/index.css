@@ -634,80 +634,24 @@ label {
   font-weight: 700;
 }
 
-.hadith-book-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
-  gap: 14px;
-}
-.hadith-book-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 22px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--gold);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-  text-align: center;
-}
-.hadith-book-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary);
-}
-.hadith-book-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-.hadith-book-card-icon svg {
-  width: 20px;
-  height: 20px;
-}
-.hadith-book-card-name {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.hadith-book-card-total {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.hadith-book-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  color: var(--primary-dark);
-  font-size: 13px;
-  font-weight: 700;
-  padding: 4px 0;
-  box-shadow: none;
-  margin-bottom: 8px;
-}
-.hadith-book-back:hover {
-  color: var(--primary);
-  transform: none;
-  box-shadow: none;
-}
-.hadith-book-back svg {
-  width: 16px;
-  height: 16px;
-}
 .hadith-book-heading {
   font-size: 17px;
   font-weight: 800;
   color: var(--primary-dark);
   margin: 0 0 14px;
+  text-align: center;
+}
+.hadith-tracking-modal {
+  max-width: 720px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.study-plan-tracking-btn {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+.study-plan-tracking-btn:hover {
+  background: var(--primary-dark) !important;
 }
 
 .record-grid {
@@ -3817,7 +3761,69 @@ td.empty {
     padding: 4px 0 14px;
   }
   .menhaj-card {
-    padding: 16px 14px 14px;
+    padding: 18px 16px 16px;
+    gap: 16px;
+    border-radius: 18px;
+    border-top-width: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  }
+  .menhaj-card.active {
+    box-shadow: 0 8px 24px rgba(31, 122, 61, 0.16);
+  }
+  .menhaj-card-top {
+    gap: 12px;
+  }
+  .menhaj-card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(155deg, var(--primary-light), color-mix(in srgb, var(--primary-light) 40%, var(--surface)));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
+  }
+  .menhaj-card-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+  .menhaj-card.active .menhaj-card-icon {
+    background: linear-gradient(155deg, var(--primary), var(--primary-dark));
+    box-shadow: 0 4px 10px rgba(31, 122, 61, 0.35);
+  }
+  .menhaj-card-title {
+    font-size: 16.5px;
+  }
+  .menhaj-card-subtitle {
+    font-size: 12.5px;
+  }
+  .menhaj-card-chevron {
+    width: 32px;
+    height: 32px;
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .menhaj-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .menhaj-card-stat {
+    align-items: center;
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 14px;
+  }
+  .menhaj-card-stat-value {
+    font-size: 14.5px;
+  }
+  .menhaj-card-cta {
+    align-self: center;
+    font-size: 12px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  .menhaj-card.active .menhaj-card-cta {
+    background: var(--primary);
+    color: #fff;
   }
   .settings-card,
   .curriculum-settings-book-picker {

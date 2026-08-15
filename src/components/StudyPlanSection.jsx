@@ -983,7 +983,7 @@ function PdfManagerModal({ bookTitle, pdfs, onAdd, onRemove, onClose }) {
   );
 }
 
-function BookCard({ book, order, onSaveEdit, onDeleteBook }) {
+function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const { user, isAdmin, isSuperadmin } = useAuth();
   const [editing, setEditing] = useState(false);
   const [editAuthor, setEditAuthor] = useState(book.author || "");
@@ -1265,6 +1265,8 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook }) {
           إدارة ملفات PDF
         </button>
       )}
+
+      {trackingButton}
 
       {idx !== null && isLessonSeries && (
         <>
@@ -1858,3 +1860,5 @@ export default function StudyPlanSection() {
     </div>
   );
 }
+
+export { BookCard, AddBookForm, ReorderPanel };
