@@ -119,17 +119,24 @@ export default function HadithBooksSection() {
                       hadithKey && (
                         <button
                           type="button"
-                          className="study-plan-book-select study-plan-tracking-btn"
+                          className="study-plan-tracking-btn"
                           onClick={() => {
                             setTrackingBook({ title: b.title, hadithKey });
                             setTrackingSub("hifz");
                           }}
                         >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="9" cy="7" r="3.2" />
-                            <path d="M2.5 20c.7-3.6 3.3-5.6 6.5-5.6s5.8 2 6.5 5.6" />
-                          </svg>
-                          متابعة الطلاب
+                          <span className="study-plan-tracking-btn-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="9" cy="7" r="3.2" />
+                              <path d="M2.5 20c.7-3.6 3.3-5.6 6.5-5.6s5.8 2 6.5 5.6" />
+                            </svg>
+                          </span>
+                          <span className="study-plan-tracking-btn-text">
+                            <span className="study-plan-tracking-btn-title">متابعة الطلاب</span>
+                            <span className="study-plan-tracking-btn-hint">
+                              انقر هنا لمراقبة تقدم الطالب
+                            </span>
+                          </span>
                         </button>
                       )
                     }

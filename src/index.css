@@ -647,11 +647,51 @@ label {
   overflow-y: auto;
 }
 .study-plan-tracking-btn {
-  background: var(--primary) !important;
-  color: #fff !important;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: none;
 }
 .study-plan-tracking-btn:hover {
-  background: var(--primary-dark) !important;
+  background: var(--primary-dark);
+  transform: none;
+  box-shadow: none;
+}
+.study-plan-tracking-btn-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+}
+.study-plan-tracking-btn-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.study-plan-tracking-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: right;
+}
+.study-plan-tracking-btn-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+.study-plan-tracking-btn-hint {
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 .record-grid {
