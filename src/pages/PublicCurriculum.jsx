@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import MenhajAccordion from "../components/MenhajAccordion";
 import SettingsPanel from "../components/SettingsPanel";
+import PublicQuranReader from "../components/PublicQuranReader";
 import logo from "../assets/logo.png";
 
 const TABS = [
+  { key: "quran", label: "القرآن" },
   { key: "menhaj", label: "المنهج" },
   { key: "settings", label: "الإعدادات" },
 ];
@@ -15,7 +17,7 @@ const TABS = [
 // theme/calendar preferences here — its superadmin curriculum-upload card
 // is self-gated inside SettingsPanel, so nothing private leaks through.
 export default function PublicCurriculum() {
-  const [tab, setTab] = useState("menhaj");
+  const [tab, setTab] = useState("quran");
 
   return (
     <div className="public-curriculum">
@@ -44,6 +46,7 @@ export default function PublicCurriculum() {
       </nav>
 
       <main className="public-curriculum-body">
+        {tab === "quran" && <PublicQuranReader />}
         {tab === "menhaj" && <MenhajAccordion />}
         {tab === "settings" && <SettingsPanel />}
       </main>
