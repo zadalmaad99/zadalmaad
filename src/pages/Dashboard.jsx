@@ -176,7 +176,6 @@ export default function Dashboard() {
     if (["hifz", "qiraah", "murajaah"].includes(sectionKey)) {
       if (domain === "hadith") {
         setTab("hadith");
-        setHadithSub(sectionKey);
       } else {
         setTab("quran");
         setQuranSub(sectionKey);

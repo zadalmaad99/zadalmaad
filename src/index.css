@@ -306,6 +306,13 @@ label {
   background: var(--gold);
   color: #fff;
 }
+.public-curriculum-tabs {
+  display: flex;
+  gap: 8px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
 .public-curriculum-body {
   max-width: 1100px;
   margin: 0 auto;
