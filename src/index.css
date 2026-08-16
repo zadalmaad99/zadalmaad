@@ -1396,6 +1396,15 @@ td.empty {
     bottom: calc(84px + env(safe-area-inset-bottom));
     inset-inline-end: 14px;
   }
+  /* The fixed install pill otherwise sits directly on top of the public
+     page's header (logo/title/login button all share that same vertical
+     band on narrow screens) — move it out of the way instead. */
+  .install-wrap {
+    top: auto;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 14px;
+    transform: none;
+  }
 }
 
 .install-btn {
@@ -3924,7 +3933,8 @@ td.empty {
     padding: 16px 14px 14px;
   }
   .curriculum-pdf-panel {
-    padding: 4px 0 14px;
+    margin: 4px 0 14px;
+    padding: 16px 14px;
   }
   .menhaj-card {
     padding: 18px 16px 16px;
@@ -3997,6 +4007,33 @@ td.empty {
   }
   .settings-section {
     padding-inline: 0;
+  }
+
+  .public-curriculum-header {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  .public-curriculum-logo {
+    width: 34px;
+    height: 34px;
+  }
+  .public-curriculum-heading h1 {
+    font-size: 15px;
+  }
+  .public-curriculum-heading p {
+    font-size: 11px;
+  }
+  .public-curriculum-login {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+  .public-curriculum-tabs {
+    padding: 12px 12px 0;
+    overflow-x: auto;
+  }
+  .public-curriculum-body {
+    padding: 16px 10px 50px;
   }
 }
 
