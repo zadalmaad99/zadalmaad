@@ -3066,6 +3066,34 @@ td.empty {
   font-weight: 700;
   color: var(--primary-dark);
 }
+.study-plan-youtube {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.study-plan-youtube-label {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+}
+.study-plan-youtube-frame {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+.study-plan-youtube-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
 .study-plan-audio-external {
   width: 100%;
   display: flex;

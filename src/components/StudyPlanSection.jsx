@@ -99,6 +99,39 @@ function isStreamableAudioUrl(url) {
   }
 }
 
+// Accepts youtube.com/watch?v=, youtu.be/, and youtube.com/embed/ links.
+function getYoutubeId(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const embedMatch = u.pathname.match(/^\/(embed|shorts)\/([^/?#]+)/);
+      if (embedMatch) return embedMatch[2];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function YoutubeEmbed({ videoId, label }) {
+  return (
+    <div className="study-plan-audio study-plan-youtube">
+      {label && <p className="study-plan-youtube-label">{label}</p>}
+      <div className="study-plan-youtube-frame">
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title={label || "درس يوتيوب"}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    </div>
+  );
+}
+
 function DownloadOnlyAudioCard({ url, label, book, sheikhLabel }) {
   const fileName = composedFileName(book, sheikhLabel, label, url);
   return (
@@ -1307,7 +1340,13 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
         <>
           {isLessonSeries ? (
             lesson ? (
-              isStreamableAudioUrl(lesson.url) ? (
+              getYoutubeId(lesson.url) ? (
+                <YoutubeEmbed
+                  key={lesson.url}
+                  videoId={getYoutubeId(lesson.url)}
+                  label={lesson.title}
+                />
+              ) : isStreamableAudioUrl(lesson.url) ? (
                 <AudioPlayer
                   key={lesson.url}
                   url={lesson.url}
@@ -1330,7 +1369,9 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
               <span className="study-plan-audio-missing">اختر الدرس لتشغيله</span>
             )
           ) : singleUrl ? (
-            isStreamableAudioUrl(singleUrl) ? (
+            getYoutubeId(singleUrl) ? (
+              <YoutubeEmbed key={singleUrl} videoId={getYoutubeId(singleUrl)} label={null} />
+            ) : isStreamableAudioUrl(singleUrl) ? (
               <AudioPlayer
                 key={singleUrl}
                 url={singleUrl}
