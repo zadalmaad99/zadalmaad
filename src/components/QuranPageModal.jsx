@@ -7,16 +7,47 @@ function pageUrl(page) {
   return `https://files.quran.app/hafs/madani/width_1260/page${padded}.png`;
 }
 
-export default function QuranPageModal({ page, onClose }) {
-  const [current, setCurrent] = useState(page);
+// The page image + prev/next controls, reused both inside the popup modal
+// (from student tracking records) and embedded directly on the page (public
+// Quran reader) — same viewer, different wrapper.
+export function QuranPageViewer({ page, onPageChange }) {
   const [loading, setLoading] = useState(true);
 
   function go(delta) {
-    const next = Math.min(PAGE_COUNT, Math.max(1, current + delta));
-    if (next === current) return;
+    const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
+    if (next === page) return;
     setLoading(true);
-    setCurrent(next);
+    onPageChange(next);
   }
+
+  return (
+    <>
+      <div className="quran-page-viewer">
+        {loading && <div className="quran-page-loading">جارٍ التحميل...</div>}
+        <img
+          src={pageUrl(page)}
+          alt={`صفحة ${page}`}
+          className="quran-page-img"
+          onLoad={() => setLoading(false)}
+          style={{ display: loading ? "none" : "block" }}
+        />
+      </div>
+
+      <div className="quran-page-nav">
+        <button type="button" className="ghost" onClick={() => go(-1)} disabled={page <= 1}>
+          الصفحة السابقة
+        </button>
+        <span className="hint-text">{page} / {PAGE_COUNT}</span>
+        <button type="button" className="ghost" onClick={() => go(1)} disabled={page >= PAGE_COUNT}>
+          الصفحة التالية
+        </button>
+      </div>
+    </>
+  );
+}
+
+export default function QuranPageModal({ page, onClose }) {
+  const [current, setCurrent] = useState(page);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -33,36 +64,7 @@ export default function QuranPageModal({ page, onClose }) {
           </button>
         </div>
 
-        <div className="quran-page-viewer">
-          {loading && <div className="quran-page-loading">جارٍ التحميل...</div>}
-          <img
-            src={pageUrl(current)}
-            alt={`صفحة ${current}`}
-            className="quran-page-img"
-            onLoad={() => setLoading(false)}
-            style={{ display: loading ? "none" : "block" }}
-          />
-        </div>
-
-        <div className="quran-page-nav">
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => go(-1)}
-            disabled={current <= 1}
-          >
-            الصفحة السابقة
-          </button>
-          <span className="hint-text">{current} / {PAGE_COUNT}</span>
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => go(1)}
-            disabled={current >= PAGE_COUNT}
-          >
-            الصفحة التالية
-          </button>
-        </div>
+        <QuranPageViewer page={current} onPageChange={setCurrent} />
       </div>
     </div>
   );
