@@ -73,18 +73,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Public — the المنهج page (books, شرح, PDFs) is readable without login.
     match /curriculumAudio/{bookId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isSuperadmin();
     }
 
     match /curriculumOverrides/{docId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isSuperadmin();
     }
 
     match /curriculumMeta/{docId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isSuperadmin();
     }
   }

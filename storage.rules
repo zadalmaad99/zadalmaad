@@ -9,7 +9,7 @@ service firebase.storage {
     }
 
     match /curriculum/{fileName} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isSuperadmin();
     }
   }

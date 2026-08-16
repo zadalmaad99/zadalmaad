@@ -26,7 +26,7 @@ const HADITH_TITLES = {
 // — plus a "متابعة الطلاب" button per card that opens the existing
 // hifz/qiraah/murajaah student tracking scoped to that one book.
 export default function HadithBooksSection() {
-  const { isSuperadmin } = useAuth();
+  const { user, isSuperadmin } = useAuth();
   const { sections, overrides, saveOverrides } = useCurriculumPlan(PLAN_SECTIONS, "hadithBooks");
   const [addingSection, setAddingSection] = useState(null);
   const [reorderingSection, setReorderingSection] = useState(null);
@@ -116,7 +116,7 @@ export default function HadithBooksSection() {
                       b.isAdded ? () => handleDeleteAddedBook(b.title) : handleDeleteBook
                     }
                     trackingButton={
-                      hadithKey && (
+                      hadithKey && user && (
                         <button
                           type="button"
                           className="study-plan-tracking-btn"

@@ -258,6 +258,60 @@ label {
   font-weight: 600;
 }
 
+.public-curriculum {
+  min-height: 100vh;
+  background: var(--bg, var(--surface-alt));
+}
+.public-curriculum-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  background: var(--primary-dark);
+  color: #fff;
+}
+.public-curriculum-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.public-curriculum-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.public-curriculum-heading h1 {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0;
+}
+.public-curriculum-heading p {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+  margin: 2px 0 0;
+}
+.public-curriculum-login {
+  flex-shrink: 0;
+  background: #fff;
+  color: var(--primary-dark);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.public-curriculum-login:hover {
+  background: var(--gold);
+  color: #fff;
+}
+.public-curriculum-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
 .dashboard {
   display: flex;
   min-height: 100vh;
