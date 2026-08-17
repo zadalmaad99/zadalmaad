@@ -128,5 +128,23 @@ service cloud.firestore {
       allow update: if isSignedIn() && request.auth.uid == resource.data.uid && request.auth.uid == request.resource.data.uid;
       allow delete: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner());
     }
+
+    // Per-user, per-section (قراءة/حفظ/مراجعة) mushaf page position — same
+    // pattern as videoProgress/pdfProgress, so الإعدادات's stats panel sees
+    // real-time page progress across all three القرآن sub-sections too. A
+    // student's own teacher can also read it — this IS the متابعة المعلم
+    // now, replacing the old manually-entered records.
+    match /quranPageProgress/{docId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.uid ||
+        isOwner() ||
+        (isAdminRole() &&
+          exists(/databases/$(database)/documents/students/$(resource.data.uid)) &&
+          get(/databases/$(database)/documents/students/$(resource.data.uid)).data.adminId == request.auth.uid)
+      );
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isSignedIn() && request.auth.uid == resource.data.uid && request.auth.uid == request.resource.data.uid;
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner());
+    }
   }
 }

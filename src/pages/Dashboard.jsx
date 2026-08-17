@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import StudentsPanel from "../components/StudentsPanel";
-import TrackingSection from "../components/TrackingSection";
+import QuranPageTracking from "../components/QuranPageTracking";
 import OverviewDashboard from "../components/OverviewDashboard";
 import SettingsPanel from "../components/SettingsPanel";
 import AttendancePanel from "../components/AttendancePanel";
@@ -11,6 +11,8 @@ import MenhajAccordion from "../components/MenhajAccordion";
 import AdminAlertsBell from "../components/AdminAlertsBell";
 import { QuranPageViewer } from "../components/QuranPageModal";
 import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
 import logo from "../assets/logo.png";
 
 const NAV_STORAGE_KEY = "quran-tracker-nav";
@@ -173,6 +175,16 @@ function MushafTabReader({ section }) {
     } catch {
       // private-browsing / storage-quota — resuming just won't work, no big deal
     }
+    // Live-synced to Firestore so the owner's "تقدّم كل المستخدمين" panel in
+    // الإعدادات sees exactly where every viewer is in كل من قراءة/حفظ/مراجعة,
+    // not just a local bookmark on their own device.
+    if (user?.uid) {
+      setDoc(
+        doc(db, "quranPageProgress", `${user.uid}_${section}`),
+        { uid: user.uid, email: user.email || null, section, page: next, updatedAt: Date.now() },
+        { merge: true }
+      ).catch(() => {});
+    }
   }
 
   const info = getPageInfo(page);
@@ -332,7 +344,7 @@ export default function Dashboard() {
             <div className="modal-card quran-page-card public-quran-card mushaf-tab-card">
               <MushafTabReader key={quranSub} section={quranSub} />
             </div>
-            <TrackingSection
+            <QuranPageTracking
               type={quranSub}
               title={QURAN_TITLES[quranSub]}
               focusStudentId={focusStudentId}
