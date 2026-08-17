@@ -4,11 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "pdfjs-assets": "node scripts/copy-pdfjs-assets.mjs",
+    "predev": "npm run pdfjs-assets",
     "dev": "vite",
+    "prebuild": "npm run pdfjs-assets",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "deploy": "vite build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
     "firebase": "^12.17.1",

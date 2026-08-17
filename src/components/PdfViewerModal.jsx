@@ -20,6 +20,17 @@ function loadPdfjs() {
   return pdfjsLibPromise;
 }
 
+// Served from public/pdfjs (mirrored from pdfjs-dist at build time). Without
+// these, a PDF that doesn't embed its fonts — Arial, Times New Roman — has
+// no glyph data to fall back on, and Identity-H text has no CMap table, so
+// Arabic renders with its letters unjoined and out of order.
+const PDFJS_ASSET_BASE = `${import.meta.env.BASE_URL}pdfjs/`;
+const PDF_DOC_OPTIONS = {
+  cMapUrl: `${PDFJS_ASSET_BASE}cmaps/`,
+  cMapPacked: true,
+  standardFontDataUrl: `${PDFJS_ASSET_BASE}standard_fonts/`,
+};
+
 function formatEta(seconds) {
   if (seconds == null || !Number.isFinite(seconds)) return "…";
   if (seconds < 60) return `${Math.max(1, Math.round(seconds))} ثانية`;
@@ -130,7 +141,7 @@ export default function PdfViewerModal({ url, title, onClose }) {
     let cancelled = false;
     setStatus("loading");
     loadPdfjs()
-      .then((lib) => lib.getDocument({ url }).promise)
+      .then((lib) => lib.getDocument({ url, ...PDF_DOC_OPTIONS }).promise)
       .then((pdf) => {
         if (cancelled) return;
         docRef.current = pdf;

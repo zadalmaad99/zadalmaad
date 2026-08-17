@@ -104,6 +104,9 @@ const SUB_SECTIONS = [
   { key: "murajaah", label: "مراجعة" },
 ];
 
+// Sidebar order is deliberate: العام، القرآن، المنهج، المعلّم، الطلاب،
+// الحضور، الإعدادات — the daily-use sections come before the
+// administrative ones.
 const TABS = [
   {
     key: "overview",
@@ -111,13 +114,6 @@ const TABS = [
     navLabel: "العام",
     desc: "ترتيب الطلاب حسب التقدم في كل الأقسام",
   },
-  {
-    key: "superadmin",
-    label: "لوحة الإشراف",
-    navLabel: "المعلّم",
-    desc: "متابعة كل المعلمين المسجّلين وعدد طلابهم ونشاطهم",
-  },
-  { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
   {
     key: "quran",
     label: "القرآن الكريم",
@@ -130,6 +126,13 @@ const TABS = [
     navLabel: "المنهج",
     desc: "متابعة حفظ وقراءة ومراجعة أحاديث الكتب الستة",
   },
+  {
+    key: "superadmin",
+    label: "لوحة الإشراف",
+    navLabel: "المعلّم",
+    desc: "متابعة كل المعلمين المسجّلين وعدد طلابهم ونشاطهم",
+  },
+  { key: "students", label: "الطلاب", navLabel: "الطلاب", desc: "إدارة قائمة الطلاب" },
   {
     key: "attendance",
     label: "الحضور والغياب",

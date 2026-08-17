@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const DISMISS_KEY = "braveBannerDismissed";
 
@@ -34,12 +34,36 @@ const LINKS = [
 ];
 
 export default function BraveBanner() {
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === "1");
+  // Closing it only hides it for the current visit — a refresh brings the
+  // reminder back, since the point is to keep nudging until the reader
+  // actually switches. The one thing that retires it for good is opening
+  // the app in Brave, which is exactly what it's asking for.
+  const [dismissed, setDismissed] = useState(false);
+  const [isBrave, setIsBrave] = useState(false);
 
-  if (dismissed) return null;
+  useEffect(() => {
+    // Clear the old permanent flag so anyone who dismissed it back when
+    // that was forever starts seeing the reminder again.
+    try {
+      localStorage.removeItem(DISMISS_KEY);
+    } catch {
+      // storage unavailable — nothing to clean up
+    }
+    let cancelled = false;
+    navigator.brave
+      ?.isBrave?.()
+      .then((v) => {
+        if (!cancelled) setIsBrave(!!v);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (dismissed || isBrave) return null;
 
   function handleDismiss() {
-    localStorage.setItem(DISMISS_KEY, "1");
     setDismissed(true);
   }
 

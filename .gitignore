@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Mirrored from pdfjs-dist by scripts/copy-pdfjs-assets.mjs on every build
+public/pdfjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

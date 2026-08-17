@@ -16,6 +16,7 @@ import PdfViewerModal, { readPdfProgress } from "./PdfViewerModal";
 import { applyOrQueue } from "../utils/pendingChanges";
 import { useSectionCollapse } from "../utils/persistentCollapse";
 import { normalizePdfUrl } from "../utils/pdfUrl";
+import { useMyProgress } from "../utils/myProgress";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
 
@@ -1064,6 +1065,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const [showPdfManager, setShowPdfManager] = useState(false);
   const [showSheikhPicker, setShowSheikhPicker] = useState(false);
   const [liveProgress, setLiveProgress] = useState({});
+  const cloudProgress = useMyProgress(user?.uid);
   const [justEnded, setJustEnded] = useState(false);
   // A card defaults to its first lesson *selected* (so the trigger button
   // already shows "الدرس 1" instead of a generic prompt), but with dozens
@@ -1083,6 +1085,10 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const handleVideoProgress = useCallback((videoId, percent) => {
     setLiveProgress((prev) => (prev[videoId] === percent ? prev : { ...prev, [videoId]: percent }));
   }, []);
+
+  // Cloud is the baseline (so another device's progress shows up here);
+  // anything ticking live in this session takes precedence over it.
+  const shownProgress = { ...cloudProgress.video, ...liveProgress };
 
   const idx = selected === "" ? null : Number(selected);
   const staticEntry = idx !== null ? book.audio?.[idx] : null;
@@ -1106,10 +1112,13 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const hasLessons = Object.values(extraBySheikh).some((arr) => arr?.length > 0);
   const hasDynamicData = !!dynamicPdfUrl || pdfList.length > 0 || hasLessons;
 
-  // Reading progress for the book's main PDF — re-read from storage whenever
-  // the viewer closes, since that's the only moment it could have changed.
+  // Reading progress for the book's main PDF — local storage is the fast
+  // path, but fall back to the account's cloud copy so the bar still shows
+  // on a device that hasn't opened this file yet.
   const mainPdfUrl = allPdfs[0]?.url || null;
-  const pdfProgress = mainPdfUrl ? readPdfProgress(mainPdfUrl, user?.uid) : null;
+  const pdfProgress =
+    (mainPdfUrl ? readPdfProgress(mainPdfUrl, user?.uid) : null) ||
+    (mainPdfUrl ? cloudProgress.pdf[mainPdfUrl] : null);
   const pdfPercent = pdfProgress?.numPages
     ? Math.min(100, Math.round((pdfProgress.page / pdfProgress.numPages) * 100))
     : null;
@@ -1418,7 +1427,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
       {idx !== null && isLessonSeries && (
         <>
-          <BookProgressLabel percent={aggregateVideoProgress(entry, liveProgress, user?.uid)} />
+          <BookProgressLabel percent={aggregateVideoProgress(entry, shownProgress, user?.uid)} />
 
           <button
             type="button"
@@ -1438,7 +1447,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
             {lessonIdx !== "" && getYoutubeId(entry[Number(lessonIdx)]?.url) && (
               <VideoProgressBar
                 videoId={getYoutubeId(entry[Number(lessonIdx)].url)}
-                live={liveProgress[getYoutubeId(entry[Number(lessonIdx)].url)]}
+                live={shownProgress[getYoutubeId(entry[Number(lessonIdx)].url)]}
               />
             )}
           </button>
@@ -1449,7 +1458,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
               sheikhLabel={sheikhLabel}
               downloadedSet={downloadedSet}
               staticCount={Array.isArray(staticEntry) ? staticEntry.length : 0}
-              liveProgress={liveProgress}
+              liveProgress={shownProgress}
               onSelect={(li) => {
                 setLessonIdx(String(li));
                 setVideoOpened(true);
