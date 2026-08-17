@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
 // pdf.js is a hefty dependency (~400KB) that most visitors never touch —
@@ -71,6 +73,35 @@ function savePdfProgress(url, uid, page, numPages) {
   }
 }
 
+function pdfProgressDocId(uid, url) {
+  // Firestore doc IDs can't contain "/", and the raw URL is full of them.
+  let h = 0;
+  for (let i = 0; i < url.length; i++) h = (h * 31 + url.charCodeAt(i)) | 0;
+  return `${uid}_${h}`;
+}
+
+// Mirrors the video-progress sync in StudyPlanSection.jsx so the owner's
+// "تقدّم كل المستخدمين" panel can also see PDF reading progress, not just
+// YouTube — previously this only ever lived in localStorage and never
+// reached Firestore at all, so the admin view showed nothing for it.
+function syncPdfProgressToCloud(url, user, page, numPages, title) {
+  if (!user?.uid || !numPages) return;
+  setDoc(
+    doc(db, "pdfProgress", pdfProgressDocId(user.uid, url)),
+    {
+      uid: user.uid,
+      email: user.email || null,
+      url,
+      title: title || null,
+      page,
+      numPages,
+      percent: Math.min(100, Math.round((page / numPages) * 100)),
+      updatedAt: Date.now(),
+    },
+    { merge: true }
+  ).catch(() => {});
+}
+
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
 
@@ -131,11 +162,14 @@ export default function PdfViewerModal({ url, title, onClose }) {
       renderTaskRef.current = task;
       task.promise.catch(() => {});
     });
-    if (numPages) savePdfProgress(url, uid, pageNum, numPages);
+    if (numPages) {
+      savePdfProgress(url, uid, pageNum, numPages);
+      syncPdfProgressToCloud(url, user, pageNum, numPages, title);
+    }
     return () => {
       cancelled = true;
     };
-  }, [status, pageNum, scale, url, uid, numPages]);
+  }, [status, pageNum, scale, url, uid, numPages, user, title]);
 
   function goPrev() {
     setPageNum((p) => Math.max(1, p - 1));

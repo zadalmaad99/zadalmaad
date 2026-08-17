@@ -484,6 +484,20 @@ label {
   box-shadow: 0 6px 14px rgba(31, 122, 61, 0.28);
 }
 
+@media (max-width: 560px) {
+  .subnav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .subnav-btn {
+    justify-content: center;
+    padding: 10px 8px;
+    border-radius: 12px;
+    font-size: 12.5px;
+  }
+}
+
 .panel {
   background: var(--surface);
   border-radius: var(--radius);

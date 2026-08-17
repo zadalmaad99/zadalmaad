@@ -147,17 +147,39 @@ const QURAN_TITLES = {
   murajaah: "سجلات المراجعة",
 };
 
+function mushafPageKey(uid) {
+  return `mushafPage_${uid || "anon"}`;
+}
+
 // The physical mus-haf reader, available to every signed-in role right
 // alongside the حفظ/قراءة/مراجعة tracking tabs — not just the anonymous
-// public page.
+// public page. Resumes on whichever page the viewer last had open, per
+// account, like the video/PDF progress elsewhere in the app.
 function MushafTabReader() {
-  const [page, setPage] = useState(1);
+  const { user } = useAuth();
+  const [page, setPage] = useState(() => {
+    try {
+      return Number(localStorage.getItem(mushafPageKey(user?.uid))) || 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  function handlePageChange(next) {
+    setPage(next);
+    try {
+      localStorage.setItem(mushafPageKey(user?.uid), String(next));
+    } catch {
+      // private-browsing / storage-quota — resuming just won't work, no big deal
+    }
+  }
+
   return (
     <>
       <div className="modal-header">
         <h3>صفحة {page} من المصحف</h3>
       </div>
-      <QuranPageViewer page={page} onPageChange={setPage} />
+      <QuranPageViewer page={page} onPageChange={handlePageChange} />
     </>
   );
 }
@@ -171,7 +193,9 @@ export default function Dashboard() {
       );
   const savedNav = readNav();
   const [tab, setTab] = useState(savedNav.tab || (isAdmin ? "overview" : "quran"));
-  const [quranSub, setQuranSub] = useState(savedNav.quranSub || "mushaf");
+  // Always opens on المصحف by design, even if a previous session left a
+  // different sub-tab active — only the page-within-mushaf is remembered.
+  const [quranSub, setQuranSub] = useState("mushaf");
   const [focusStudentId, setFocusStudentId] = useState(null);
   const [focusAdmin, setFocusAdmin] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];

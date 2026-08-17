@@ -119,5 +119,14 @@ service cloud.firestore {
       // The owner can reset a user's watch statistics from the admin panel.
       allow delete: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner());
     }
+
+    // Per-user PDF reading position — mirrors videoProgress above, so the
+    // owner's admin panel can see reading progress too, not just YouTube.
+    match /pdfProgress/{docId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner());
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isSignedIn() && request.auth.uid == resource.data.uid && request.auth.uid == request.resource.data.uid;
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner());
+    }
   }
 }

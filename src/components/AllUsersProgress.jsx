@@ -34,6 +34,7 @@ function progressTier(percent) {
 export default function AllUsersProgress() {
   const { isSupersuperadmin } = useAuth();
   const [byUid, setByUid] = useState({});
+  const [pdfByUid, setPdfByUid] = useState({});
   const [students, setStudents] = useState({});
   const [admins, setAdmins] = useState({});
   const [videoMap, setVideoMap] = useState({});
@@ -45,11 +46,15 @@ export default function AllUsersProgress() {
   // touches any uploaded curriculum content. The card list here updates the
   // moment the deletes land, since it's driven by the same onSnapshot below;
   // book cards read this per-viewer so there's nothing else to push to.
-  async function handleResetStats(uid, videoIds) {
-    if (!window.confirm(`هل تريد تصفير إحصائيات مشاهدة هذا المستخدم (${videoIds.length} فيديو)؟ لا يمكن التراجع.`)) return;
+  async function handleResetStats(uid, videoIds, pdfDocIds) {
+    const total = videoIds.length + pdfDocIds.length;
+    if (!window.confirm(`هل تريد تصفير إحصائيات هذا المستخدم (${total} عنصر)؟ لا يمكن التراجع.`)) return;
     setResettingUid(uid);
     try {
-      await Promise.all(videoIds.map((vid) => deleteDoc(doc(db, "videoProgress", `${uid}_${vid}`))));
+      await Promise.all([
+        ...videoIds.map((vid) => deleteDoc(doc(db, "videoProgress", `${uid}_${vid}`))),
+        ...pdfDocIds.map((id) => deleteDoc(doc(db, "pdfProgress", id))),
+      ]);
     } catch {
       window.alert("تعذّر التصفير — تحقّق من اتصال الإنترنت وحاول مجددًا");
     } finally {
@@ -67,6 +72,20 @@ export default function AllUsersProgress() {
         (grouped[data.uid] ||= []).push(data);
       });
       setByUid(grouped);
+    });
+    return unsub;
+  }, [isSupersuperadmin]);
+
+  useEffect(() => {
+    if (!isSupersuperadmin) return;
+    const unsub = onSnapshot(collection(db, "pdfProgress"), (snap) => {
+      const grouped = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        if (!data.uid) return;
+        (grouped[data.uid] ||= []).push({ ...data, docId: d.id });
+      });
+      setPdfByUid(grouped);
     });
     return unsub;
   }, [isSupersuperadmin]);
@@ -122,12 +141,14 @@ export default function AllUsersProgress() {
 
   if (!isSupersuperadmin) return null;
 
-  const rows = Object.entries(byUid)
-    .map(([uid, items]) => {
-      const avg = Math.round(items.reduce((s, i) => s + (i.percent ?? Math.round(((i.seconds || 0) / (i.duration || 1)) * 100)), 0) / items.length);
+  const allUids = new Set([...Object.keys(byUid), ...Object.keys(pdfByUid)]);
+  const rows = [...allUids]
+    .map((uid) => {
+      const items = byUid[uid] || [];
+      const pdfItems = pdfByUid[uid] || [];
       const student = students[uid];
       const admin = admins[uid];
-      const email = items.find((i) => i.email)?.email || null;
+      const email = items.find((i) => i.email)?.email || pdfItems.find((i) => i.email)?.email || null;
       const isOwnerEmail = email === "mathelove2@gmail.com";
       const isWatchedEmail = email === "admin.zadalmaad@admin.com";
       const name = student?.name || admin?.name || (isOwnerEmail || isWatchedEmail ? email : null);
@@ -137,22 +158,36 @@ export default function AllUsersProgress() {
           const percent = Math.min(100, i.percent ?? Math.round(((i.seconds || 0) / (i.duration || 1)) * 100));
           const info = videoMap[i.videoId];
           return {
-            videoId: i.videoId,
+            type: "video",
+            id: i.videoId,
             percent,
             book: info?.book || null,
             sheikh: info?.sheikh?.replace(/^شرح\s+/, "") || null,
             lesson: info?.lesson || null,
             updatedAt: i.updatedAt || 0,
           };
-        })
-        .sort((a, b) => b.updatedAt - a.updatedAt);
+        });
+      const pdfs = pdfItems.map((i) => ({
+        type: "pdf",
+        id: i.docId,
+        percent: Math.min(100, i.percent || 0),
+        book: i.title || null,
+        sheikh: null,
+        lesson: `صفحة ${i.page} من ${i.numPages}`,
+        updatedAt: i.updatedAt || 0,
+      }));
+      const activities = [...videos, ...pdfs].sort((a, b) => b.updatedAt - a.updatedAt);
+      const allPercents = activities.map((a) => a.percent);
+      const avg = allPercents.length ? Math.round(allPercents.reduce((a, b) => a + b, 0) / allPercents.length) : 0;
       return {
         uid,
         name: name || email || "مستخدم بدون اسم مسجّل",
         role,
-        videosStarted: items.length,
+        videosStarted: activities.length,
         avgPercent: Math.min(100, avg),
-        videos,
+        videos: activities,
+        videoIds: items.map((i) => i.videoId),
+        pdfDocIds: pdfItems.map((i) => i.docId),
       };
     })
     .sort((a, b) => b.avgPercent - a.avgPercent);
@@ -200,7 +235,7 @@ export default function AllUsersProgress() {
                     </span>
                     <span className="all-progress-summary">
                       <strong>{r.avgPercent}%</strong>
-                      <span>{r.videosStarted} فيديو</span>
+                      <span>{r.videosStarted} عنصر</span>
                     </span>
                     <svg
                       viewBox="0 0 24 24"
@@ -219,12 +254,7 @@ export default function AllUsersProgress() {
                         type="button"
                         className="all-progress-reset-btn"
                         disabled={resettingUid === r.uid}
-                        onClick={() =>
-                          handleResetStats(
-                            r.uid,
-                            r.videos.map((v) => v.videoId)
-                          )
-                        }
+                        onClick={() => handleResetStats(r.uid, r.videoIds, r.pdfDocIds)}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13" />
@@ -232,11 +262,14 @@ export default function AllUsersProgress() {
                         {resettingUid === r.uid ? "جارٍ التصفير..." : "تصفير إحصائيات هذا المستخدم"}
                       </button>
                       {r.videos.map((v) => (
-                        <div key={v.videoId} className="all-progress-video-row">
+                        <div key={`${v.type}-${v.id}`} className="all-progress-video-row">
                           <div className="all-progress-video-info">
                             {v.book ? (
                               <>
-                                <span className="all-progress-video-book">{v.book}</span>
+                                <span className="all-progress-video-book">
+                                  {v.type === "pdf" ? "📄 " : ""}
+                                  {v.book}
+                                </span>
                                 <span className="all-progress-video-lesson">
                                   {v.sheikh && <span className="all-progress-video-sheikh">{v.sheikh}</span>}
                                   {v.lesson || "درس"}
@@ -246,7 +279,7 @@ export default function AllUsersProgress() {
                               <span className="all-progress-video-lesson">
                                 فيديو غير مرتبط بكتاب حاليًا
                                 <span className="all-progress-video-id" dir="ltr">
-                                  {v.videoId}
+                                  {v.id}
                                 </span>
                               </span>
                             )}
