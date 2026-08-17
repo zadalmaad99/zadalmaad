@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { isFlipMuted, playPageFlip, setFlipMuted } from "../utils/pageFlipSound";
 
 const PAGE_COUNT = 604;
 const MIN_SCALE = 1;
@@ -20,6 +21,7 @@ export function QuranPageViewer({ page, onPageChange }) {
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
     if (next === page) return;
+    playPageFlip();
     setLoading(true);
     onPageChange(next);
   }
@@ -73,6 +75,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [loading, setLoading] = useState(true);
+  const [muted, setMuted] = useState(() => isFlipMuted());
   const pinchRef = useRef(null);
   const panRef = useRef(null);
   const swipeRef = useRef(null);
@@ -80,6 +83,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
     if (next === page) return;
+    playPageFlip();
     setLoading(true);
     setScale(1);
     setOffset({ x: 0, y: 0 });
@@ -89,8 +93,9 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   useEffect(() => {
     function onKey(e) {
       if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowRight") go(-1);
-      else if (e.key === "ArrowLeft") go(1);
+      // Matches the swipe: rightward moves forward through the mushaf.
+      else if (e.key === "ArrowRight") go(1);
+      else if (e.key === "ArrowLeft") go(-1);
     }
     window.addEventListener("keydown", onKey);
     // The body must not scroll behind a full-screen reader.
@@ -137,15 +142,17 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   }
 
   function handleTouchEnd(e) {
-    // A mostly-horizontal flick at 1x turns the page — in an RTL mushaf,
-    // dragging leftward pulls the next page in.
+    // A mostly-horizontal flick at 1x turns the page. The mushaf is bound
+    // on the right — الفاتحة is the rightmost page and السور تتقدم يسارًا —
+    // so moving forward means sweeping the sheet rightward, exactly like
+    // turning a page in the physical book.
     const s = swipeRef.current;
     if (s && scale <= 1) {
       const t = e.changedTouches?.[0];
       if (t) {
         const dx = t.clientX - s.x;
         const dy = t.clientY - s.y;
-        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
+        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx > 0 ? 1 : -1);
       }
     }
     pinchRef.current = null;
@@ -179,6 +186,28 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             </svg>
           </button>
         </div>
+        <button
+          type="button"
+          className="quran-fs-close"
+          onClick={() => {
+            setFlipMuted(!muted);
+            setMuted(!muted);
+          }}
+          aria-label={muted ? "تشغيل صوت تقليب الصفحات" : "كتم صوت تقليب الصفحات"}
+          title={muted ? "تشغيل الصوت" : "كتم الصوت"}
+        >
+          {muted ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+              <path d="m22 9-6 6m0-6 6 6" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+              <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" />
+            </svg>
+          )}
+        </button>
         <button type="button" className="quran-fs-close" onClick={onClose} aria-label="إغلاق">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -207,7 +236,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
 
       {/* No arrow buttons — they sat on top of the text. Paging is by
           swipe (and by keyboard on desktop). */}
-      <p className="quran-fs-hint">اسحب يمينًا أو يسارًا لتغيير الصفحة</p>
+      <p className="quran-fs-hint">اسحب يمينًا للصفحة التالية، ويسارًا للسابقة</p>
     </div>,
     document.body
   );
