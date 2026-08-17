@@ -181,8 +181,12 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         x: e.touches[0].clientX - offset.x,
         y: e.touches[0].clientY - offset.y,
       };
+      // Also tracked at any zoom level: a fast, mostly-horizontal drag well
+      // past normal panning distance still turns the page (see the
+      // threshold below), so being zoomed in never traps the reader —
+      // the قصيرة/توضيح buttons in the toolbar are the guaranteed fallback.
+      swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else if (e.touches.length === 1) {
-      // Only at 1x — once zoomed in, a one-finger drag means pan, not turn.
       swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
   }
@@ -207,12 +211,16 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     // so moving forward means sweeping the sheet rightward, exactly like
     // turning a page in the physical book.
     const s = swipeRef.current;
-    if (s && scale <= 1) {
+    if (s) {
       const t = e.changedTouches?.[0];
       if (t) {
         const dx = t.clientX - s.x;
         const dy = t.clientY - s.y;
-        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx > 0 ? 1 : -1);
+        // A much bigger threshold once zoomed in, so an ordinary pan never
+        // fires it — but a real edge-to-edge sweep still turns the page,
+        // instead of the reader being trapped unable to page while zoomed.
+        const threshold = scale <= 1 ? 55 : 130;
+        if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy) * 1.8) go(dx > 0 ? 1 : -1);
       }
     }
     pinchRef.current = null;
@@ -320,6 +328,22 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
       )}
 
       <div className="quran-fs-bar">
+        {/* Always-working page turn, independent of swipe/zoom state — a
+            swipe is ambiguous with panning once scale > 1 (that's the
+            whole reason panning was added), so these are the reliable
+            fallback rather than the only way to turn a zoomed page. */}
+        <div className="quran-fs-pager">
+          <button type="button" onClick={() => go(-1)} disabled={page <= 1} aria-label="الصفحة السابقة">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+          <button type="button" onClick={() => go(1)} disabled={page >= PAGE_COUNT} aria-label="الصفحة التالية">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+        </div>
         <div className="quran-fs-zoom">
           <button type="button" onClick={() => zoom(-0.25)} disabled={scale <= MIN_SCALE} aria-label="تصغير">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

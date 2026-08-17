@@ -40,6 +40,16 @@ export default function BraveBanner() {
   // the app in Brave, which is exactly what it's asking for.
   const [dismissed, setDismissed] = useState(false);
   const [isBrave, setIsBrave] = useState(false);
+  // After a minute of not being touched, the full card tucks itself into a
+  // small pulsing badge instead of taking up space forever — the pulse is
+  // what keeps it from reading as fully gone, so it can still be reopened.
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (dismissed || collapsed) return;
+    const t = setTimeout(() => setCollapsed(true), 60000);
+    return () => clearTimeout(t);
+  }, [dismissed, collapsed]);
 
   useEffect(() => {
     // Clear the old permanent flag so anyone who dismissed it back when
@@ -65,6 +75,22 @@ export default function BraveBanner() {
 
   function handleDismiss() {
     setDismissed(true);
+  }
+
+  if (collapsed) {
+    return (
+      <div className="brave-card-wrap">
+        <button
+          type="button"
+          className="brave-card-pill"
+          onClick={() => setCollapsed(false)}
+          aria-label="فتح تذكير تثبيت Brave"
+          title="لمنع الإعلانات — ثبّت Brave"
+        >
+          <img src={`${import.meta.env.BASE_URL}brave.png`} alt="" width="20" height="20" />
+        </button>
+      </div>
+    );
   }
 
   return (
