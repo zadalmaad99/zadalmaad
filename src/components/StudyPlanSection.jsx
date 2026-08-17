@@ -1325,7 +1325,12 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
             className="study-plan-book-select"
             onClick={() => setShowLessonPicker(true)}
           >
-            {lessonIdx !== "" ? entry[Number(lessonIdx)].title : "الدرس"}
+            {(lessonIdx !== "" ? getYoutubeId(entry[Number(lessonIdx)]?.url) : entry.some((l) => getYoutubeId(l.url))) && (
+              <svg viewBox="0 0 24 24" fill="currentColor" className="lesson-picker-item-youtube">
+                <path d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2 12a28 28 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3a2.7 2.7 0 0 0 1.9-1.9A28 28 0 0 0 22 12a28 28 0 0 0-.4-4.8ZM10 15V9l5 3-5 3Z" />
+              </svg>
+            )}
+            {lessonIdx !== "" ? entry[Number(lessonIdx)].title : "انقر لرؤية الدروس"}
           </button>
 
           <button

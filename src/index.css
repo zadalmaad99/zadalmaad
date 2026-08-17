@@ -2410,6 +2410,15 @@ td.empty {
   text-align: center;
   text-align-last: center;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.study-plan-book-select .lesson-picker-item-youtube {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .study-plan-book-select:hover {
   background: var(--primary);
