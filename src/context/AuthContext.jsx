@@ -39,9 +39,18 @@ export function AuthProvider({ children }) {
 
   const isSuperadmin = role === "superadmin";
   const isAdmin = role === "superadmin" || role === "admin";
+  // Among the two superadmin emails, mathelove2@gmail.com is the "owner"
+  // account with full unsupervised control; admin.zadalmaad@admin.com is
+  // superadmin too (changes still apply immediately, per the owner's own
+  // call), but every change it makes is logged and surfaced to the owner —
+  // see src/utils/pendingChanges.js.
+  const isSupersuperadmin = isSuperadmin && user?.email === "mathelove2@gmail.com";
+  const isWatchedSuperadmin = isSuperadmin && !isSupersuperadmin;
 
   return (
-    <AuthContext.Provider value={{ user, role, isAdmin, isSuperadmin, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, role, isAdmin, isSuperadmin, isSupersuperadmin, isWatchedSuperadmin, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

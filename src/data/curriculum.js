@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { STUDY_PLAN } from "./studyPlan";
+import { useAuth } from "../context/AuthContext";
+import { applyOrQueue } from "../utils/pendingChanges";
 
 export function noteLines(note) {
   return note
@@ -19,6 +21,7 @@ const EMPTY_OVERRIDES = { hidden: [], edits: {}, added: {} };
  * in one place shows up everywhere immediately.
  */
 export function useCurriculumPlan(planSections = STUDY_PLAN, overridesDocId = "global") {
+  const { user } = useAuth();
   const [overrides, setOverrides] = useState(EMPTY_OVERRIDES);
 
   useEffect(() => {
@@ -33,9 +36,19 @@ export function useCurriculumPlan(planSections = STUDY_PLAN, overridesDocId = "g
     return unsub;
   }, [overridesDocId]);
 
-  async function saveOverrides(patch) {
+  async function saveOverrides(patch, description) {
     try {
-      await setDoc(doc(db, "curriculumOverrides", overridesDocId), patch, { merge: true });
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumOverrides",
+        docId: overridesDocId,
+        patch,
+        merge: true,
+        action: "تعديل المنهج",
+        description: description || JSON.stringify(patch).slice(0, 200),
+      });
+      if (result.queued) {
+        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
     }

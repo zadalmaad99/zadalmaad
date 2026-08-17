@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { collection, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { HADITH_STUDY_SECTION } from "../data/hadithStudyPlan";
 import SelectPickerModal from "./SelectPickerModal";
+import { useAuth } from "../context/AuthContext";
+import { applyOrQueue } from "../utils/pendingChanges";
 
 const HADITH_PLAN_SECTIONS = [HADITH_STUDY_SECTION];
 
@@ -112,6 +114,7 @@ function normalizeAudioUrl(raw) {
 }
 
 export default function CurriculumAudioSettings() {
+  const { user } = useAuth();
   const { allBooks: studyBooks } = useCurriculumPlan();
   const { allBooks: hadithBooks } = useCurriculumPlan(HADITH_PLAN_SECTIONS, "hadithBooks");
   const [bookSource, setBookSource] = useState("study");
@@ -131,7 +134,8 @@ export default function CurriculumAudioSettings() {
   const [importing, setImporting] = useState(false);
   const [preview, setPreview] = useState([]); // {title, sourceName, url}
   const [savingPreview, setSavingPreview] = useState(false);
-  const [filledTitles, setFilledTitles] = useState(new Set());
+  const [filledYoutubeTitles, setFilledYoutubeTitles] = useState(new Set());
+  const [filledPdfTitles, setFilledPdfTitles] = useState(new Set());
   const [filledLoaded, setFilledLoaded] = useState(false);
   const [showBookPicker, setShowBookPicker] = useState(false);
   const bulkDetailsRef = useRef(null);
@@ -140,36 +144,49 @@ export default function CurriculumAudioSettings() {
   const book = BOOKS.find((b) => b.title === bookTitle);
   const sheikhOptions = book?.note ? noteLines(book.note) : [];
 
-  // One listener across every book's curriculumAudio doc, just to know which
-  // ones already have at least one lesson saved — drives the gray-out in the
-  // book picker and the "jump to the next book still missing a link" default.
+  // One listener across every book's curriculumAudio doc, tracking YouTube
+  // lessons and PDF files as two separate signals — drives the two ✓/✗
+  // badges in the book picker and the "jump to the next book still missing
+  // a YouTube link" default.
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "curriculumAudio"), (snap) => {
-      const filled = new Set();
+      const yt = new Set();
+      const pdf = new Set();
       snap.docs.forEach((d) => {
-        const hasLessons = Object.values(d.data()?.bySheikh || {}).some(
-          (arr) => Array.isArray(arr) && arr.length > 0
+        const data = d.data();
+        const hasYoutube = Object.values(data?.bySheikh || {}).some(
+          (arr) => Array.isArray(arr) && arr.some((l) => isYoutubeUrl(l?.url))
         );
-        if (hasLessons) filled.add(d.id);
+        if (hasYoutube) yt.add(d.id);
+        const hasPdf = !!data?.pdfUrl || (Array.isArray(data?.pdfs) && data.pdfs.length > 0);
+        if (hasPdf) pdf.add(d.id);
       });
-      setFilledTitles(filled);
+      setFilledYoutubeTitles(yt);
+      setFilledPdfTitles(pdf);
       setFilledLoaded(true);
     });
     return unsub;
   }, []);
 
+  // Static plan data can also ship a book with a pdfUrl baked in, on top of
+  // whatever curriculumAudio has — fold those in too.
+  const pdfFilledTitles = new Set(filledPdfTitles);
+  BOOKS.forEach((b) => {
+    if (b.pdfUrl) pdfFilledTitles.add(b.title);
+  });
+
   // The book list arrives asynchronously (static plan + live overrides), and
   // completion status arrives separately — once both are ready, default to
-  // the first book that doesn't have a link yet instead of always book #1,
-  // and re-run whenever the source toggle switches to a list bookTitle isn't
-  // part of (drops the previous source's selection).
+  // the first book still missing its YouTube lesson link instead of always
+  // book #1, and re-run whenever the source toggle switches to a list
+  // bookTitle isn't part of (drops the previous source's selection).
   useEffect(() => {
     if (!BOOKS.length || !filledLoaded) return;
     if (bookInitRef.current && BOOKS.some((b) => b.title === bookTitle)) return;
-    const firstUnfilled = BOOKS.find((b) => !filledTitles.has(b.title));
+    const firstUnfilled = BOOKS.find((b) => !filledYoutubeTitles.has(b.title));
     setBookTitle((firstUnfilled || BOOKS[0]).title);
     bookInitRef.current = true;
-  }, [BOOKS, filledLoaded, filledTitles, bookTitle]);
+  }, [BOOKS, filledLoaded, filledYoutubeTitles, bookTitle]);
 
   // Keep the sheikh valid whenever the book — or its edited note — changes.
   useEffect(() => {
@@ -195,11 +212,17 @@ export default function CurriculumAudioSettings() {
   async function saveLessons(nextLessons) {
     setSaving(true);
     try {
-      await setDoc(
-        doc(db, "curriculumAudio", bookTitle),
-        { bySheikh: { ...bySheikh, [sheikh]: nextLessons } },
-        { merge: true }
-      );
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumAudio",
+        docId: bookTitle,
+        patch: { bySheikh: { ...bySheikh, [sheikh]: nextLessons } },
+        merge: true,
+        action: "تعديل دروس",
+        description: `${bookTitle} — ${sheikh} (${nextLessons.length} درسًا)`,
+      });
+      if (result.queued) {
+        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
     } finally {
@@ -509,7 +532,17 @@ export default function CurriculumAudioSettings() {
   async function savePdfUrl(value) {
     setSavingPdf(true);
     try {
-      await setDoc(doc(db, "curriculumAudio", bookTitle), { pdfUrl: value || null }, { merge: true });
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumAudio",
+        docId: bookTitle,
+        patch: { pdfUrl: value || null },
+        merge: true,
+        action: value ? "تعديل رابط PDF" : "حذف رابط PDF",
+        description: bookTitle,
+      });
+      if (result.queued) {
+        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
     } finally {
@@ -560,8 +593,9 @@ export default function CurriculumAudioSettings() {
 
         {filledLoaded && (
           <p className="curriculum-settings-book-legend">
-            <span className="curriculum-settings-book-legend-dot done" /> فيه دروس محفوظة
-            <span className="curriculum-settings-book-legend-dot" /> بدون دروس بعد
+            <span className="curriculum-settings-book-legend-dot yt" /> رابط يوتيوب
+            <span className="curriculum-settings-book-legend-dot pdf" /> ملف PDF
+            <span>— أخضر = موجود، رمادي = غير موجود</span>
           </p>
         )}
       </div>
@@ -572,7 +606,10 @@ export default function CurriculumAudioSettings() {
           options={BOOKS.map((b) => ({
             value: b.title,
             label: b.title,
-            dimmed: filledTitles.has(b.title),
+            badges: [
+              { key: "yt", done: filledYoutubeTitles.has(b.title), title: "رابط يوتيوب" },
+              { key: "pdf", done: pdfFilledTitles.has(b.title), title: "ملف PDF" },
+            ],
           }))}
           selectedValue={bookTitle}
           onSelect={(v) => setBookTitle(v)}

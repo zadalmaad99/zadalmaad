@@ -2,6 +2,7 @@ import { useCalendar } from "../context/CalendarContext";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import CurriculumAudioSettings from "./CurriculumAudioSettings";
+import AllUsersProgress from "./AllUsersProgress";
 
 const CALENDAR_OPTIONS = [
   { key: "gregorian", label: "ميلادي", desc: "التقويم الميلادي القياسي" },
@@ -89,6 +90,8 @@ export default function SettingsPanel() {
           {formatDate(today)}
         </div>
       </div>
+
+      <AllUsersProgress />
 
       {isSuperadmin && <CurriculumAudioSettings />}
     </div>

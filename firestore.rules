@@ -7,6 +7,13 @@ service cloud.firestore {
     function isSuperadmin() {
       return isSignedIn() && request.auth.token.email in ["mathelove2@gmail.com", "admin.zadalmaad@admin.com"];
     }
+    // The owner account — full unsupervised control. The other superadmin
+    // email is still "isSuperadmin" for read/role purposes, but its writes
+    // to curriculum content are routed through /pendingChanges instead of
+    // applying directly (enforced below, not just in client code).
+    function isOwner() {
+      return isSignedIn() && request.auth.token.email == "mathelove2@gmail.com";
+    }
     function myRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
@@ -74,25 +81,39 @@ service cloud.firestore {
     }
 
     // Public — the المنهج page (books, شرح, PDFs) is readable without login.
+    // Direct writes are owner-only — the watched superadmin's edits go
+    // through /pendingChanges and only ever land here once the owner
+    // approves them (which is itself a write performed as the owner).
     match /curriculumAudio/{bookId} {
       allow read: if true;
-      allow write: if isSuperadmin();
+      allow write: if isOwner();
     }
 
     match /curriculumOverrides/{docId} {
       allow read: if true;
-      allow write: if isSuperadmin();
+      allow write: if isOwner();
     }
 
     match /curriculumMeta/{docId} {
       allow read: if true;
-      allow write: if isSuperadmin();
+      allow write: if isOwner();
+    }
+
+    // Real approval queue: the watched superadmin (admin.zadalmaad@admin.com)
+    // can only ever create an entry here, never write curriculum collections
+    // directly (see above) — only the owner can approve (apply) or reject.
+    match /pendingChanges/{changeId} {
+      allow read: if isSignedIn() &&
+        (isOwner() || request.auth.token.email == resource.data.actorEmail);
+      allow create: if isSuperadmin() && request.resource.data.actorEmail == request.auth.token.email;
+      allow update, delete: if isOwner();
     }
 
     // Per-user YouTube resume position — each signed-in user only ever
-    // touches their own doc (uid baked into both the id and the data).
+    // touches their own doc (uid baked into both the id and the data), but
+    // the owner can also read every doc to see everyone's progress.
     match /videoProgress/{docId} {
-      allow read: if isSignedIn() && request.auth.uid == resource.data.uid;
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner());
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
       allow update: if isSignedIn() && request.auth.uid == resource.data.uid && request.auth.uid == request.resource.data.uid;
       allow delete: if false;

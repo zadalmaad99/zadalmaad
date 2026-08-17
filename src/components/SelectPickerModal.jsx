@@ -36,6 +36,27 @@ export default function SelectPickerModal({ title, options, selectedValue, onSel
               }}
             >
               <span>{opt.label}</span>
+              {opt.badges && (
+                <span className="picker-modal-item-badges">
+                  {opt.badges.map((b) => (
+                    <span
+                      key={b.key}
+                      className={`picker-modal-item-badge${b.done ? " done" : ""}`}
+                      title={b.title}
+                    >
+                      {b.done ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M18 6 6 18M6 6l12 12" />
+                        </svg>
+                      )}
+                    </span>
+                  ))}
+                </span>
+              )}
               {opt.dimmed && opt.value !== selectedValue && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="picker-modal-item-done">
                   <path d="M20 6 9 17l-5-5" />

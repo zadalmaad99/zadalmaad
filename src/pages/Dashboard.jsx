@@ -8,6 +8,7 @@ import AttendancePanel from "../components/AttendancePanel";
 import SuperadminDashboard from "../components/SuperadminDashboard";
 import ScrollButtons from "../components/ScrollButtons";
 import MenhajAccordion from "../components/MenhajAccordion";
+import AdminAlertsBell from "../components/AdminAlertsBell";
 import logo from "../assets/logo.png";
 
 const NAV_STORAGE_KEY = "quran-tracker-nav";
@@ -194,6 +195,7 @@ export default function Dashboard() {
             <h1>زاد المعاد</h1>
             <span className="brand-sub">القرآن والسنة</span>
           </div>
+          <AdminAlertsBell />
         </div>
 
         <nav>

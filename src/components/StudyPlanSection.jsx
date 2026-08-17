@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   STUDY_PLAN_CREDIT_NAME,
@@ -13,6 +13,7 @@ import SelectPickerModal from "./SelectPickerModal";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
 import PdfViewerModal from "./PdfViewerModal";
+import { applyOrQueue } from "../utils/pendingChanges";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
 
@@ -1126,12 +1127,18 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
     if (!sheikhLabel || !window.confirm("هل تريد حذف هذا الدرس؟")) return;
     const nextExtra = (extraLessons || []).filter((_, i) => i !== extraIdx);
     try {
-      await setDoc(
-        doc(db, "curriculumAudio", book.title),
-        { bySheikh: { ...extraBySheikh, [sheikhLabel]: nextExtra } },
-        { merge: true }
-      );
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumAudio",
+        docId: book.title,
+        patch: { bySheikh: { ...extraBySheikh, [sheikhLabel]: nextExtra } },
+        merge: true,
+        action: "حذف درس",
+        description: `${book.title} — ${sheikhLabel}`,
+      });
       setLessonIdx("");
+      if (result.queued) {
+        window.alert("تم إرسال الحذف لموافقة السوبر أدمن الأعلى — لن يُطبَّق إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر حذف الدرس — تحقّق من اتصال الإنترنت وحاول مجددًا");
     }
@@ -1145,9 +1152,18 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
     )
       return;
     try {
-      await deleteDoc(doc(db, "curriculumAudio", book.title));
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumAudio",
+        docId: book.title,
+        remove: true,
+        action: "تصفير معلومات كتاب",
+        description: book.title,
+      });
       setSelected("");
       setLessonIdx("");
+      if (result.queued) {
+        window.alert("تم إرسال التصفير لموافقة السوبر أدمن الأعلى — لن يُطبَّق إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر التصفير — تحقّق من اتصال الإنترنت وحاول مجددًا");
     }
@@ -1155,7 +1171,17 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
   async function savePdfs(nextPdfs) {
     try {
-      await setDoc(doc(db, "curriculumAudio", book.title), { pdfs: nextPdfs }, { merge: true });
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumAudio",
+        docId: book.title,
+        patch: { pdfs: nextPdfs },
+        merge: true,
+        action: "تعديل ملفات PDF",
+        description: `${book.title} (${nextPdfs.length} ملفًا)`,
+      });
+      if (result.queued) {
+        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
     }
@@ -1449,7 +1475,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 }
 
 function CurriculumPdfPanel() {
-  const { isSuperadmin } = useAuth();
+  const { user, isSuperadmin } = useAuth();
   const [fileUrl, setFileUrl] = useState(undefined); // undefined = loading, null = missing
   const [editing, setEditing] = useState(false);
   const [urlInput, setUrlInput] = useState("");
@@ -1475,8 +1501,18 @@ function CurriculumPdfPanel() {
     if (!url) return;
     setSaving(true);
     try {
-      await setDoc(CURRICULUM_PDF_DOC, { url }, { merge: true });
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumMeta",
+        docId: "studyPlanPdf",
+        patch: { url },
+        merge: true,
+        action: "تعديل ملف دراسة المنهج",
+        description: url,
+      });
       setEditing(false);
+      if (result.queued) {
+        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر حفظ الرابط — تحقّق من اتصال الإنترنت وحاول مجددًا");
     } finally {
@@ -1488,7 +1524,17 @@ function CurriculumPdfPanel() {
     if (!window.confirm("هل تريد حذف رابط ملف خطة الدراسة؟")) return;
     setDeleting(true);
     try {
-      await setDoc(CURRICULUM_PDF_DOC, { url: null }, { merge: true });
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumMeta",
+        docId: "studyPlanPdf",
+        patch: { url: null },
+        merge: true,
+        action: "حذف ملف دراسة المنهج",
+        description: "",
+      });
+      if (result.queued) {
+        window.alert("تم إرسال الحذف لموافقة السوبر أدمن الأعلى — لن يُطبَّق إلا بعد الموافقة.");
+      }
     } catch {
       window.alert("تعذّر حذف الرابط — حاول مجددًا");
     } finally {

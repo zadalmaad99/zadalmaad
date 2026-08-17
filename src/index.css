@@ -1643,6 +1643,14 @@ td.empty {
   background: var(--primary);
   border-color: var(--primary);
 }
+.curriculum-settings-book-legend-dot.yt {
+  background: #ff0000;
+  border-color: #ff0000;
+}
+.curriculum-settings-book-legend-dot.pdf {
+  background: #0891b2;
+  border-color: #0891b2;
+}
 .curriculum-settings-card {
   max-width: 560px;
 }
@@ -2779,6 +2787,30 @@ td.empty {
 }
 .picker-modal-item-done {
   color: var(--muted) !important;
+}
+.picker-modal-item-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.picker-modal-item-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: #ef4444;
+}
+.picker-modal-item-badge svg {
+  width: 10px;
+  height: 10px;
+}
+.picker-modal-item-badge.done {
+  background: color-mix(in srgb, #16a34a 18%, transparent);
+  color: #16a34a;
 }
 .lesson-picker-title {
   font-size: 15px;
@@ -5057,12 +5089,14 @@ td.empty {
 .pdf-viewer-page-wrap {
   margin: auto;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  touch-action: pan-x pan-y;
 }
 .pdf-viewer-canvas {
   display: block;
   max-width: 100%;
   height: auto;
   background: #fff;
+  transform-origin: center;
 }
 .pdf-viewer-status {
   margin: auto;
@@ -5090,5 +5124,242 @@ td.empty {
   text-align: center;
   color: #fff;
   font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* Owner-only "watch admin.zadalmaad@admin.com's activity" bell */
+.admin-alerts-bell-wrap {
+  position: relative;
+  margin-inline-start: auto;
+}
+.admin-alerts-bell {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.admin-alerts-bell:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: none;
+  box-shadow: none;
+}
+.admin-alerts-bell svg {
+  width: 17px;
+  height: 17px;
+}
+.admin-alerts-badge {
+  position: absolute;
+  top: -3px;
+  inset-inline-end: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-alerts-panel {
+  position: absolute;
+  top: 42px;
+  inset-inline-start: 0;
+  width: 280px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  padding: 12px;
+  z-index: 40;
+}
+.admin-alerts-panel-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.admin-alerts-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+  padding: 10px 0;
+}
+.admin-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-alerts-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  cursor: pointer;
+}
+.admin-alerts-item.unread {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface-alt));
+  border-inline-start: 3px solid var(--primary);
+}
+.admin-alerts-item-action {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.admin-alerts-item-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.admin-alerts-item-time {
+  font-size: 10px;
+  color: var(--muted);
+  direction: ltr;
+  text-align: end;
+}
+
+.admin-alerts-status {
+  margin-inline-start: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+.admin-alerts-status.approved {
+  background: color-mix(in srgb, #16a34a 15%, transparent);
+  color: #16a34a;
+}
+.admin-alerts-status.rejected {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: #ef4444;
+}
+.admin-alerts-item-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.admin-alerts-approve,
+.admin-alerts-reject {
+  flex: 1;
+  padding: 5px 0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.admin-alerts-approve {
+  background: #16a34a;
+  color: #fff;
+}
+.admin-alerts-reject {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: #ef4444;
+}
+
+.all-progress-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  cursor: pointer;
+}
+.all-progress-chevron {
+  margin-inline-start: auto;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+.all-progress-chevron.open {
+  transform: rotate(180deg);
+}
+.all-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.all-progress-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 6px 10px;
+}
+.all-progress-name {
+  grid-column: 1 / -1;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.all-progress-track {
+  grid-column: 1 / 3;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.all-progress-fill {
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg, #0891b2, #22d3ee);
+  border-radius: 3px;
+}
+.all-progress-percent {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0891b2;
+  min-width: 34px;
+  text-align: end;
+}
+.all-progress-count {
+  grid-column: 1 / -1;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.pdf-download-done-modal {
+  max-width: 280px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 20px;
+}
+.pdf-download-done-icon {
+  width: 40px;
+  height: 40px;
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 15%, transparent);
+  border-radius: 50%;
+  padding: 8px;
+}
+.pdf-download-done-modal p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pdf-download-done-modal button {
+  width: 100%;
+  background: var(--primary);
+  color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
   font-weight: 700;
 }
