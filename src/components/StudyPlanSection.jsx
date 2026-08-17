@@ -348,6 +348,29 @@ function YoutubeEmbed({ videoId, label, onProgress, onEnded }) {
   );
 }
 
+// Shown instead of the real player until the viewer explicitly taps it —
+// nothing about this component talks to YouTube at all, so it can sit on
+// dozens of cards at once with zero cost, and nothing plays by itself.
+function YoutubePlayPlaceholder({ videoId, onOpen }) {
+  return (
+    <div className="study-plan-audio study-plan-youtube">
+      <button
+        type="button"
+        className="study-plan-youtube-frame study-plan-youtube-play"
+        onClick={onOpen}
+        style={{ backgroundImage: `url(https://img.youtube.com/vi/${videoId}/hqdefault.jpg)` }}
+        aria-label="تشغيل الدرس"
+      >
+        <span className="study-plan-youtube-play-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7Z" />
+          </svg>
+        </span>
+      </button>
+    </div>
+  );
+}
+
 function DownloadOnlyAudioCard({ url, label, book, sheikhLabel }) {
   const fileName = composedFileName(book, sheikhLabel, label, url);
   return (
@@ -1040,32 +1063,16 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const [showSheikhPicker, setShowSheikhPicker] = useState(false);
   const [liveProgress, setLiveProgress] = useState({});
   const [justEnded, setJustEnded] = useState(false);
-  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  // A card defaults to its first lesson *selected* (so the trigger button
+  // already shows "الدرس 1" instead of a generic prompt), but with dozens
+  // of book cards on the page, actually mounting a live YouTube player for
+  // every one of them at once is exactly the "several videos start playing
+  // by themselves" bug — so the real embed only ever mounts after an
+  // explicit tap, never automatically.
+  const [videoOpened, setVideoOpened] = useState(false);
   const cardRef = useRef(null);
   const sheikhAutoPickedRef = useRef(false);
   const lessonAutoPickedForRef = useRef(null); // sheikhLabel this card already auto-picked a lesson for
-
-  // Every card defaults to its first lesson selected, but with dozens of
-  // book cards on the page that would mean dozens of live YouTube players
-  // all created at once on load. Only actually mount the embed once the
-  // card has been scrolled into view at least once.
-  useEffect(() => {
-    if (!cardRef.current || typeof IntersectionObserver === "undefined") {
-      setHasBeenVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entryObs]) => {
-        if (entryObs.isIntersecting) {
-          setHasBeenVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-    observer.observe(cardRef.current);
-    return () => observer.disconnect();
-  }, []);
 
   // Stable identity so passing this to YoutubeEmbed doesn't retrigger its
   // player-setup effect on every tick — live watch-progress ticks push
@@ -1427,6 +1434,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
               liveProgress={liveProgress}
               onSelect={(li) => {
                 setLessonIdx(String(li));
+                setVideoOpened(true);
                 setShowLessonPicker(false);
               }}
               onDelete={handleDeleteLesson}
@@ -1441,7 +1449,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
           {isLessonSeries ? (
             lesson ? (
               getYoutubeId(lesson.url) ? (
-                hasBeenVisible ? (
+                videoOpened ? (
                   <YoutubeEmbed
                     key={lesson.url}
                     videoId={getYoutubeId(lesson.url)}
@@ -1450,9 +1458,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
                     onEnded={handleLessonEnded}
                   />
                 ) : (
-                  <div className="study-plan-audio study-plan-youtube study-plan-youtube-placeholder">
-                    <div className="study-plan-youtube-frame" />
-                  </div>
+                  <YoutubePlayPlaceholder videoId={getYoutubeId(lesson.url)} onOpen={() => setVideoOpened(true)} />
                 )
               ) : isStreamableAudioUrl(lesson.url) ? (
                 <AudioPlayer
@@ -1478,12 +1484,10 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
             )
           ) : singleUrl ? (
             getYoutubeId(singleUrl) ? (
-              hasBeenVisible ? (
+              videoOpened ? (
                 <YoutubeEmbed key={singleUrl} videoId={getYoutubeId(singleUrl)} label={null} onProgress={handleVideoProgress} />
               ) : (
-                <div className="study-plan-audio study-plan-youtube study-plan-youtube-placeholder">
-                  <div className="study-plan-youtube-frame" />
-                </div>
+                <YoutubePlayPlaceholder videoId={getYoutubeId(singleUrl)} onOpen={() => setVideoOpened(true)} />
               )
             ) : isStreamableAudioUrl(singleUrl) ? (
               <AudioPlayer

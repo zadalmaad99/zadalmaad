@@ -5361,23 +5361,43 @@ td.empty {
   font-weight: 700;
 }
 
-.study-plan-youtube-placeholder .study-plan-youtube-frame {
-  background: var(--surface-alt);
+.study-plan-youtube-play {
+  background-color: var(--surface-alt);
+  background-size: cover;
+  background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  cursor: pointer;
 }
-.study-plan-youtube-placeholder .study-plan-youtube-frame::after {
-  content: "";
-  width: 28px;
-  height: 28px;
+.study-plan-youtube-play:hover {
+  transform: none;
+  box-shadow: none;
+}
+.study-plan-youtube-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 3px solid color-mix(in srgb, var(--primary) 30%, transparent);
-  border-top-color: var(--primary);
-  animation: study-plan-yt-spin 0.8s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
-@keyframes study-plan-yt-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.study-plan-youtube-play:hover .study-plan-youtube-play-icon {
+  background: #ff0000;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.study-plan-youtube-play-icon svg {
+  width: 26px;
+  height: 26px;
+  margin-inline-start: 3px;
 }
