@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
+import { getPageInfo, hizbLabel, surahNames } from "../utils/quranPageInfo";
 
 const QURAN_SECTION_LABELS = { qiraah: "قراءة", hifz: "حفظ", murajaah: "مراجعة" };
 const PAGE_COUNT = 604;
@@ -221,7 +221,7 @@ export default function AllUsersProgress() {
           book: "القرآن الكريم",
           sheikh: QURAN_SECTION_LABELS[i.section] || i.section,
           lesson: info
-            ? `صفحة ${i.page} — ${info.surahs.map((s) => s.name.replace(/^سُورَةُ\s*/, "")).join(" / ")} — الجزء ${info.juz.join("-")} — ${hizbLabel(info.hizbQuarter)}`
+            ? `صفحة ${i.page} — ${surahNames(info)} — الجزء ${info.juz.join("-")} — ${hizbLabel(info.hizbQuarter)}`
             : `صفحة ${i.page}`,
           updatedAt: i.updatedAt || 0,
         };

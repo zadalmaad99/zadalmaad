@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
-import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
+import { getPageInfo, hizbLabel, surahNames } from "../utils/quranPageInfo";
 import QuranPageModal from "./QuranPageModal";
 
 const PAGE_COUNT = 604;
@@ -133,7 +133,7 @@ export default function QuranPageTracking({ type, title, focusStudentId, onFocus
                       <div>صفحة {p.page} من {PAGE_COUNT}</div>
                       {info && (
                         <div className="record-card-unit-extra">
-                          {info.surahs.map((sr) => sr.name.replace(/^سُورَةُ\s*/, "")).join(" / ")} — الجزء{" "}
+                          {surahNames(info)} — الجزء{" "}
                           {info.juz.join("-")} · {hizbLabel(info.hizbQuarter)}
                         </div>
                       )}

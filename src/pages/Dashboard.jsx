@@ -10,7 +10,7 @@ import ScrollButtons from "../components/ScrollButtons";
 import MenhajAccordion from "../components/MenhajAccordion";
 import AdminAlertsBell from "../components/AdminAlertsBell";
 import { QuranPageViewer } from "../components/QuranPageModal";
-import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
+import { getPageInfo, hizbLabel, surahNames } from "../utils/quranPageInfo";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useProgressBackfill } from "../utils/progressBackfill";
@@ -237,7 +237,7 @@ function MushafTabReader({ section }) {
       {info && (
         <div className="mushaf-page-meta">
           <span className="mushaf-page-meta-surah">
-            {info.surahs.map((s) => s.name.replace(/^سُورَةُ\s*/, "")).join(" / ")}
+            {surahNames(info)}
           </span>
           <span className="mushaf-page-meta-chip">الجزء {info.juz.join("-")}</span>
           <span className="mushaf-page-meta-chip">{hizbLabel(info.hizbQuarter)}</span>

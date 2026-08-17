@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getPageInfo, hizbLabel, surahNames, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
 import {
   FLIP_MODE_LABELS,
   getFlipMode,
   getFlipSpeed,
+  getSoftness,
   nextFlipMode,
   playPageFlip,
   setFlipMode,
@@ -84,6 +86,10 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const [loading, setLoading] = useState(true);
   const [soundMode, setSoundMode] = useState(() => getFlipMode());
   const flipMs = getFlipSpeed();
+  const softness = getSoftness();
+  const info = getPageInfo(page);
+  const [picker, setPicker] = useState(null); // "surah" | "juz" | null
+  const [search, setSearch] = useState("");
   // Holds the page being turned away, so it can rotate out over the new one.
   const [turning, setTurning] = useState(null); // { page, dir } | null
   const pinchRef = useRef(null);
@@ -93,7 +99,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
     if (next === page || turning) return;
-    playPageFlip(soundMode);
+    playPageFlip(softness, soundMode);
     // The outgoing sheet keeps rendering on top and rotates about the edge
     // it's bound on, revealing the new page underneath — the same motion as
     // turning a real leaf, rather than a cut or a fade.
@@ -176,6 +182,33 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     if (scale <= 1) setOffset({ x: 0, y: 0 });
   }
 
+  function jumpTo(target) {
+    setPicker(null);
+    setSearch("");
+    if (target === page) return;
+    go(target - page);
+  }
+
+  const q = search.trim();
+  const pickerItems =
+    picker === "surah"
+      ? SURAH_STARTS.filter((s) => !q || s.name.includes(q) || String(s.number) === q).map((s) => ({
+          key: `s${s.number}`,
+          number: s.number,
+          label: s.name,
+          page: s.page,
+          active: !!info?.surahs.some((x) => x.number === s.number),
+        }))
+      : picker === "juz"
+        ? JUZ_STARTS.filter((j) => !q || String(j.number) === q || `الجزء ${j.number}`.includes(q)).map((j) => ({
+            key: `j${j.number}`,
+            number: j.number,
+            label: `الجزء ${j.number}`,
+            page: j.page,
+            active: !!info?.juz.includes(j.number),
+          }))
+        : [];
+
   function zoom(delta) {
     setScale((s) => {
       const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s + delta));
@@ -186,8 +219,68 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
 
   return createPortal(
     <div className="quran-fs">
+      {/* Right-to-left across its own strip: السورة، الجزء، الحزب.
+          السورة and الجزء are pickers — choosing one jumps to its first page. */}
+      <div className="quran-fs-place">
+        <button
+          type="button"
+          className="quran-fs-surah quran-fs-jump"
+          onClick={() => setPicker(picker === "surah" ? null : "surah")}
+        >
+          {info ? surahNames(info) : `صفحة ${page}`}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="quran-fs-juz quran-fs-jump"
+          onClick={() => setPicker(picker === "juz" ? null : "juz")}
+        >
+          {info ? `الجزء ${info.juz.join("-")}` : "الجزء"}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <span className="quran-fs-hizb">{info ? hizbLabel(info.hizbQuarter) : ""}</span>
+      </div>
+
+      {picker && (
+        <div className="quran-fs-picker">
+          <div className="quran-fs-picker-head">
+            <input
+              type="text"
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={picker === "surah" ? "ابحث عن سورة..." : "ابحث عن جزء..."}
+            />
+            <button type="button" onClick={() => setPicker(null)} aria-label="إغلاق">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <ul className="quran-fs-picker-list">
+            {pickerItems.map((it) => (
+              <li key={it.key}>
+                <button
+                  type="button"
+                  className={it.active ? "active" : ""}
+                  onClick={() => jumpTo(it.page)}
+                >
+                  <span className="quran-fs-picker-num">{it.number}</span>
+                  <span className="quran-fs-picker-name">{it.label}</span>
+                  <span className="quran-fs-picker-page">صفحة {it.page}</span>
+                </button>
+              </li>
+            ))}
+            {pickerItems.length === 0 && <li className="quran-fs-picker-empty">لا توجد نتيجة</li>}
+          </ul>
+        </div>
+      )}
+
       <div className="quran-fs-bar">
-        <span className="quran-fs-page">صفحة {page} من {PAGE_COUNT}</span>
         <div className="quran-fs-zoom">
           <button type="button" onClick={() => zoom(-0.25)} disabled={scale <= MIN_SCALE} aria-label="تصغير">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -201,7 +294,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             </svg>
           </button>
         </div>
-        {/* Cycles ناعم → همس → صامت, and previews the one just picked. */}
+        {/* Sound on/off; the softness itself is tuned in الإعدادات. */}
         <button
           type="button"
           className="quran-fs-sound"
@@ -209,7 +302,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             const next = nextFlipMode(soundMode);
             setSoundMode(next);
             setFlipMode(next);
-            playPageFlip(next);
+            playPageFlip(softness, next);
           }}
           aria-label={`صوت التقليب: ${FLIP_MODE_LABELS[soundMode]} — اضغط للتغيير`}
           title="صوت تقليب الصفحات"
@@ -222,11 +315,9 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
           ) : (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-              {soundMode === "soft" && <path d="M15.5 8.5a5 5 0 0 1 0 7" />}
-              {soundMode === "whisper" && <path d="M14.5 10a2.5 2.5 0 0 1 0 4" />}
+              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
             </svg>
           )}
-          <span>{FLIP_MODE_LABELS[soundMode]}</span>
         </button>
         <button type="button" className="quran-fs-close" onClick={onClose} aria-label="إغلاق">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -269,7 +360,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
 
       {/* No arrow buttons — they sat on top of the text. Paging is by
           swipe (and by keyboard on desktop). */}
-      <p className="quran-fs-hint">اسحب يمينًا للصفحة التالية، ويسارًا للسابقة</p>
+      <div className="quran-fs-foot"><span className="quran-fs-pageno">{page} / {PAGE_COUNT}</span><span className="quran-fs-swipe">اسحب يمينًا للتالية، ويسارًا للسابقة</span></div>
     </div>,
     document.body
   );

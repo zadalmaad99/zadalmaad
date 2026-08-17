@@ -1,4 +1,15 @@
 import pages from "../data/quranPages.json";
+import { SURAHS } from "../data/surahs";
+
+// The page data carries names as they appear in "سورةُ البقرةِ", i.e. already
+// inflected for that construction — printed on their own they end on a stray
+// kasra. The canonical list is the one to show.
+const NAME_BY_NUMBER = new Map(SURAHS.map((s) => [s.number, s.name]));
+
+export function surahNames(info) {
+  if (!info) return "";
+  return info.surahs.map((s) => NAME_BY_NUMBER.get(s.number) || s.name).join(" / ");
+}
 
 // Real per-page mushaf metadata (surah, juz, hizb, last ayah) fetched once
 // from api.alquran.cloud's quran-uthmani edition — same 604-page Madani
@@ -9,6 +20,19 @@ const byPage = new Map(pages.map((p) => [p.page, p]));
 export function getPageInfo(page) {
   return byPage.get(page) || null;
 }
+
+// First page each surah/juz begins on, derived from the same page table —
+// so jumping never disagrees with what the header shows.
+export const SURAH_STARTS = SURAHS.map((s) => {
+  const first = pages.find((p) => p.surahs.some((x) => x.number === s.number));
+  return { number: s.number, name: s.name, page: first ? first.page : 1 };
+});
+
+export const JUZ_STARTS = Array.from({ length: 30 }, (_, i) => {
+  const n = i + 1;
+  const first = pages.find((p) => p.juz.includes(n));
+  return { number: n, page: first ? first.page : 1 };
+});
 
 export function hizbLabel(hizbQuarter) {
   if (!hizbQuarter) return null;

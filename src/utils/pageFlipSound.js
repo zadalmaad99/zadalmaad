@@ -8,13 +8,49 @@ const MODE_KEY = "mushafFlipSound";
 // Two calm profiles the reader can pick between, plus silence. "soft" stays
 // audible on a phone's own speaker; "whisper" is for a quiet room or
 // headphones, where even that reads as loud.
-export const FLIP_MODES = ["soft", "whisper", "off"];
-export const FLIP_MODE_LABELS = { soft: "ناعم", whisper: "همس", off: "صامت" };
+export const FLIP_MODES = ["on", "off"];
+export const FLIP_MODE_LABELS = { on: "الصوت يعمل", off: "صامت" };
 
-const PROFILES = {
-  soft: { rate: 0.42, freq: [300, 780, 360], q: 0.4, lowpass: 1200, peak: 0.032, attack: 0.2, release: 0.8, dur: 0.9 },
-  whisper: { rate: 0.32, freq: [240, 560, 280], q: 0.35, lowpass: 900, peak: 0.02, attack: 0.28, release: 1.05, dur: 1.2 },
-};
+// Softness is continuous rather than a fixed menu: 0 is the crisp rustle,
+// 100 is barely-there breath. Every parameter that makes paper sound harsh
+// — loudness, attack speed, and how much high frequency survives — moves
+// together along that one axis, so there is always a softer setting.
+const SOFT_KEY = "mushafFlipSoftness";
+export const SOFTNESS_DEFAULT = 88;
+
+export function getSoftness() {
+  try {
+    const n = Number(localStorage.getItem(SOFT_KEY));
+    return Number.isFinite(n) && n >= 0 && n <= 100 ? n : SOFTNESS_DEFAULT;
+  } catch {
+    return SOFTNESS_DEFAULT;
+  }
+}
+
+export function setSoftness(v) {
+  try {
+    localStorage.setItem(SOFT_KEY, String(v));
+  } catch {
+    // storage unavailable — the choice just won't persist
+  }
+}
+
+function profileFor(softness) {
+  const t = Math.min(100, Math.max(0, softness)) / 100;
+  const mix = (a, b) => a + (b - a) * t;
+  return {
+    rate: mix(1.0, 0.24),
+    freq: [mix(700, 200), mix(2600, 460), mix(900, 240)],
+    q: mix(0.9, 0.3),
+    lowpass: mix(6000, 700),
+    // Quietest end is deliberately near-silent; the curve is exponential so
+    // the top of the slider keeps making an audible difference.
+    peak: 0.16 * Math.pow(0.055, t),
+    attack: mix(0.035, 0.34),
+    release: mix(0.27, 1.25),
+    dur: mix(0.3, 1.4),
+  };
+}
 
 let ctx = null;
 let noiseBuffer = null;
@@ -22,9 +58,10 @@ let noiseBuffer = null;
 export function getFlipMode() {
   try {
     const v = localStorage.getItem(MODE_KEY);
-    return FLIP_MODES.includes(v) ? v : "soft";
+    // "soft"/"whisper" are the old fixed levels — treat them as sound-on.
+    return v === "off" ? "off" : "on";
   } catch {
-    return "soft";
+    return "on";
   }
 }
 
@@ -84,9 +121,9 @@ function getNoise(audio) {
   return noiseBuffer;
 }
 
-export function playPageFlip(mode = getFlipMode()) {
-  const p = PROFILES[mode];
-  if (!p) return; // "off"
+export function playPageFlip(softness = getSoftness(), mode = getFlipMode()) {
+  if (mode === "off") return;
+  const p = profileFor(softness);
   let audio;
   try {
     audio = getContext();

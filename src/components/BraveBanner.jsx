@@ -94,9 +94,8 @@ export default function BraveBanner() {
         </div>
 
         <div className="brave-card-body">
-          <p className="brave-card-title">لمنع الإعلانات المزعجة على يوتيوب</p>
-          <p className="brave-card-desc">
-            استخدم متصفح <strong>Brave</strong> — يحظر الإعلانات تلقائيًا ويجعل مشاهدة الدروس أسرع وأنظف. حمّله مجانًا من الرابط المناسب لجهازك:
+          <p className="brave-card-title">
+            لمنع الإعلانات ثبّت تطبيق <strong dir="ltr">Brave</strong>
           </p>
           <div className="brave-card-links">
             {LINKS.map((l) => (
@@ -107,9 +106,8 @@ export default function BraveBanner() {
             ))}
           </div>
           <p className="brave-card-note">
-            بعض الأحيان لا تفتح الروابط مباشرة — في هذه الحالة ابحث بنفسك في متجر التطبيقات عن اسم التطبيق:{" "}
-            <strong dir="ltr">Brave</strong> — عبر <strong dir="ltr">Google Play</strong> (أندرويد) أو{" "}
-            <strong dir="ltr">App Store</strong> (آيفون).
+            إذا لم تفتح الروابط، اكتب اسم التطبيق <strong dir="ltr">Brave</strong> مباشرة في{" "}
+            <strong dir="ltr">Google Play</strong> أو <strong dir="ltr">App Store</strong>.
           </p>
         </div>
       </div>

@@ -369,7 +369,7 @@ label {
 }
 .brand-sub {
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #9c8862;
 }
 .sidebar nav {
   display: flex;
@@ -944,7 +944,9 @@ label {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #0d0d0d;
+  /* Warm paper rather than a dark void — the page images are cream, and a
+     matching ground makes the reader feel like a printed mushaf. */
+  background: #f7f1e4;
   display: flex;
   flex-direction: column;
   /* Keep the whole reader clear of the status bar and the gesture bar —
@@ -958,40 +960,216 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  padding: 9px 12px;
+  margin: 8px 10px 0;
+  border-radius: 10px;
+  background: #fdfaf3;
+  border: 1px solid #e2d3ae;
+  color: #6b5426;
   flex-shrink: 0;
 }
-.quran-fs-page {
-  font-size: 13px;
+/* Its own strip so the three markers can sit at the right, centre and left
+   edges the way a printed mushaf heads its pages. */
+.quran-fs-place {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  margin: 8px 10px 0;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #fdfaf3;
+  border: 1px solid #e2d3ae;
+}
+.quran-fs-surah {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #5a441c;
+  white-space: nowrap;
+}
+.quran-fs-juz,
+.quran-fs-hizb {
+  font-size: 11.5px;
   font-weight: 700;
+  color: #8a734a;
+  white-space: nowrap;
+}
+.quran-fs-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  border-radius: 7px;
+  box-shadow: none;
+  cursor: pointer;
+}
+.quran-fs-jump:hover {
+  background: #f2e8d2;
+  transform: none;
+  box-shadow: none;
+}
+.quran-fs-jump svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+/* Overlays the reader so a jump never loses the page behind it. */
+.quran-fs-picker {
+  position: absolute;
+  top: 56px;
+  inset-inline: 10px;
+  z-index: 6;
+  max-height: 62vh;
+  display: flex;
+  flex-direction: column;
+  background: #fdfaf3;
+  border: 1px solid #e2d3ae;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(90, 68, 28, 0.24);
+  overflow: hidden;
+}
+.quran-fs-picker-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 1px solid #eadfc6;
+}
+.quran-fs-picker-head input {
+  flex: 1;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e2d3ae;
+  background: #fff;
+  padding: 0 10px;
+  font-size: 13px;
+  color: #5a441c;
+}
+.quran-fs-picker-head button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f2e8d2;
+  color: #6b5426;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.quran-fs-picker-head svg {
+  width: 15px;
+  height: 15px;
+}
+.quran-fs-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+}
+.quran-fs-picker-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: #5a441c;
+  font-size: 13px;
+  box-shadow: none;
+  text-align: start;
+}
+.quran-fs-picker-list button:hover {
+  background: #f2e8d2;
+  transform: none;
+  box-shadow: none;
+}
+.quran-fs-picker-list button.active {
+  background: #eadfc6;
+  font-weight: 800;
+}
+.quran-fs-picker-num {
+  min-width: 26px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #f2e8d2;
+  font-size: 11px;
+  font-weight: 800;
+  color: #8a734a;
+  flex-shrink: 0;
+}
+.quran-fs-picker-name {
+  flex: 1;
+  font-weight: 700;
+}
+.quran-fs-picker-page {
+  font-size: 11px;
+  color: #9c8862;
+}
+.quran-fs-picker-empty {
+  padding: 14px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #9c8862;
 }
 .quran-fs-zoom {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #fff;
-  font-size: 12.5px;
+  gap: 6px;
+  color: #6b5426;
+  font-size: 12px;
   font-weight: 700;
 }
 .quran-fs-zoom button,
-.quran-fs-close {
-  width: 32px;
-  height: 32px;
+.quran-fs-close,
+.quran-fs-sound {
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  border-radius: 8px;
+  background: #f2e8d2;
+  border: 1px solid #e2d3ae;
+  color: #6b5426;
   box-shadow: none;
+  padding: 0;
 }
 .quran-fs-zoom button:hover:not(:disabled),
-.quran-fs-close:hover {
-  background: rgba(255, 255, 255, 0.24);
+.quran-fs-close:hover,
+.quran-fs-sound:hover {
+  background: #e8dabc;
   transform: none;
   box-shadow: none;
+}
+.quran-fs-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+.quran-fs-pageno {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b5426;
+  background: #fdfaf3;
+  border: 1px solid #e2d3ae;
+  border-radius: 999px;
+  padding: 3px 14px;
+}
+.quran-fs-swipe {
+  font-size: 10.5px;
+  color: #9c8862;
 }
 .quran-fs-zoom button:disabled {
   opacity: 0.4;
@@ -1037,7 +1215,7 @@ label {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: #9c8862;
   pointer-events: none;
 }
 /* The outgoing sheet: sits exactly over the page area and pivots on the
@@ -3612,7 +3790,7 @@ td.empty {
 .adv-player-topbar-label {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: #9c8862;
   letter-spacing: 0.02em;
 }
 .adv-player-topbar-spacer {
@@ -3653,7 +3831,7 @@ td.empty {
 }
 .adv-player-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #9c8862;
   margin: 0;
   text-align: start;
 }
