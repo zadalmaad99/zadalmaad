@@ -1166,10 +1166,31 @@ label {
   box-shadow: none;
 }
 .quran-fs-foot {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
+  flex-shrink: 0;
+}
+/* Sits beside the centred page number without shifting it off centre. */
+.quran-fs-sajda {
+  position: absolute;
+  inset-inline-start: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #7a5a12;
+  background: #f6e7c2;
+  border: 1px solid #d9c496;
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+.quran-fs-sajda svg {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 /* Just the page number, centred — the way a printed mushaf foots its
@@ -1886,10 +1907,14 @@ td.empty {
 }
 .brave-card {
   position: relative;
+  /* Stacked and centred: the mark, then the one-line ask, then the three
+     stores as equal columns. Reads as one tidy block instead of a row with
+     ragged text beside it. */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 16px 44px 16px 18px;
+  gap: 12px;
+  padding: 18px 18px 16px;
   border-radius: 16px;
   background: linear-gradient(120deg, #fff4e0 0%, #fff 55%, #fff4e0 100%);
   border: 1px solid color-mix(in srgb, #fb542b 25%, transparent);
@@ -1911,10 +1936,15 @@ td.empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* The app icon already includes its own rounded white plate, so this
-     container adds nothing behind it. */
-  background: transparent;
-  box-shadow: none;
+  /* A small mark set inside two rings — inner padding lifts it off the
+     plate, the outer halo separates it from the card. */
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  padding: 7px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, #fb542b 26%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, #fb542b 9%, transparent);
 }
 .brave-card-icon img {
   width: 100%;
@@ -1923,14 +1953,16 @@ td.empty {
   display: block;
 }
 .brave-card-body {
+  width: 100%;
   flex: 1;
   min-width: 0;
 }
 .brave-card-title {
-  margin: 0 0 3px;
+  margin: 0 0 10px;
   font-size: 14.5px;
   font-weight: 800;
   color: var(--ink);
+  text-align: center;
 }
 .brave-card-desc {
   margin: 0 0 10px;
@@ -1942,15 +1974,18 @@ td.empty {
   color: #fb542b;
 }
 .brave-card-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
 }
 .brave-card-note {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, #fb542b 18%, transparent);
   font-size: 11px;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.7;
+  text-align: center;
 }
 .brave-card-note strong {
   color: #fb542b;
@@ -1959,19 +1994,24 @@ td.empty {
 .brave-card-link {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 7px 14px;
-  border-radius: 9px;
-  background: #fb542b;
-  color: #fff;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, #fb542b 32%, transparent);
+  color: #d2410f;
   font-size: 12.5px;
   font-weight: 700;
-  box-shadow: 0 3px 8px rgba(251, 84, 43, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .brave-card-link:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 12px rgba(251, 84, 43, 0.4);
+  background: color-mix(in srgb, #fb542b 10%, #fff);
+  border-color: #fb542b;
+  transform: none;
+  box-shadow: none;
 }
 .brave-card-link svg {
   width: 15px;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getPageInfo, hizbLabel, surahNames, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
+import { getPageInfo, hizbLabel, surahNames, sajdasOnPage, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
 import {
   FLIP_MODE_LABELS,
   getFlipMode,
@@ -88,6 +88,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const flipMs = getFlipSpeed();
   const softness = getSoftness();
   const info = getPageInfo(page);
+  const sajdas = sajdasOnPage(page);
   const [picker, setPicker] = useState(null); // "surah" | "juz" | null
   const [search, setSearch] = useState("");
   // Holds the page being turned away, so it can rotate out over the new one.
@@ -367,6 +368,14 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
       {/* No arrow buttons — they sat on top of the text. Paging is by
           swipe (and by keyboard on desktop). */}
       <div className="quran-fs-foot">
+        {sajdas.length > 0 && (
+          <span className="quran-fs-sajda" title={sajdas.map((s) => `${s.surah} ${s.ayah}`).join(" · ")}>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-6.6 14.2c-.5 0-.9-.4-.9-.9 0-.4.3-.8.7-.9l4.6-1.1 1.4-3.6c.3-.7 1-1.1 1.7-.9.5.1.9.5 1.1 1l1 3 3.4 1.3c.4.2.7.5.7.9 0 .5-.4.9-.9.9H5.4Zm-1.2 2.3h15.6c.5 0 .9.4.9.9s-.4.9-.9.9H4.2c-.5 0-.9-.4-.9-.9s.4-.9.9-.9Z" />
+            </svg>
+            موضع سجدة
+          </span>
+        )}
         <span className="quran-fs-pageno">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M4 4.5C4 3.7 4.7 3 5.5 3H12v18H5.5c-.8 0-1.5-.7-1.5-1.5v-15Z" />
