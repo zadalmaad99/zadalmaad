@@ -18,13 +18,18 @@ export default function SelectPickerModal({ title, options, selectedValue, onSel
             <button
               key={opt.value}
               type="button"
-              className={`picker-modal-item${opt.value === selectedValue ? " selected" : ""}`}
+              className={`picker-modal-item${opt.value === selectedValue ? " selected" : ""}${opt.dimmed ? " dimmed" : ""}`}
               onClick={() => {
                 onSelect(opt.value);
                 onClose();
               }}
             >
               <span>{opt.label}</span>
+              {opt.dimmed && opt.value !== selectedValue && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="picker-modal-item-done">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              )}
               {opt.value === selectedValue && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 6 9 17l-5-5" />

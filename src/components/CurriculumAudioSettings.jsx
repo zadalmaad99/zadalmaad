@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { HADITH_STUDY_SECTION } from "../data/hadithStudyPlan";
+import SelectPickerModal from "./SelectPickerModal";
 
 const HADITH_PLAN_SECTIONS = [HADITH_STUDY_SECTION];
 
@@ -66,20 +67,45 @@ export default function CurriculumAudioSettings() {
   const [importing, setImporting] = useState(false);
   const [preview, setPreview] = useState([]); // {title, sourceName, url}
   const [savingPreview, setSavingPreview] = useState(false);
+  const [filledTitles, setFilledTitles] = useState(new Set());
+  const [filledLoaded, setFilledLoaded] = useState(false);
+  const [showBookPicker, setShowBookPicker] = useState(false);
   const bulkDetailsRef = useRef(null);
+  const bookInitRef = useRef(false);
 
   const book = BOOKS.find((b) => b.title === bookTitle);
   const sheikhOptions = book?.note ? noteLines(book.note) : [];
 
-  // The book list arrives asynchronously (static plan + live overrides), so
-  // pick the first book once it's available, and drop the selection if that
-  // book later gets deleted by the superadmin.
+  // One listener across every book's curriculumAudio doc, just to know which
+  // ones already have at least one lesson saved — drives the gray-out in the
+  // book picker and the "jump to the next book still missing a link" default.
   useEffect(() => {
-    if (!BOOKS.length) return;
-    if (!BOOKS.some((b) => b.title === bookTitle)) {
-      setBookTitle(BOOKS[0].title);
-    }
-  }, [BOOKS, bookTitle]);
+    const unsub = onSnapshot(collection(db, "curriculumAudio"), (snap) => {
+      const filled = new Set();
+      snap.docs.forEach((d) => {
+        const hasLessons = Object.values(d.data()?.bySheikh || {}).some(
+          (arr) => Array.isArray(arr) && arr.length > 0
+        );
+        if (hasLessons) filled.add(d.id);
+      });
+      setFilledTitles(filled);
+      setFilledLoaded(true);
+    });
+    return unsub;
+  }, []);
+
+  // The book list arrives asynchronously (static plan + live overrides), and
+  // completion status arrives separately — once both are ready, default to
+  // the first book that doesn't have a link yet instead of always book #1,
+  // and re-run whenever the source toggle switches to a list bookTitle isn't
+  // part of (drops the previous source's selection).
+  useEffect(() => {
+    if (!BOOKS.length || !filledLoaded) return;
+    if (bookInitRef.current && BOOKS.some((b) => b.title === bookTitle)) return;
+    const firstUnfilled = BOOKS.find((b) => !filledTitles.has(b.title));
+    setBookTitle((firstUnfilled || BOOKS[0]).title);
+    bookInitRef.current = true;
+  }, [BOOKS, filledLoaded, filledTitles, bookTitle]);
 
   // Keep the sheikh valid whenever the book — or its edited note — changes.
   useEffect(() => {
@@ -406,15 +432,36 @@ export default function CurriculumAudioSettings() {
 
         <label className="curriculum-settings-field">
           <span>الكتاب (يُطبَّق على البطاقتين أدناه)</span>
-          <select value={bookTitle} onChange={(e) => setBookTitle(e.target.value)}>
-            {BOOKS.map((b) => (
-              <option key={b.title} value={b.title}>
-                {b.title}
-              </option>
-            ))}
-          </select>
+          <button
+            type="button"
+            className="book-picker-trigger"
+            onClick={() => setShowBookPicker(true)}
+          >
+            {bookTitle || "اختر الكتاب"}
+          </button>
         </label>
+
+        {filledLoaded && (
+          <p className="curriculum-settings-book-legend">
+            <span className="curriculum-settings-book-legend-dot done" /> فيه دروس محفوظة
+            <span className="curriculum-settings-book-legend-dot" /> بدون دروس بعد
+          </p>
+        )}
       </div>
+
+      {showBookPicker && (
+        <SelectPickerModal
+          title="الكتاب"
+          options={BOOKS.map((b) => ({
+            value: b.title,
+            label: b.title,
+            dimmed: filledTitles.has(b.title),
+          }))}
+          selectedValue={bookTitle}
+          onSelect={(v) => setBookTitle(v)}
+          onClose={() => setShowBookPicker(false)}
+        />
+      )}
 
       <div className="settings-card curriculum-settings-card">
         <div className="settings-card-title">

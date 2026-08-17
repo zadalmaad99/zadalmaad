@@ -1052,6 +1052,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const [showPdfPicker, setShowPdfPicker] = useState(false);
   const [showPdfManager, setShowPdfManager] = useState(false);
   const [showSheikhPicker, setShowSheikhPicker] = useState(false);
+  const sheikhAutoPickedRef = useRef(false);
 
   const idx = selected === "" ? null : Number(selected);
   const staticEntry = idx !== null ? book.audio?.[idx] : null;
@@ -1070,15 +1071,30 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
     ...(!dynamicPdfUrl && book.pdfUrl ? [{ title: "الكتاب", url: book.pdfUrl }] : []),
     ...pdfList,
   ];
-  const hasDynamicData =
-    !!dynamicPdfUrl || pdfList.length > 0 || Object.values(extraBySheikh).some((arr) => arr?.length > 0);
+  const hasLessons = Object.values(extraBySheikh).some((arr) => arr?.length > 0);
+  const hasDynamicData = !!dynamicPdfUrl || pdfList.length > 0 || hasLessons;
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "curriculumAudio", book.title), (snap) => {
       const data = snap.data();
-      setExtraBySheikh(data?.bySheikh || {});
+      const nextBySheikh = data?.bySheikh || {};
+      setExtraBySheikh(nextBySheikh);
       setDynamicPdfUrl(data?.pdfUrl || null);
       setPdfList(Array.isArray(data?.pdfs) ? data.pdfs : []);
+
+      // Open the card straight on a sheikh's lessons by default — prefer
+      // whichever sheikh actually has lessons saved (static or dynamic) over
+      // just always defaulting to the first one listed in the note.
+      if (!sheikhAutoPickedRef.current && lines.length > 0) {
+        const withData = lines.findIndex((label, i) => {
+          const staticHas = Array.isArray(book.audio?.[i])
+            ? book.audio[i].length > 0
+            : !!book.audio?.[i];
+          return staticHas || (nextBySheikh[label] || []).length > 0;
+        });
+        setSelected(String(withData >= 0 ? withData : 0));
+        sheikhAutoPickedRef.current = true;
+      }
     });
     return unsub;
   }, [book.title]);
@@ -1190,7 +1206,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   }
 
   return (
-    <li className="study-plan-book">
+    <li className={`study-plan-book${hasLessons ? " study-plan-book-filled" : ""}`}>
       {isSuperadmin && (
         <button
           type="button"
@@ -1418,6 +1434,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
           options={lines.map((line, li) => ({ value: String(li), label: line }))}
           selectedValue={selected}
           onSelect={(v) => {
+            sheikhAutoPickedRef.current = true;
             setSelected(v);
             setLessonIdx("");
           }}
