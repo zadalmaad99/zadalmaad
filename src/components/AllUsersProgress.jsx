@@ -3,15 +3,42 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
-// Owner-only: every signed-in viewer's YouTube watch progress, grouped by
-// account, so mathelove2@gmail.com can see how everyone is doing at a
-// glance — not just their own progress bars scattered across book cards.
+function extractYoutubeId(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const embedMatch = u.pathname.match(/^\/(embed|shorts)\/([^/?#]+)/);
+      if (embedMatch) return embedMatch[2];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Same red/yellow/green tiers used on the book cards, so a glance here
+// matches what the viewer themselves would see.
+function progressTier(percent) {
+  if (percent < 30) return "#f87171";
+  if (percent <= 70) return "#fbbf24";
+  return "#4ade80";
+}
+
+// Owner-only: every signed-in viewer's YouTube watch progress, broken down
+// per lesson (not just an average) — expandable per person, with the book,
+// sheikh, and lesson name resolved from the same curriculumAudio data the
+// المنهج section reads, not just a bare video ID.
 export default function AllUsersProgress() {
   const { isSupersuperadmin } = useAuth();
   const [byUid, setByUid] = useState({});
   const [students, setStudents] = useState({});
   const [admins, setAdmins] = useState({});
+  const [videoMap, setVideoMap] = useState({});
   const [expanded, setExpanded] = useState(false);
+  const [expandedUid, setExpandedUid] = useState(null);
 
   useEffect(() => {
     if (!isSupersuperadmin) return;
@@ -54,6 +81,28 @@ export default function AllUsersProgress() {
     return unsub;
   }, [isSupersuperadmin]);
 
+  // One-time-ish map from a YouTube video ID to which book/sheikh/lesson it
+  // belongs to, built from the same curriculumAudio docs the المنهج page
+  // itself reads — covers both the study-plan and hadith-books sections
+  // since they're stored in the same collection.
+  useEffect(() => {
+    if (!isSupersuperadmin) return;
+    const unsub = onSnapshot(collection(db, "curriculumAudio"), (snap) => {
+      const map = {};
+      snap.docs.forEach((d) => {
+        const bySheikh = d.data()?.bySheikh || {};
+        Object.entries(bySheikh).forEach(([sheikh, lessons]) => {
+          (Array.isArray(lessons) ? lessons : []).forEach((lesson) => {
+            const vid = extractYoutubeId(lesson?.url || "");
+            if (vid) map[vid] = { book: d.id, sheikh, lesson: lesson.title };
+          });
+        });
+      });
+      setVideoMap(map);
+    });
+    return unsub;
+  }, [isSupersuperadmin]);
+
   if (!isSupersuperadmin) return null;
 
   const rows = Object.entries(byUid)
@@ -66,12 +115,27 @@ export default function AllUsersProgress() {
       const isWatchedEmail = email === "admin.zadalmaad@admin.com";
       const name = student?.name || admin?.name || (isOwnerEmail || isWatchedEmail ? email : null);
       const role = student ? "طالب" : admin ? "معلّم" : isOwnerEmail || isWatchedEmail ? "سوبر أدمن" : null;
+      const videos = items
+        .map((i) => {
+          const percent = Math.min(100, i.percent ?? Math.round(((i.seconds || 0) / (i.duration || 1)) * 100));
+          const info = videoMap[i.videoId];
+          return {
+            videoId: i.videoId,
+            percent,
+            book: info?.book || null,
+            sheikh: info?.sheikh?.replace(/^شرح\s+/, "") || null,
+            lesson: info?.lesson || null,
+            updatedAt: i.updatedAt || 0,
+          };
+        })
+        .sort((a, b) => b.updatedAt - a.updatedAt);
       return {
         uid,
         name: name || email || "مستخدم بدون اسم مسجّل",
         role,
         videosStarted: items.length,
         avgPercent: Math.min(100, avg),
+        videos,
       };
     })
     .sort((a, b) => b.avgPercent - a.avgPercent);
@@ -89,23 +153,87 @@ export default function AllUsersProgress() {
       </button>
 
       {expanded && (
-        <div className="all-progress-list">
+        <div className="all-progress-cards">
           {rows.length === 0 ? (
             <p className="hint-text">لا يوجد أي تقدّم مسجّل بعد.</p>
           ) : (
-            rows.map((r) => (
-              <div key={r.uid} className="all-progress-row">
-                <span className="all-progress-name">
-                  {r.name}
-                  {r.role && <span className="all-progress-role">{r.role}</span>}
-                </span>
-                <span className="all-progress-track">
-                  <span className="all-progress-fill" style={{ width: `${r.avgPercent}%` }} />
-                </span>
-                <span className="all-progress-percent">{r.avgPercent}%</span>
-                <span className="all-progress-count">{r.videosStarted} فيديو</span>
-              </div>
-            ))
+            rows.map((r) => {
+              const isOpen = expandedUid === r.uid;
+              return (
+                <div key={r.uid} className={`all-progress-card${isOpen ? " open" : ""}`}>
+                  <button
+                    type="button"
+                    className="all-progress-card-header"
+                    onClick={() => setExpandedUid(isOpen ? null : r.uid)}
+                  >
+                    <span className="all-progress-avatar" style={{ "--avatar-color": progressTier(r.avgPercent) }}>
+                      {r.name.trim()[0] || "؟"}
+                    </span>
+                    <span className="all-progress-card-info">
+                      <span className="all-progress-name">
+                        {r.name}
+                        {r.role && <span className="all-progress-role">{r.role}</span>}
+                      </span>
+                      <span className="all-progress-track">
+                        <span
+                          className="all-progress-fill"
+                          style={{ width: `${r.avgPercent}%`, background: progressTier(r.avgPercent) }}
+                        />
+                      </span>
+                    </span>
+                    <span className="all-progress-summary">
+                      <strong>{r.avgPercent}%</strong>
+                      <span>{r.videosStarted} فيديو</span>
+                    </span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className={`all-progress-chevron${isOpen ? " open" : ""}`}
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {isOpen && (
+                    <div className="all-progress-videos">
+                      {r.videos.map((v) => (
+                        <div key={v.videoId} className="all-progress-video-row">
+                          <div className="all-progress-video-info">
+                            {v.book ? (
+                              <>
+                                <span className="all-progress-video-book">{v.book}</span>
+                                <span className="all-progress-video-lesson">
+                                  {v.sheikh && <span className="all-progress-video-sheikh">{v.sheikh}</span>}
+                                  {v.lesson || "درس"}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="all-progress-video-lesson">
+                                فيديو غير مرتبط بكتاب حاليًا
+                                <span className="all-progress-video-id" dir="ltr">
+                                  {v.videoId}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+                          <span className="all-progress-video-track">
+                            <span
+                              className="all-progress-video-fill"
+                              style={{ width: `${v.percent}%`, background: progressTier(v.percent) }}
+                            />
+                          </span>
+                          <span className="all-progress-video-percent" style={{ color: progressTier(v.percent) }}>
+                            {v.percent}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
