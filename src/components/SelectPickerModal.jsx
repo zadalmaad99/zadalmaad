@@ -36,17 +36,15 @@ export default function SelectPickerModal({ title, options, selectedValue, onSel
               }}
             >
               <span>{opt.label}</span>
-              {opt.badges && (
+              {opt.badges?.some((b) => b.done) && (
                 <span className="picker-modal-item-badges">
-                  {opt.badges.map((b) => (
-                    <span
-                      key={b.key}
-                      className={`picker-modal-item-badge${b.done ? " done" : ""}`}
-                      title={b.done ? `${b.title}: تم الرفع` : `${b.title}: لم يُرفع بعد`}
-                    >
-                      {b.icon}
-                    </span>
-                  ))}
+                  {opt.badges
+                    .filter((b) => b.done)
+                    .map((b) => (
+                      <span key={b.key} className={`picker-modal-item-badge done ${b.key}`} title={`${b.title}: تم الرفع`}>
+                        {b.icon}
+                      </span>
+                    ))}
                 </span>
               )}
               {opt.dimmed && opt.value !== selectedValue && (

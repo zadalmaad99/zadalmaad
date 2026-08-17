@@ -2798,19 +2798,15 @@ td.empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--border);
 }
 .picker-modal-item-badge > svg {
   width: 16px;
   height: 16px;
 }
-.picker-modal-item-badge.done {
-  color: var(--ink);
-}
-.picker-modal-item-badges .picker-modal-item-badge:first-child.done {
+.picker-modal-item-badge.done.yt {
   color: #ff0000;
 }
-.picker-modal-item-badges .picker-modal-item-badge:last-child.done {
+.picker-modal-item-badge.done.pdf {
   color: #0891b2;
 }
 .lesson-picker-title {
