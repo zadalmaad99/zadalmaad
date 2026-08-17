@@ -15,6 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import PdfViewerModal, { readPdfProgress } from "./PdfViewerModal";
 import { applyOrQueue } from "../utils/pendingChanges";
 import { useSectionCollapse } from "../utils/persistentCollapse";
+import { normalizePdfUrl } from "../utils/pdfUrl";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
 
@@ -1099,7 +1100,9 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
     ...(dynamicPdfUrl ? [{ title: "الكتاب", url: dynamicPdfUrl }] : []),
     ...(!dynamicPdfUrl && book.pdfUrl ? [{ title: "الكتاب", url: book.pdfUrl }] : []),
     ...pdfList,
-  ];
+    // A GitHub blob-page link pasted by an admin would otherwise open
+    // github.com instead of the file — normalize every one of them here.
+  ].map((p) => ({ ...p, url: normalizePdfUrl(p.url) }));
   const hasLessons = Object.values(extraBySheikh).some((arr) => arr?.length > 0);
   const hasDynamicData = !!dynamicPdfUrl || pdfList.length > 0 || hasLessons;
 
@@ -1574,10 +1577,14 @@ function CurriculumPdfPanel() {
   const [speedBps, setSpeedBps] = useState(0);
   const startedAtRef = useRef(0);
 
+  const [reading, setReading] = useState(false);
+
   useEffect(() => {
     const unsub = onSnapshot(CURRICULUM_PDF_DOC, (snap) => {
       const url = snap.data()?.url || null;
-      setFileUrl(url);
+      // Normalized on read, so links saved before this fix (GitHub blob
+      // pages) start working without anyone re-entering them.
+      setFileUrl(url ? normalizePdfUrl(url) : null);
       setUrlInput(url || "");
     });
     return unsub;
@@ -1661,13 +1668,11 @@ function CurriculumPdfPanel() {
       }
 
       saveBlob(blob, "دراسة الكتب بالتدريج.pdf");
-      // Open the file itself once it's fully on-device, so the admin/student
-      // sees the PDF right away instead of just a "downloaded" toast.
-      const viewUrl = URL.createObjectURL(blob);
-      window.open(viewUrl, "_blank");
-      setTimeout(() => URL.revokeObjectURL(viewUrl), 60000);
     } catch {
-      window.open(fileUrl, "_blank", "noreferrer");
+      // Never fall back to opening the source URL — that dumps the reader on
+      // github.com instead of the file, which is exactly what this panel is
+      // meant to avoid. Reading in-app is always available instead.
+      window.alert("تعذّر تنزيل الملف — تحقّق من اتصال الإنترنت، أو اضغط \"قراءة\" لفتحه داخل التطبيق.");
     } finally {
       setDownloading(false);
     }
@@ -1721,6 +1726,19 @@ function CurriculumPdfPanel() {
               {fileUrl ? "تعديل الرابط" : "إضافة رابط"}
             </button>
           )}
+
+          <button
+            type="button"
+            className="curriculum-pdf-btn read"
+            onClick={() => setReading(true)}
+            disabled={!fileUrl}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M2 5.5C4 4 6.5 3.5 8.5 4.2 10 4.7 11.2 5.5 12 6.5c.8-1 2-1.8 3.5-2.3C17.5 3.5 20 4 22 5.5v13c-2-1.5-4.5-2-6.5-1.3-1.5.5-2.7 1.3-3.5 2.3-.8-1-2-1.8-3.5-2.3C6.5 16.5 4 17 2 18.5v-13Z" />
+              <path d="M12 6.5v13" />
+            </svg>
+            قراءة
+          </button>
 
           <button
             type="button"
@@ -1780,11 +1798,19 @@ function CurriculumPdfPanel() {
                   )}
                 </div>
               </div>
-              <p className="curriculum-pdf-download-hint">لا تغلق الصفحة حتى تنتهي التنزيل — سيُفتح الملف تلقائيًا بعد الانتهاء.</p>
+              <p className="curriculum-pdf-download-hint">لا تغلق الصفحة حتى تنتهي التنزيل — سيُحفظ الملف في جهازك بعد الانتهاء.</p>
             </div>
           </div>,
           document.body
         )}
+
+      {reading && fileUrl && (
+        <PdfViewerModal
+          url={fileUrl}
+          title="دراسة الكتب بالتدريج"
+          onClose={() => setReading(false)}
+        />
+      )}
     </div>
   );
 }

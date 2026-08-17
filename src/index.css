@@ -2404,6 +2404,15 @@ td.empty {
   transform: none;
   box-shadow: none;
 }
+.curriculum-pdf-btn.read {
+  background: var(--gold);
+  color: #2b2205;
+}
+.curriculum-pdf-btn.read:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: none;
+  box-shadow: none;
+}
 .curriculum-pdf-btn.upload {
   background: var(--primary);
   color: #fff;
