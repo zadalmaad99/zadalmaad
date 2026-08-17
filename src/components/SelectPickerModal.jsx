@@ -42,20 +42,9 @@ export default function SelectPickerModal({ title, options, selectedValue, onSel
                     <span
                       key={b.key}
                       className={`picker-modal-item-badge${b.done ? " done" : ""}`}
-                      title={b.title}
+                      title={b.done ? `${b.title}: تم الرفع` : `${b.title}: لم يُرفع بعد`}
                     >
                       {b.icon}
-                      <span className="picker-modal-item-badge-mark">
-                        {b.done ? (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                            <path d="M18 6 6 18M6 6l12 12" />
-                          </svg>
-                        )}
-                      </span>
                     </span>
                   ))}
                 </span>
