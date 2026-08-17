@@ -227,12 +227,16 @@ function YoutubeEmbed({ videoId, label, onProgress }) {
     resumeSecondsRef.current = local?.seconds || 0;
     if (!user) return;
     let cancelled = false;
-    getDoc(doc(db, "videoProgress", videoProgressDocId(user.uid, videoId))).then((snap) => {
-      if (cancelled || !snap.exists()) return;
-      // Whichever device/session got further wins the resume point.
-      const remote = snap.data().seconds || 0;
-      if (remote > resumeSecondsRef.current) resumeSecondsRef.current = remote;
-    });
+    getDoc(doc(db, "videoProgress", videoProgressDocId(user.uid, videoId)))
+      .then((snap) => {
+        if (cancelled || !snap.exists()) return;
+        // Whichever device/session got further wins the resume point.
+        const remote = snap.data().seconds || 0;
+        if (remote > resumeSecondsRef.current) resumeSecondsRef.current = remote;
+      })
+      // A logout can race an in-flight read and turn it into a permission
+      // error after the fact — this lookup is best-effort, so just drop it.
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
