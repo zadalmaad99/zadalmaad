@@ -183,8 +183,12 @@ export default function CurriculumAudioSettings() {
   useEffect(() => {
     if (!BOOKS.length || !filledLoaded) return;
     if (bookInitRef.current && BOOKS.some((b) => b.title === bookTitle)) return;
-    const firstUnfilled = BOOKS.find((b) => !filledYoutubeTitles.has(b.title));
-    setBookTitle((firstUnfilled || BOOKS[0]).title);
+    // Only consider books that actually have a شرح/sheikh configured —
+    // landing on one with none skips straight to the "لا يوجد شرح مسجّل"
+    // empty state and hides the whole upload section for no reason.
+    const withSheikh = BOOKS.filter((b) => b.note && noteLines(b.note).length > 0);
+    const firstUnfilled = withSheikh.find((b) => !filledYoutubeTitles.has(b.title));
+    setBookTitle((firstUnfilled || withSheikh[0] || BOOKS[0]).title);
     bookInitRef.current = true;
   }, [BOOKS, filledLoaded, filledYoutubeTitles, bookTitle]);
 
