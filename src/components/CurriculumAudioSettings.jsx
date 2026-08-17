@@ -72,6 +72,25 @@ function isYoutubeUrl(url) {
   }
 }
 
+// Same idea as StudyPlanSection's getYoutubeId, duplicated here since this
+// file already has its own small URL-parsing helpers rather than importing
+// across components for a two-line function.
+function extractYoutubeVideoId(url) {
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const embedMatch = u.pathname.match(/^\/(embed|shorts)\/([^/?#]+)/);
+      if (embedMatch) return embedMatch[2];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeAudioUrl(raw) {
   const trimmed = String(raw).trim();
   try {
@@ -330,6 +349,31 @@ export default function CurriculumAudioSettings() {
     }
   }
 
+  // A single YouTube video link (no ?list=) — add it as one lesson instead
+  // of erroring out just because it isn't a playlist. The title comes from
+  // YouTube's public oEmbed endpoint, no API key needed.
+  async function importSingleYoutubeVideo(videoId) {
+    setImporting(true);
+    try {
+      const res = await fetch(
+        `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`
+      );
+      if (!res.ok) throw new Error("oembed failed");
+      const data = await res.json();
+      setPreview([
+        {
+          title: `الدرس ${lessons.length + 1}`,
+          sourceName: data.title || videoId,
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+        },
+      ]);
+    } catch {
+      window.alert("تعذّر جلب بيانات هذا الفيديو — تحقّق من الرابط أو حاول مجددًا");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function handleImportPlaylist() {
     const ytPlaylistId = extractYoutubePlaylistId(playlistUrl);
     if (ytPlaylistId) {
@@ -337,9 +381,15 @@ export default function CurriculumAudioSettings() {
       return;
     }
 
+    const ytVideoId = extractYoutubeVideoId(playlistUrl);
+    if (ytVideoId) {
+      await importSingleYoutubeVideo(ytVideoId);
+      return;
+    }
+
     const identifier = extractArchiveIdentifier(playlistUrl);
     if (!identifier) {
-      window.alert("تعذّر التعرّف على معرّف العنصر — تأكد أن الرابط من archive.org/details/...");
+      window.alert("تعذّر التعرّف على معرّف العنصر — تأكد أن الرابط من archive.org/details/... أو رابط يوتيوب صالح");
       return;
     }
     setImporting(true);

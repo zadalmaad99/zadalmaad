@@ -12,6 +12,7 @@ import {
 import SelectPickerModal from "./SelectPickerModal";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
+import PdfViewerModal from "./PdfViewerModal";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
 
@@ -905,7 +906,7 @@ function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, liv
   );
 }
 
-function PdfPickerModal({ pdfs, onClose }) {
+function PdfPickerModal({ pdfs, onClose, onOpenPdf }) {
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card lesson-picker-card" onClick={(e) => e.stopPropagation()}>
@@ -917,20 +918,21 @@ function PdfPickerModal({ pdfs, onClose }) {
         <p className="lesson-picker-title">اختر الملف</p>
         <div className="pdf-picker-list">
           {pdfs.map((p, i) => (
-            <a
+            <button
               key={i}
+              type="button"
               className="pdf-picker-item"
-              href={p.url}
-              target="_blank"
-              rel="noreferrer"
-              onClick={onClose}
+              onClick={() => {
+                onOpenPdf(p);
+                onClose();
+              }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 3v4a1 1 0 0 0 1 1h4" />
                 <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" />
               </svg>
               {p.title || `ملف ${i + 1}`}
-            </a>
+            </button>
           ))}
         </div>
       </div>
@@ -1027,6 +1029,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const [dynamicPdfUrl, setDynamicPdfUrl] = useState(null);
   const [pdfList, setPdfList] = useState([]);
   const [showPdfPicker, setShowPdfPicker] = useState(false);
+  const [activePdf, setActivePdf] = useState(null);
   const [showPdfManager, setShowPdfManager] = useState(false);
   const [showSheikhPicker, setShowSheikhPicker] = useState(false);
   const [liveProgress, setLiveProgress] = useState({});
@@ -1109,7 +1112,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
     if (allPdfs.length > 1) {
       setShowPdfPicker(true);
     } else if (allPdfs.length === 1) {
-      window.open(allPdfs[0].url, "_blank", "noreferrer");
+      setActivePdf(allPdfs[0]);
     } else {
       setShowNoPdf(true);
     }
@@ -1419,7 +1422,13 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
       {showNoPdf && <NoPdfModal onClose={() => setShowNoPdf(false)} />}
 
-      {showPdfPicker && <PdfPickerModal pdfs={allPdfs} onClose={() => setShowPdfPicker(false)} />}
+      {showPdfPicker && (
+        <PdfPickerModal pdfs={allPdfs} onClose={() => setShowPdfPicker(false)} onOpenPdf={setActivePdf} />
+      )}
+
+      {activePdf && (
+        <PdfViewerModal url={activePdf.url} title={activePdf.title || book.title} onClose={() => setActivePdf(null)} />
+      )}
 
       {showPdfManager && (
         <PdfManagerModal
