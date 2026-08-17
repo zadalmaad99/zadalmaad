@@ -874,6 +874,10 @@ label {
   max-width: 100%;
   border-radius: 8px;
   border: 1px solid var(--border);
+  /* The mushaf page image itself is a real page — it must always look like
+     paper (white, black ink) regardless of light/dark theme, never blend
+     into a dark card background. */
+  background: #fff;
 }
 .quran-page-nav {
   display: flex;
@@ -4913,6 +4917,28 @@ td.empty {
 }
 .study-plan-section-head .study-plan-section-title {
   margin: 0;
+  flex: 1;
+}
+.study-plan-collapse-toggle {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(74, 58, 6, 0.12);
+  color: #2b2205;
+  box-shadow: none;
+}
+.study-plan-collapse-toggle:hover {
+  background: rgba(74, 58, 6, 0.22);
+  transform: none;
+  box-shadow: none;
+}
+.study-plan-collapse-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 .study-plan-reorder-toggle {
   display: inline-flex;

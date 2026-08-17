@@ -14,6 +14,7 @@ import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
 import PdfViewerModal, { readPdfProgress } from "./PdfViewerModal";
 import { applyOrQueue } from "../utils/pendingChanges";
+import { useSectionCollapse } from "../utils/persistentCollapse";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
 
@@ -1973,61 +1974,22 @@ export default function StudyPlanSection() {
       <CurriculumPdfPanel />
       <div className="study-plan-body">
         {sections.map((section) => (
-          <div key={section.title} className="study-plan-section">
-            <div className="study-plan-section-head">
-              <h4 className="study-plan-section-title">{section.title}</h4>
-              {isSuperadmin && reorderingSection !== section.title && (
-                <button
-                  type="button"
-                  className="study-plan-reorder-toggle"
-                  onClick={() => setReorderingSection(section.title)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-                  </svg>
-                  تعديل التسلسل
-                </button>
-              )}
-            </div>
-
-            {reorderingSection === section.title ? (
-              <ReorderPanel
-                books={section.books}
-                onSave={handleSaveOrder}
-                onCancel={() => setReorderingSection(null)}
-              />
-            ) : (
-              <ol className="study-plan-books">
-                {section.books.map((b) => (
-                  <BookCard
-                    key={b.title}
-                    book={b}
-                    order={b.order}
-                    onSaveEdit={handleSaveEdit}
-                    onDeleteBook={
-                      b.isAdded ? () => handleDeleteAddedBook(section.title, b.title) : handleDeleteBook
-                    }
-                  />
-                ))}
-                {isSuperadmin &&
-                  (addingSection === section.title ? (
-                    <AddBookForm
-                      onAdd={(newBook) => handleAddBook(section.title, newBook)}
-                      onCancel={() => setAddingSection(null)}
-                    />
-                  ) : (
-                    <li className="study-plan-book study-plan-book-add-trigger">
-                      <button type="button" onClick={() => setAddingSection(section.title)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 5v14M5 12h14" />
-                        </svg>
-                        إضافة كتاب
-                      </button>
-                    </li>
-                  ))}
-              </ol>
-            )}
-          </div>
+          <StudyPlanSectionBlock
+            key={section.title}
+            section={section}
+            isSuperadmin={isSuperadmin}
+            reordering={reorderingSection === section.title}
+            onStartReorder={() => setReorderingSection(section.title)}
+            onCancelReorder={() => setReorderingSection(null)}
+            onSaveOrder={handleSaveOrder}
+            onSaveEdit={handleSaveEdit}
+            onDeleteBook={handleDeleteBook}
+            onDeleteAddedBook={(bookTitle) => handleDeleteAddedBook(section.title, bookTitle)}
+            adding={addingSection === section.title}
+            onStartAdd={() => setAddingSection(section.title)}
+            onCancelAdd={() => setAddingSection(null)}
+            onAddBook={(newBook) => handleAddBook(section.title, newBook)}
+          />
         ))}
       </div>
 
@@ -2062,4 +2024,88 @@ export default function StudyPlanSection() {
   );
 }
 
-export { BookCard, AddBookForm, ReorderPanel };
+// One باب section — collapsed state is remembered per section title so a
+// refresh keeps it exactly as the viewer left it, open or closed.
+function StudyPlanSectionBlock({
+  section,
+  isSuperadmin,
+  reordering,
+  onStartReorder,
+  onCancelReorder,
+  onSaveOrder,
+  onSaveEdit,
+  onDeleteBook,
+  onDeleteAddedBook,
+  adding,
+  onStartAdd,
+  onCancelAdd,
+  onAddBook,
+  bookCardExtra,
+}) {
+  const [collapsed, toggleCollapsed] = useSectionCollapse(section.title);
+
+  return (
+    <div className="study-plan-section">
+      <div className="study-plan-section-head">
+        <button
+          type="button"
+          className="study-plan-collapse-toggle"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "فتح الباب" : "طي الباب"}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            className={collapsed ? "chevron" : "chevron chevron-open"}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <h4 className="study-plan-section-title">{section.title}</h4>
+        {isSuperadmin && !reordering && (
+          <button type="button" className="study-plan-reorder-toggle" onClick={onStartReorder}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+            </svg>
+            ترتيب
+          </button>
+        )}
+      </div>
+
+      {!collapsed &&
+        (reordering ? (
+          <ReorderPanel books={section.books} onSave={onSaveOrder} onCancel={onCancelReorder} />
+        ) : (
+          <ol className="study-plan-books">
+            {section.books.map((b) => (
+              <BookCard
+                key={b.title}
+                book={b}
+                order={b.order}
+                onSaveEdit={onSaveEdit}
+                onDeleteBook={b.isAdded ? () => onDeleteAddedBook(b.title) : onDeleteBook}
+                {...(bookCardExtra ? bookCardExtra(b) : null)}
+              />
+            ))}
+            {isSuperadmin &&
+              (adding ? (
+                <AddBookForm onAdd={onAddBook} onCancel={onCancelAdd} />
+              ) : (
+                <li className="study-plan-book study-plan-book-add-trigger">
+                  <button type="button" onClick={onStartAdd}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    إضافة كتاب
+                  </button>
+                </li>
+              ))}
+          </ol>
+        ))}
+    </div>
+  );
+}
+
+export { BookCard, AddBookForm, ReorderPanel, StudyPlanSectionBlock };

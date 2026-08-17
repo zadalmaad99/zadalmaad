@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCurriculumPlan } from "../data/curriculum";
 import { HADITH_STUDY_SECTION } from "../data/hadithStudyPlan";
 import { HADITH_BOOKS } from "../data/hadithBooks";
-import { BookCard, AddBookForm, ReorderPanel } from "./StudyPlanSection";
+import { StudyPlanSectionBlock } from "./StudyPlanSection";
 import HadithTrackingSection from "./HadithTrackingSection";
 
 const PLAN_SECTIONS = [HADITH_STUDY_SECTION];
@@ -79,86 +79,47 @@ export default function HadithBooksSection() {
   return (
     <div className="study-plan-inline">
       <div className="study-plan-body">
-        <div className="study-plan-section">
-          <div className="study-plan-section-head">
-            <h4 className="study-plan-section-title">{section.title}</h4>
-            {isSuperadmin && reorderingSection !== section.title && (
-              <button
-                type="button"
-                className="study-plan-reorder-toggle"
-                onClick={() => setReorderingSection(section.title)}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-                </svg>
-                تعديل التسلسل
-              </button>
-            )}
-          </div>
-
-          {reorderingSection === section.title ? (
-            <ReorderPanel
-              books={section.books}
-              onSave={handleSaveOrder}
-              onCancel={() => setReorderingSection(null)}
-            />
-          ) : (
-            <ol className="study-plan-books">
-              {section.books.map((b) => {
-                const hadithKey = b.hadithKey || HADITH_BOOKS.find((hb) => hb.name === b.title)?.key;
-                return (
-                  <BookCard
-                    key={b.title}
-                    book={b}
-                    order={b.order}
-                    onSaveEdit={handleSaveEdit}
-                    onDeleteBook={
-                      b.isAdded ? () => handleDeleteAddedBook(b.title) : handleDeleteBook
-                    }
-                    trackingButton={
-                      hadithKey && user && (
-                        <button
-                          type="button"
-                          className="study-plan-tracking-btn"
-                          onClick={() => {
-                            setTrackingBook({ title: b.title, hadithKey });
-                            setTrackingSub("hifz");
-                          }}
-                        >
-                          <span className="study-plan-tracking-btn-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <circle cx="9" cy="7" r="3.2" />
-                              <path d="M2.5 20c.7-3.6 3.3-5.6 6.5-5.6s5.8 2 6.5 5.6" />
-                            </svg>
-                          </span>
-                          <span className="study-plan-tracking-btn-text">
-                            <span className="study-plan-tracking-btn-title">متابعة الطلاب</span>
-                            <span className="study-plan-tracking-btn-hint">
-                              انقر هنا لمراقبة تقدم الطالب
-                            </span>
-                          </span>
-                        </button>
-                      )
-                    }
-                  />
-                );
-              })}
-              {isSuperadmin &&
-                (addingSection === section.title ? (
-                  <AddBookForm onAdd={handleAddBook} onCancel={() => setAddingSection(null)} />
-                ) : (
-                  <li className="study-plan-book study-plan-book-add-trigger">
-                    <button type="button" onClick={() => setAddingSection(section.title)}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                      إضافة كتاب
-                    </button>
-                  </li>
-                ))}
-            </ol>
-          )}
-        </div>
+        <StudyPlanSectionBlock
+          section={section}
+          isSuperadmin={isSuperadmin}
+          reordering={reorderingSection === section.title}
+          onStartReorder={() => setReorderingSection(section.title)}
+          onCancelReorder={() => setReorderingSection(null)}
+          onSaveOrder={handleSaveOrder}
+          onSaveEdit={handleSaveEdit}
+          onDeleteBook={handleDeleteBook}
+          onDeleteAddedBook={handleDeleteAddedBook}
+          adding={addingSection === section.title}
+          onStartAdd={() => setAddingSection(section.title)}
+          onCancelAdd={() => setAddingSection(null)}
+          onAddBook={handleAddBook}
+          bookCardExtra={(b) => {
+            const hadithKey = b.hadithKey || HADITH_BOOKS.find((hb) => hb.name === b.title)?.key;
+            return {
+              trackingButton: hadithKey && user && (
+                <button
+                  type="button"
+                  className="study-plan-tracking-btn"
+                  onClick={() => {
+                    setTrackingBook({ title: b.title, hadithKey });
+                    setTrackingSub("hifz");
+                  }}
+                >
+                  <span className="study-plan-tracking-btn-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="9" cy="7" r="3.2" />
+                      <path d="M2.5 20c.7-3.6 3.3-5.6 6.5-5.6s5.8 2 6.5 5.6" />
+                    </svg>
+                  </span>
+                  <span className="study-plan-tracking-btn-text">
+                    <span className="study-plan-tracking-btn-title">متابعة الطلاب</span>
+                    <span className="study-plan-tracking-btn-hint">انقر هنا لمراقبة تقدم الطالب</span>
+                  </span>
+                </button>
+              ),
+            };
+          }}
+        />
       </div>
 
       {trackingBook &&
