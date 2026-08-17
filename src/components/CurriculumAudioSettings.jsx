@@ -9,6 +9,19 @@ import { applyOrQueue } from "../utils/pendingChanges";
 
 const HADITH_PLAN_SECTIONS = [HADITH_STUDY_SECTION];
 
+const YOUTUBE_BADGE_ICON = (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2 12a28 28 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3a2.7 2.7 0 0 0 1.9-1.9A28 28 0 0 0 22 12a28 28 0 0 0-.4-4.8ZM10 15V9l5 3-5 3Z" />
+  </svg>
+);
+
+const PDF_BADGE_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+    <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" />
+  </svg>
+);
+
 // Arabic file names arrive percent-encoded (%D8%B4...), which is unreadable in
 // the review box. We show them decoded and re-encode on save, so what actually
 // gets stored is byte-for-byte the same working URL either way.
@@ -611,8 +624,8 @@ export default function CurriculumAudioSettings() {
             value: b.title,
             label: b.title,
             badges: [
-              { key: "yt", done: filledYoutubeTitles.has(b.title), title: "رابط يوتيوب" },
-              { key: "pdf", done: pdfFilledTitles.has(b.title), title: "ملف PDF" },
+              { key: "yt", done: filledYoutubeTitles.has(b.title), title: "رابط يوتيوب", icon: YOUTUBE_BADGE_ICON },
+              { key: "pdf", done: pdfFilledTitles.has(b.title), title: "ملف PDF", icon: PDF_BADGE_ICON },
             ],
           }))}
           selectedValue={bookTitle}

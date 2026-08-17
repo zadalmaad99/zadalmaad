@@ -9,6 +9,7 @@ import SuperadminDashboard from "../components/SuperadminDashboard";
 import ScrollButtons from "../components/ScrollButtons";
 import MenhajAccordion from "../components/MenhajAccordion";
 import AdminAlertsBell from "../components/AdminAlertsBell";
+import { QuranPageViewer } from "../components/QuranPageModal";
 import logo from "../assets/logo.png";
 
 const NAV_STORAGE_KEY = "quran-tracker-nav";
@@ -46,6 +47,12 @@ const ICONS = {
       <path d="M2.5 20c.7-3.6 3.3-5.6 6.5-5.6s5.8 2 6.5 5.6" />
       <circle cx="17" cy="8" r="2.4" />
       <path d="M15.5 14.6c2.6.2 4.6 2 5.2 5" />
+    </svg>
+  ),
+  mushaf: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 4.5C4 3.7 4.7 3 5.5 3H12v18H5.5c-.8 0-1.5-.7-1.5-1.5v-15Z" />
+      <path d="M20 4.5c0-.8-.7-1.5-1.5-1.5H12v18h6.5c.8 0 1.5-.7 1.5-1.5v-15Z" />
     </svg>
   ),
   hifz: (
@@ -88,6 +95,7 @@ const ICONS = {
 };
 
 const SUB_SECTIONS = [
+  { key: "mushaf", label: "المصحف" },
   { key: "hifz", label: "حفظ" },
   { key: "qiraah", label: "قراءة" },
   { key: "murajaah", label: "مراجعة" },
@@ -139,6 +147,21 @@ const QURAN_TITLES = {
   murajaah: "سجلات المراجعة",
 };
 
+// The physical mus-haf reader, available to every signed-in role right
+// alongside the حفظ/قراءة/مراجعة tracking tabs — not just the anonymous
+// public page.
+function MushafTabReader() {
+  const [page, setPage] = useState(1);
+  return (
+    <>
+      <div className="modal-header">
+        <h3>صفحة {page} من المصحف</h3>
+      </div>
+      <QuranPageViewer page={page} onPageChange={setPage} />
+    </>
+  );
+}
+
 export default function Dashboard() {
   const { logout, isAdmin, isSuperadmin, role } = useAuth();
   const visibleTabs = isAdmin
@@ -148,7 +171,7 @@ export default function Dashboard() {
       );
   const savedNav = readNav();
   const [tab, setTab] = useState(savedNav.tab || (isAdmin ? "overview" : "quran"));
-  const [quranSub, setQuranSub] = useState(savedNav.quranSub || "hifz");
+  const [quranSub, setQuranSub] = useState(savedNav.quranSub || "mushaf");
   const [focusStudentId, setFocusStudentId] = useState(null);
   const [focusAdmin, setFocusAdmin] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
@@ -268,7 +291,12 @@ export default function Dashboard() {
           />
         )}
         {tab === "settings" && isAdmin && <SettingsPanel />}
-        {tab === "quran" && (
+        {tab === "quran" && quranSub === "mushaf" && (
+          <div className="modal-card quran-page-card public-quran-card mushaf-tab-card">
+            <MushafTabReader />
+          </div>
+        )}
+        {tab === "quran" && quranSub !== "mushaf" && (
           <TrackingSection
             type={quranSub}
             title={QURAN_TITLES[quranSub]}

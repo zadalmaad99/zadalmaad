@@ -2791,26 +2791,49 @@ td.empty {
 .picker-modal-item-badges {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
 }
 .picker-modal-item-badge {
-  width: 18px;
-  height: 18px;
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-alt);
+  color: var(--muted);
+  opacity: 0.55;
+}
+.picker-modal-item-badge > svg {
+  width: 13px;
+  height: 13px;
+}
+.picker-modal-item-badge.done {
+  opacity: 1;
+  color: var(--ink);
+}
+.picker-modal-item-badge-mark {
+  position: absolute;
+  bottom: -4px;
+  inset-inline-end: -4px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, #ef4444 15%, transparent);
-  color: #ef4444;
+  background: #ef4444;
+  color: #fff;
+  border: 1.5px solid var(--surface);
 }
-.picker-modal-item-badge svg {
-  width: 10px;
-  height: 10px;
+.picker-modal-item-badge-mark svg {
+  width: 7px;
+  height: 7px;
 }
-.picker-modal-item-badge.done {
-  background: color-mix(in srgb, #16a34a 18%, transparent);
-  color: #16a34a;
+.picker-modal-item-badge.done .picker-modal-item-badge-mark {
+  background: #16a34a;
 }
 .lesson-picker-title {
   font-size: 15px;
@@ -5362,4 +5385,25 @@ td.empty {
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.study-plan-youtube-placeholder .study-plan-youtube-frame {
+  background: var(--surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.study-plan-youtube-placeholder .study-plan-youtube-frame::after {
+  content: "";
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  border-top-color: var(--primary);
+  animation: study-plan-yt-spin 0.8s linear infinite;
+}
+@keyframes study-plan-yt-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
