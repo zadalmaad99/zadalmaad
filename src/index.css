@@ -1129,8 +1129,7 @@ label {
   font-weight: 700;
 }
 .quran-fs-zoom button,
-.quran-fs-close,
-.quran-fs-sound {
+.quran-fs-close {
   width: 30px;
   height: 30px;
   display: inline-flex;
@@ -1143,6 +1142,22 @@ label {
   box-shadow: none;
   padding: 0;
 }
+/* Labelled, so it's obvious what the control does rather than a bare
+   icon sitting in an empty box. */
+.quran-fs-sound {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: #f2e8d2;
+  border: 1px solid #e2d3ae;
+  color: #6b5426;
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: none;
+}
 .quran-fs-zoom button:hover:not(:disabled),
 .quran-fs-close:hover,
 .quran-fs-sound:hover {
@@ -1154,22 +1169,31 @@ label {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   padding: 8px 12px;
   flex-shrink: 0;
 }
+/* Just the page number, centred — the way a printed mushaf foots its
+   pages. Double-ruled to read as a printed ornament rather than a chip. */
 .quran-fs-pageno {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
   font-weight: 800;
   color: #6b5426;
   background: #fdfaf3;
-  border: 1px solid #e2d3ae;
+  border: 1px solid #d9c496;
+  outline: 3px solid #fdfaf3;
+  box-shadow: 0 0 0 4px #e6d5b0;
   border-radius: 999px;
-  padding: 3px 14px;
+  padding: 5px 20px;
+  letter-spacing: 0.5px;
 }
-.quran-fs-swipe {
-  font-size: 10.5px;
-  color: #9c8862;
+.quran-fs-pageno svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 .quran-fs-zoom button:disabled {
   opacity: 0.4;
@@ -1275,27 +1299,9 @@ label {
     display: none;
   }
 }
-.quran-fs-sound {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 11.5px;
-  font-weight: 700;
-  box-shadow: none;
-}
-.quran-fs-sound:hover {
-  background: rgba(255, 255, 255, 0.24);
-  transform: none;
-  box-shadow: none;
-}
 .quran-fs-sound svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 

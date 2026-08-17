@@ -95,16 +95,21 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const pinchRef = useRef(null);
   const panRef = useRef(null);
   const swipeRef = useRef(null);
+  const turnTimerRef = useRef(null);
 
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
-    if (next === page || turning) return;
+    // Deliberately not blocked while a turn is still animating: at slow
+    // speeds that swallowed every follow-up swipe for over a second and
+    // made the reader feel dead. A new turn just restarts the animation.
+    if (next === page) return;
     playPageFlip(softness, soundMode);
     // The outgoing sheet keeps rendering on top and rotates about the edge
     // it's bound on, revealing the new page underneath — the same motion as
     // turning a real leaf, rather than a cut or a fade.
     setTurning({ page, dir: delta > 0 ? "fwd" : "back" });
-    setTimeout(() => setTurning(null), flipMs);
+    clearTimeout(turnTimerRef.current);
+    turnTimerRef.current = setTimeout(() => setTurning(null), flipMs);
     setLoading(true);
     setScale(1);
     setOffset({ x: 0, y: 0 });
@@ -318,6 +323,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
               <path d="M15.5 8.5a5 5 0 0 1 0 7" />
             </svg>
           )}
+          <span>{soundMode === "off" ? "صامت" : "الصوت"}</span>
         </button>
         <button type="button" className="quran-fs-close" onClick={onClose} aria-label="إغلاق">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -360,7 +366,15 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
 
       {/* No arrow buttons — they sat on top of the text. Paging is by
           swipe (and by keyboard on desktop). */}
-      <div className="quran-fs-foot"><span className="quran-fs-pageno">{page} / {PAGE_COUNT}</span><span className="quran-fs-swipe">اسحب يمينًا للتالية، ويسارًا للسابقة</span></div>
+      <div className="quran-fs-foot">
+        <span className="quran-fs-pageno">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M4 4.5C4 3.7 4.7 3 5.5 3H12v18H5.5c-.8 0-1.5-.7-1.5-1.5v-15Z" />
+            <path d="M20 4.5c0-.8-.7-1.5-1.5-1.5H12v18h6.5c.8 0 1.5-.7 1.5-1.5v-15Z" />
+          </svg>
+          {page}
+        </span>
+      </div>
     </div>,
     document.body
   );
