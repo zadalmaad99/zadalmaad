@@ -79,8 +79,11 @@ export default function AdminAlertsBell() {
   }
 
   function formatWhen(ts) {
-    if (!ts?.toDate) return "";
-    return ts.toDate().toLocaleString("ar-EG", { dateStyle: "short", timeStyle: "short" });
+    // serverTimestamp() is null in the local echo until the server write
+    // lands, so show something meaningful rather than an empty line.
+    const d = ts?.toDate ? ts.toDate() : null;
+    if (!d) return "الآن";
+    return d.toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
   }
 
   return (
@@ -160,31 +163,42 @@ export default function AdminAlertsBell() {
                       <div className="admin-alerts-diff">
                         <div className="admin-alerts-diff-row">
                           <span className="admin-alerts-diff-field">الإجراء</span>
-                          <span className="admin-alerts-diff-before">موجود</span>
-                          <span className="admin-alerts-diff-after removed">سيُحذف</span>
+                          <span className="admin-alerts-diff-change">
+                            <span className="admin-alerts-diff-before">موجود</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                              <path d="M19 12H5m0 0 6-6m-6 6 6 6" />
+                            </svg>
+                            <span className="admin-alerts-diff-after removed">سيُحذف</span>
+                          </span>
                         </div>
                       </div>
                     ) : rows.length > 0 ? (
                       <div className="admin-alerts-diff">
-                        <div className="admin-alerts-diff-head">
-                          <span className="admin-alerts-diff-field">الحقل</span>
-                          <span className="admin-alerts-diff-before">قبل</span>
-                          <span className="admin-alerts-diff-after">بعد</span>
-                        </div>
-                        {rows.slice(0, 8).map((r, i) => (
+                        {rows.slice(0, 6).map((r, i) => (
                           <div className="admin-alerts-diff-row" key={i}>
                             <span className="admin-alerts-diff-field">{r.field}</span>
-                            <span className="admin-alerts-diff-before">{r.before}</span>
-                            <span className="admin-alerts-diff-after">{r.after}</span>
+                            <span className="admin-alerts-diff-change">
+                              <span className="admin-alerts-diff-before">{r.before}</span>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                                <path d="M19 12H5m0 0 6-6m-6 6 6 6" />
+                              </svg>
+                              <span className="admin-alerts-diff-after">{r.after}</span>
+                            </span>
                           </div>
                         ))}
-                        {rows.length > 8 && (
-                          <p className="admin-alerts-diff-more">و{rows.length - 8} تغييرًا آخر…</p>
+                        {rows.length > 6 && (
+                          <p className="admin-alerts-diff-more">و{rows.length - 6} تغييرًا آخر…</p>
                         )}
                       </div>
                     ) : null}
 
-                    <span className="admin-alerts-item-time">{formatWhen(c.createdAt)}</span>
+                    <span className="admin-alerts-item-time">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                      </svg>
+                      {formatWhen(c.createdAt)}
+                    </span>
 
                     <span className="admin-alerts-item-actions">
                       {c.status === "pending" && (

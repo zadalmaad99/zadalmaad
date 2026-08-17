@@ -231,18 +231,18 @@ function MushafTabReader({ section }) {
 
   return (
     <>
-      <div className="modal-header">
-        <h3>صفحة {page} من المصحف</h3>
-        {info && (
-          <span className="mushaf-page-meta">
+      {/* No "صفحة N من المصحف" heading — the page number already sits under
+          the page, and dropping it gives the سورة/جزء/حزب line the full
+          width it needs to stay on one tidy row. */}
+      {info && (
+        <div className="mushaf-page-meta">
+          <span className="mushaf-page-meta-surah">
             {info.surahs.map((s) => s.name.replace(/^سُورَةُ\s*/, "")).join(" / ")}
-            {" — "}
-            الجزء {info.juz.join("-")}
-            {" — "}
-            {hizbLabel(info.hizbQuarter)}
           </span>
-        )}
-      </div>
+          <span className="mushaf-page-meta-chip">الجزء {info.juz.join("-")}</span>
+          <span className="mushaf-page-meta-chip">{hizbLabel(info.hizbQuarter)}</span>
+        </div>
+      )}
       <QuranPageViewer page={page} onPageChange={handlePageChange} />
     </>
   );

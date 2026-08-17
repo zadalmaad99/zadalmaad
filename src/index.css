@@ -886,6 +886,32 @@ label {
   gap: 14px;
 }
 
+/* Surah / juz / hizb strip above the mushaf page — takes the space the
+   old "صفحة N من المصحف" heading used to occupy. */
+.mushaf-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.mushaf-page-meta-surah {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+.mushaf-page-meta-chip {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-2, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
 /* ---- Full-screen mushaf reader ---- */
 .quran-page-viewer {
   position: relative;
@@ -921,13 +947,18 @@ label {
   background: #0d0d0d;
   display: flex;
   flex-direction: column;
+  /* Keep the whole reader clear of the status bar and the gesture bar —
+     otherwise the toolbar hides under the clock and the page runs beneath
+     the system navigation. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .quran-fs-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-top));
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   flex-shrink: 0;
@@ -972,52 +1003,32 @@ label {
 }
 .quran-fs-stage {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 6px;
   touch-action: none;
 }
 .quran-fs-img {
-  max-width: 100%;
-  max-height: 100%;
+  /* Fill the stage and stay centred on both axes whatever the page's
+     aspect ratio — no drifting to one edge. */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   background: #fff;
   transform-origin: center center;
   will-change: transform;
 }
-.quran-fs-arrow {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 46px;
-  height: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
-  box-shadow: none;
-  z-index: 2;
-}
-.quran-fs-arrow:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.75);
-  transform: translateY(-50%);
-  box-shadow: none;
-}
-.quran-fs-arrow:disabled {
-  opacity: 0.3;
-}
-.quran-fs-arrow.prev {
-  right: 10px;
-}
-.quran-fs-arrow.next {
-  left: 10px;
-}
-.quran-fs-arrow svg {
-  width: 24px;
-  height: 24px;
+.quran-fs-hint {
+  margin: 0;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
 }
 .record-card-notes {
   font-size: 12.5px;
@@ -1502,7 +1513,9 @@ td.empty {
   }
 
   .content {
-    padding: 18px 12px calc(88px + env(safe-area-inset-bottom));
+    /* viewport-fit=cover lets the page run edge-to-edge, so the top inset
+       has to be added back or the first row hides under the status bar. */
+    padding: calc(18px + env(safe-area-inset-top)) 12px calc(88px + env(safe-area-inset-bottom));
   }
   .panel {
     padding: 16px;
@@ -1546,13 +1559,15 @@ td.empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fb542b;
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(251, 84, 43, 0.35);
+  /* The mark carries its own brand colours, so the plate behind it stays
+     neutral instead of an orange-on-orange blur. */
+  background: #fff;
+  border: 1px solid rgba(251, 84, 43, 0.3);
+  box-shadow: 0 4px 10px rgba(251, 84, 43, 0.22);
 }
 .brave-card-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
 }
 .brave-card-body {
   flex: 1;
@@ -5374,8 +5389,8 @@ td.empty {
   position: absolute;
   top: 42px;
   inset-inline-start: 0;
-  width: 280px;
-  max-height: 360px;
+  width: min(92vw, 400px);
+  max-height: min(70vh, 460px);
   overflow-y: auto;
   background: var(--surface);
   color: var(--ink);
@@ -5480,24 +5495,35 @@ td.empty {
   overflow: hidden;
   font-size: 11px;
 }
-.admin-alerts-diff-head,
 .admin-alerts-diff-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 6px;
-  padding: 5px 7px;
-}
-.admin-alerts-diff-head {
-  background: var(--surface-2, rgba(0, 0, 0, 0.05));
-  font-weight: 800;
-  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
 }
 .admin-alerts-diff-row + .admin-alerts-diff-row {
   border-top: 1px solid var(--border);
 }
 .admin-alerts-diff-field {
-  font-weight: 700;
+  font-weight: 800;
+  color: var(--muted);
+  font-size: 10.5px;
   overflow-wrap: anywhere;
+}
+/* Old value, arrow, new value on one line — far easier to scan in a narrow
+   popup than three cramped columns. */
+.admin-alerts-diff-change {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11.5px;
+}
+.admin-alerts-diff-change svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--muted);
 }
 .admin-alerts-diff-before {
   color: #b3261e;
@@ -5561,10 +5587,17 @@ td.empty {
   color: var(--muted);
 }
 .admin-alerts-item-time {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
   color: var(--muted);
-  direction: ltr;
-  text-align: end;
+}
+.admin-alerts-item-time svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .admin-alerts-status {
