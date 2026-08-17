@@ -294,7 +294,7 @@ function YoutubeEmbed({ videoId, label, onProgress, onEnded }) {
       if (user) {
         setDoc(
           doc(db, "videoProgress", videoProgressDocId(user.uid, videoId)),
-          { uid: user.uid, videoId, seconds: t.seconds, duration: t.duration, updatedAt: Date.now() },
+          { uid: user.uid, email: user.email, videoId, seconds: t.seconds, duration: t.duration, updatedAt: Date.now() },
           { merge: true }
         ).catch(() => {});
       }

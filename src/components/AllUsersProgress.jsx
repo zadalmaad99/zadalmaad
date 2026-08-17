@@ -9,7 +9,8 @@ import { useAuth } from "../context/AuthContext";
 export default function AllUsersProgress() {
   const { isSupersuperadmin } = useAuth();
   const [byUid, setByUid] = useState({});
-  const [users, setUsers] = useState({});
+  const [students, setStudents] = useState({});
+  const [admins, setAdmins] = useState({});
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -26,14 +27,29 @@ export default function AllUsersProgress() {
     return unsub;
   }, [isSupersuperadmin]);
 
+  // Names live in one of two places depending on role: students/{uid}.name
+  // for students, admins/{uid}.name for teachers — users/{uid} only has the
+  // role and login email, no display name.
   useEffect(() => {
     if (!isSupersuperadmin) return;
-    const unsub = onSnapshot(collection(db, "users"), (snap) => {
+    const unsub = onSnapshot(collection(db, "students"), (snap) => {
       const map = {};
       snap.docs.forEach((d) => {
         map[d.id] = d.data();
       });
-      setUsers(map);
+      setStudents(map);
+    });
+    return unsub;
+  }, [isSupersuperadmin]);
+
+  useEffect(() => {
+    if (!isSupersuperadmin) return;
+    const unsub = onSnapshot(collection(db, "admins"), (snap) => {
+      const map = {};
+      snap.docs.forEach((d) => {
+        map[d.id] = d.data();
+      });
+      setAdmins(map);
     });
     return unsub;
   }, [isSupersuperadmin]);
@@ -43,9 +59,17 @@ export default function AllUsersProgress() {
   const rows = Object.entries(byUid)
     .map(([uid, items]) => {
       const avg = Math.round(items.reduce((s, i) => s + (i.percent ?? Math.round(((i.seconds || 0) / (i.duration || 1)) * 100)), 0) / items.length);
+      const student = students[uid];
+      const admin = admins[uid];
+      const email = items.find((i) => i.email)?.email || null;
+      const isOwnerEmail = email === "mathelove2@gmail.com";
+      const isWatchedEmail = email === "admin.zadalmaad@admin.com";
+      const name = student?.name || admin?.name || (isOwnerEmail || isWatchedEmail ? email : null);
+      const role = student ? "طالب" : admin ? "معلّم" : isOwnerEmail || isWatchedEmail ? "سوبر أدمن" : null;
       return {
         uid,
-        name: users[uid]?.name || users[uid]?.email || uid,
+        name: name || email || "مستخدم بدون اسم مسجّل",
+        role,
         videosStarted: items.length,
         avgPercent: Math.min(100, avg),
       };
@@ -71,7 +95,10 @@ export default function AllUsersProgress() {
           ) : (
             rows.map((r) => (
               <div key={r.uid} className="all-progress-row">
-                <span className="all-progress-name">{r.name}</span>
+                <span className="all-progress-name">
+                  {r.name}
+                  {r.role && <span className="all-progress-role">{r.role}</span>}
+                </span>
                 <span className="all-progress-track">
                   <span className="all-progress-fill" style={{ width: `${r.avgPercent}%` }} />
                 </span>

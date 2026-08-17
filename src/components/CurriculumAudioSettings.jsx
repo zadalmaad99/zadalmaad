@@ -136,6 +136,10 @@ export default function CurriculumAudioSettings() {
   const [sheikh, setSheikh] = useState("");
   const [bySheikh, setBySheikh] = useState({});
   const [savedPdfUrl, setSavedPdfUrl] = useState("");
+  const [pdfFiles, setPdfFiles] = useState([]);
+  const [newPdfTitle, setNewPdfTitle] = useState("");
+  const [newPdfUrl, setNewPdfUrl] = useState("");
+  const [savingPdfFile, setSavingPdfFile] = useState(false);
   const [pdfUrlInput, setPdfUrlInput] = useState("");
   const [savingPdf, setSavingPdf] = useState(false);
   const [title, setTitle] = useState("");
@@ -220,6 +224,7 @@ export default function CurriculumAudioSettings() {
       setBySheikh(data?.bySheikh || {});
       setSavedPdfUrl(data?.pdfUrl || "");
       setPdfUrlInput(data?.pdfUrl || "");
+      setPdfFiles(Array.isArray(data?.pdfs) ? data.pdfs : []);
     });
     return unsub;
   }, [bookTitle]);
@@ -577,6 +582,43 @@ export default function CurriculumAudioSettings() {
     return savePdfUrl("");
   }
 
+  // A book can carry several PDF files at once — the matn, a commentary, a
+  // different print — exactly like it can have several sheikhs' audio.
+  async function savePdfFiles(nextFiles) {
+    setSavingPdfFile(true);
+    try {
+      const result = await applyOrQueue(user, {
+        collectionName: "curriculumAudio",
+        docId: bookTitle,
+        patch: { pdfs: nextFiles },
+        merge: true,
+        action: "تعديل ملفات PDF",
+        description: `${bookTitle} (${nextFiles.length} ملفًا)`,
+      });
+      if (result.queued) {
+        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+      }
+    } catch {
+      window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
+    } finally {
+      setSavingPdfFile(false);
+    }
+  }
+
+  async function handleAddPdfFile() {
+    const t = newPdfTitle.trim();
+    const u = newPdfUrl.trim();
+    if (!t || !u) return;
+    await savePdfFiles([...pdfFiles, { title: t, url: u }]);
+    setNewPdfTitle("");
+    setNewPdfUrl("");
+  }
+
+  function handleRemovePdfFile(i) {
+    if (!window.confirm("هل تريد حذف هذا الملف؟")) return;
+    savePdfFiles(pdfFiles.filter((_, li) => li !== i));
+  }
+
   return (
     <div className="curriculum-settings-group">
       <div className="curriculum-settings-book-picker">
@@ -676,6 +718,53 @@ export default function CurriculumAudioSettings() {
                 حذف الرابط المحفوظ
               </button>
             )}
+          </div>
+
+          <p className="hint-text">
+            يمكن أيضًا إضافة أكثر من ملف PDF لنفس الكتاب — تمامًا كما يمكن أن يكون له أكثر
+            من شيخ للشرح الصوتي (مثلًا: المتن، وشرح آخر، أو نسخة مختلفة):
+          </p>
+
+          {pdfFiles.length > 0 && (
+            <ul className="curriculum-settings-list">
+              {pdfFiles.map((p, i) => (
+                <li key={i}>
+                  <span className="curriculum-settings-lesson-title">{p.title}</span>
+                  <button
+                    type="button"
+                    className="curriculum-settings-remove"
+                    onClick={() => handleRemovePdfFile(i)}
+                    aria-label="حذف الملف"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="curriculum-settings-add">
+            <input
+              type="text"
+              placeholder="اسم الملف (مثلًا: المتن، أو شرح ابن عثيمين)"
+              value={newPdfTitle}
+              onChange={(e) => setNewPdfTitle(e.target.value)}
+            />
+            <input
+              type="url"
+              placeholder="رابط ملف PDF (مثلًا من jsDelivr أو archive.org)"
+              value={newPdfUrl}
+              onChange={(e) => setNewPdfUrl(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={handleAddPdfFile}
+              disabled={savingPdfFile || !newPdfTitle.trim() || !newPdfUrl.trim()}
+            >
+              {savingPdfFile ? "جارٍ الحفظ..." : "إضافة الملف"}
+            </button>
           </div>
         </div>
       </div>
