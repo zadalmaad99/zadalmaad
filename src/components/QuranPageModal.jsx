@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const PAGE_COUNT = 604;
+const MIN_SCALE = 1;
+const MAX_SCALE = 4;
 
 function pageUrl(page) {
   const padded = String(page).padStart(3, "0");
@@ -12,6 +15,7 @@ function pageUrl(page) {
 // Quran reader) — same viewer, different wrapper.
 export function QuranPageViewer({ page, onPageChange }) {
   const [loading, setLoading] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
 
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
@@ -31,6 +35,17 @@ export function QuranPageViewer({ page, onPageChange }) {
           onLoad={() => setLoading(false)}
           style={{ display: loading ? "none" : "block" }}
         />
+        <button
+          type="button"
+          className="quran-page-expand"
+          onClick={() => setFullscreen(true)}
+          aria-label="تكبير الصفحة لملء الشاشة"
+          title="ملء الشاشة"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m0 8v3a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3" />
+          </svg>
+        </button>
       </div>
 
       <div className="quran-page-nav">
@@ -42,7 +57,162 @@ export function QuranPageViewer({ page, onPageChange }) {
           الصفحة التالية
         </button>
       </div>
+
+      {fullscreen && (
+        <QuranFullscreenReader page={page} onPageChange={onPageChange} onClose={() => setFullscreen(false)} />
+      )}
     </>
+  );
+}
+
+// Full-screen mushaf: side arrows pinned to the middle edges for one-thumb
+// paging, +/− buttons, and real pinch-to-zoom with drag-to-pan once zoomed
+// (panning is disabled at 1x so a plain swipe still can't strand the page
+// off-centre).
+function QuranFullscreenReader({ page, onPageChange, onClose }) {
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [loading, setLoading] = useState(true);
+  const pinchRef = useRef(null);
+  const panRef = useRef(null);
+
+  function go(delta) {
+    const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
+    if (next === page) return;
+    setLoading(true);
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+    onPageChange(next);
+  }
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight") go(-1);
+      else if (e.key === "ArrowLeft") go(1);
+    }
+    window.addEventListener("keydown", onKey);
+    // The body must not scroll behind a full-screen reader.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  });
+
+  function dist(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+
+  function handleTouchStart(e) {
+    if (e.touches.length === 2) {
+      pinchRef.current = { startDist: dist(e.touches), startScale: scale };
+      panRef.current = null;
+    } else if (e.touches.length === 1 && scale > 1) {
+      panRef.current = {
+        x: e.touches[0].clientX - offset.x,
+        y: e.touches[0].clientY - offset.y,
+      };
+    }
+  }
+
+  function handleTouchMove(e) {
+    if (pinchRef.current && e.touches.length === 2) {
+      e.preventDefault();
+      const next = (dist(e.touches) / pinchRef.current.startDist) * pinchRef.current.startScale;
+      setScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, next)));
+    } else if (panRef.current && e.touches.length === 1) {
+      e.preventDefault();
+      setOffset({
+        x: e.touches[0].clientX - panRef.current.x,
+        y: e.touches[0].clientY - panRef.current.y,
+      });
+    }
+  }
+
+  function handleTouchEnd() {
+    pinchRef.current = null;
+    panRef.current = null;
+    if (scale <= 1) setOffset({ x: 0, y: 0 });
+  }
+
+  function zoom(delta) {
+    setScale((s) => {
+      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s + delta));
+      if (next <= 1) setOffset({ x: 0, y: 0 });
+      return next;
+    });
+  }
+
+  return createPortal(
+    <div className="quran-fs">
+      <div className="quran-fs-bar">
+        <span className="quran-fs-page">صفحة {page} من {PAGE_COUNT}</span>
+        <div className="quran-fs-zoom">
+          <button type="button" onClick={() => zoom(-0.25)} disabled={scale <= MIN_SCALE} aria-label="تصغير">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+          <span>{Math.round(scale * 100)}%</span>
+          <button type="button" onClick={() => zoom(0.25)} disabled={scale >= MAX_SCALE} aria-label="تكبير">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        </div>
+        <button type="button" className="quran-fs-close" onClick={onClose} aria-label="إغلاق">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        className="quran-fs-stage"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {loading && <div className="quran-page-loading">جارٍ التحميل...</div>}
+        <img
+          src={pageUrl(page)}
+          alt={`صفحة ${page}`}
+          className="quran-fs-img"
+          onLoad={() => setLoading(false)}
+          style={{
+            display: loading ? "none" : "block",
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          }}
+        />
+      </div>
+
+      {/* In a right-to-left mushaf the NEXT page sits to the left. */}
+      <button
+        type="button"
+        className="quran-fs-arrow next"
+        onClick={() => go(1)}
+        disabled={page >= PAGE_COUNT}
+        aria-label="الصفحة التالية"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className="quran-fs-arrow prev"
+        onClick={() => go(-1)}
+        disabled={page <= 1}
+        aria-label="الصفحة السابقة"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+    </div>,
+    document.body
   );
 }
 

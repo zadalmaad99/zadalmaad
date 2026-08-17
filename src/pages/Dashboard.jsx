@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import StudentsPanel from "../components/StudentsPanel";
 import QuranPageTracking from "../components/QuranPageTracking";
@@ -171,6 +171,7 @@ function MushafTabReader({ section }) {
       return 1;
     }
   });
+  const lastLocalWriteRef = useRef(0);
 
   // Live two-way: the saved page follows the account across devices, and
   // whatever this device has locally is pushed up on mount so the stats
@@ -181,7 +182,11 @@ function MushafTabReader({ section }) {
     const ref = doc(db, "quranPageProgress", `${user.uid}_${section}`);
     let seeded = false;
     const unsub = onSnapshot(ref, (snap) => {
-      const remote = snap.data()?.page;
+      const data = snap.data();
+      const remote = data?.page;
+      // A snapshot that predates a page turn made here would otherwise
+      // yank the reader back to the old page mid-read.
+      if ((data?.updatedAt || 0) < lastLocalWriteRef.current) return;
       if (remote) {
         setPage(remote);
         try {
@@ -204,6 +209,7 @@ function MushafTabReader({ section }) {
 
   function handlePageChange(next) {
     setPage(next);
+    lastLocalWriteRef.current = Date.now();
     try {
       localStorage.setItem(mushafPageKey(user?.uid, section), String(next));
     } catch {

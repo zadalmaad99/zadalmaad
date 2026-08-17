@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 const OWNER_EMAIL = "mathelove2@gmail.com";
@@ -16,10 +16,20 @@ export async function applyOrQueue(user, { collectionName, docId, patch, merge =
   if (!user) throw new Error("not signed in");
 
   if (user.email === WATCHED_EMAIL) {
+    // Snapshot the current value too, so the approval card can show
+    // before-vs-after instead of just the proposed blob.
+    let before = null;
+    try {
+      const snap = await getDoc(doc(db, collectionName, docId));
+      before = snap.exists() ? snap.data() : null;
+    } catch {
+      // unreadable for any reason — the card just shows the new value alone
+    }
     await addDoc(collection(db, "pendingChanges"), {
       actorEmail: user.email,
       collectionName,
       docId,
+      before,
       patch: remove ? null : patch,
       merge,
       remove,
@@ -50,6 +60,17 @@ export async function approvePendingChange(change) {
 
 export async function rejectPendingChange(changeId) {
   await updateDoc(doc(db, "pendingChanges", changeId), { status: "rejected", resolvedAt: serverTimestamp() });
+}
+
+// Notifications behave like files: archive keeps them out of the way but
+// findable, trash is recoverable, and only "delete forever" actually
+// removes the record — same mental model as the desktop recycle bin.
+export async function setChangeBox(changeId, box) {
+  await updateDoc(doc(db, "pendingChanges", changeId), { box });
+}
+
+export async function deleteChangeForever(changeId) {
+  await deleteDoc(doc(db, "pendingChanges", changeId));
 }
 
 export { OWNER_EMAIL, WATCHED_EMAIL };

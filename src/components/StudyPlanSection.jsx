@@ -178,9 +178,12 @@ function progressTier(percent) {
 }
 
 function BookProgressLabel({ percent, label = "تقدمك في الاستماع" }) {
-  if (percent == null || percent < 1) return null;
-  const done = percent >= 96;
-  const tier = progressTier(percent);
+  // Always rendered, even at 0% — a visible "not started yet" bar on every
+  // card reads as a checklist, whereas hiding it made cards look
+  // inconsistent and left people unsure whether progress was tracked.
+  const shown = Math.max(0, Math.min(100, percent ?? 0));
+  const done = shown >= 96;
+  const tier = progressTier(shown);
   const style = { "--tier-color": tier.color, "--tier-glow": tier.glow };
   return (
     <div className="study-plan-book-progress-card" style={style}>
@@ -188,10 +191,10 @@ function BookProgressLabel({ percent, label = "تقدمك في الاستماع"
         {done ? <path d="M20 6 9 17l-5-5" /> : <path d="M3 17 9 11 13 15 21 7M21 7h-6M21 7v6" />}
       </svg>
       <span className="study-plan-book-progress-card-text">
-        {label}: <strong>{percent}%</strong>
+        {label}: <strong>{shown}%</strong>
       </span>
       <span className="study-plan-book-progress-card-track">
-        <span className="study-plan-book-progress-card-fill" style={{ width: `${Math.min(100, percent)}%` }} />
+        <span className="study-plan-book-progress-card-fill" style={{ width: `${shown}%` }} />
       </span>
     </div>
   );
@@ -1423,11 +1426,11 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
       {trackingButton}
 
-      {mainPdfUrl && <BookProgressLabel percent={pdfPercent} label="تقدمك في القراءة" />}
+      <BookProgressLabel percent={pdfPercent} label="تقدمك في القراءة" />
+      <BookProgressLabel percent={aggregateVideoProgress(entry, shownProgress, user?.uid)} />
 
       {idx !== null && isLessonSeries && (
         <>
-          <BookProgressLabel percent={aggregateVideoProgress(entry, shownProgress, user?.uid)} />
 
           <button
             type="button"
