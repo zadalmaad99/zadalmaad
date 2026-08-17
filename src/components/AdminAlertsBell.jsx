@@ -9,6 +9,7 @@ import {
   setChangeBox,
 } from "../utils/pendingChanges";
 import { changeKind, diffRows } from "../utils/changeDiff";
+import MyRequestsBell from "./MyRequestsBell";
 
 const BOXES = [
   { key: "inbox", label: "الوارد" },
@@ -19,7 +20,14 @@ const BOXES = [
 // Visible only to mathelove2@gmail.com — every change admin.zadalmaad@admin.com
 // tries to make lands here first. Nothing applies until it's approved.
 export default function AdminAlertsBell() {
-  const { isSupersuperadmin } = useAuth();
+  const { isSupersuperadmin, isWatchedSuperadmin } = useAuth();
+  // The watched account sees the other side of the same queue: its own
+  // requests and the decision on each.
+  if (isWatchedSuperadmin) return <MyRequestsBell />;
+  return <OwnerAlertsBell isSupersuperadmin={isSupersuperadmin} />;
+}
+
+function OwnerAlertsBell({ isSupersuperadmin }) {
   const [changes, setChanges] = useState([]);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState("inbox");

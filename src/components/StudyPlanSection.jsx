@@ -13,7 +13,7 @@ import SelectPickerModal from "./SelectPickerModal";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
 import PdfViewerModal, { readPdfProgress } from "./PdfViewerModal";
-import { applyOrQueue } from "../utils/pendingChanges";
+import { applyOrQueue, QUEUED_MESSAGE } from "../utils/pendingChanges";
 import { useSectionCollapse } from "../utils/persistentCollapse";
 import { normalizePdfUrl } from "../utils/pdfUrl";
 import { useMyProgress } from "../utils/myProgress";
@@ -1223,7 +1223,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
       });
       setLessonIdx("");
       if (result.queued) {
-        window.alert("تم إرسال الحذف لموافقة السوبر أدمن الأعلى — لن يُطبَّق إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر حذف الدرس — تحقّق من اتصال الإنترنت وحاول مجددًا");
@@ -1248,7 +1248,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
       setSelected("");
       setLessonIdx("");
       if (result.queued) {
-        window.alert("تم إرسال التصفير لموافقة السوبر أدمن الأعلى — لن يُطبَّق إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر التصفير — تحقّق من اتصال الإنترنت وحاول مجددًا");
@@ -1266,7 +1266,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
         description: `${book.title} (${nextPdfs.length} ملفًا)`,
       });
       if (result.queued) {
-        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
@@ -1617,7 +1617,7 @@ function CurriculumPdfPanel() {
       });
       setEditing(false);
       if (result.queued) {
-        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر حفظ الرابط — تحقّق من اتصال الإنترنت وحاول مجددًا");
@@ -1639,7 +1639,7 @@ function CurriculumPdfPanel() {
         description: "",
       });
       if (result.queued) {
-        window.alert("تم إرسال الحذف لموافقة السوبر أدمن الأعلى — لن يُطبَّق إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر حذف الرابط — حاول مجددًا");

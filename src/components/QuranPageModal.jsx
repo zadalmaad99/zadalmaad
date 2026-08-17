@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { isFlipMuted, playPageFlip, setFlipMuted } from "../utils/pageFlipSound";
+import {
+  FLIP_MODE_LABELS,
+  getFlipMode,
+  getFlipSpeed,
+  nextFlipMode,
+  playPageFlip,
+  setFlipMode,
+} from "../utils/pageFlipSound";
 
 const PAGE_COUNT = 604;
 const MIN_SCALE = 1;
@@ -75,15 +82,23 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [loading, setLoading] = useState(true);
-  const [muted, setMuted] = useState(() => isFlipMuted());
+  const [soundMode, setSoundMode] = useState(() => getFlipMode());
+  const flipMs = getFlipSpeed();
+  // Holds the page being turned away, so it can rotate out over the new one.
+  const [turning, setTurning] = useState(null); // { page, dir } | null
   const pinchRef = useRef(null);
   const panRef = useRef(null);
   const swipeRef = useRef(null);
 
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
-    if (next === page) return;
-    playPageFlip();
+    if (next === page || turning) return;
+    playPageFlip(soundMode);
+    // The outgoing sheet keeps rendering on top and rotates about the edge
+    // it's bound on, revealing the new page underneath — the same motion as
+    // turning a real leaf, rather than a cut or a fade.
+    setTurning({ page, dir: delta > 0 ? "fwd" : "back" });
+    setTimeout(() => setTurning(null), flipMs);
     setLoading(true);
     setScale(1);
     setOffset({ x: 0, y: 0 });
@@ -186,17 +201,20 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             </svg>
           </button>
         </div>
+        {/* Cycles ناعم → همس → صامت, and previews the one just picked. */}
         <button
           type="button"
-          className="quran-fs-close"
+          className="quran-fs-sound"
           onClick={() => {
-            setFlipMuted(!muted);
-            setMuted(!muted);
+            const next = nextFlipMode(soundMode);
+            setSoundMode(next);
+            setFlipMode(next);
+            playPageFlip(next);
           }}
-          aria-label={muted ? "تشغيل صوت تقليب الصفحات" : "كتم صوت تقليب الصفحات"}
-          title={muted ? "تشغيل الصوت" : "كتم الصوت"}
+          aria-label={`صوت التقليب: ${FLIP_MODE_LABELS[soundMode]} — اضغط للتغيير`}
+          title="صوت تقليب الصفحات"
         >
-          {muted ? (
+          {soundMode === "off" ? (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 5 6 9H3v6h3l5 4V5Z" />
               <path d="m22 9-6 6m0-6 6 6" />
@@ -204,9 +222,11 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
           ) : (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-              <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" />
+              {soundMode === "soft" && <path d="M15.5 8.5a5 5 0 0 1 0 7" />}
+              {soundMode === "whisper" && <path d="M14.5 10a2.5 2.5 0 0 1 0 4" />}
             </svg>
           )}
+          <span>{FLIP_MODE_LABELS[soundMode]}</span>
         </button>
         <button type="button" className="quran-fs-close" onClick={onClose} aria-label="إغلاق">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -228,10 +248,23 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
           className="quran-fs-img"
           onLoad={() => setLoading(false)}
           style={{
-            display: loading ? "none" : "block",
+            // Fade rather than swap — a hard cut between pages feels jarring
+            // next to a soft turning sound.
+            opacity: loading ? 0 : 1,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           }}
         />
+
+        {turning && (
+          <img
+            key={turning.page}
+            src={pageUrl(turning.page)}
+            alt=""
+            aria-hidden="true"
+            className={`quran-fs-turning ${turning.dir}`}
+            style={{ animationDuration: `${flipMs}ms` }}
+          />
+        )}
       </div>
 
       {/* No arrow buttons — they sat on top of the text. Paging is by

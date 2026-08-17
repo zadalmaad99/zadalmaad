@@ -3,6 +3,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import CurriculumAudioSettings from "./CurriculumAudioSettings";
 import AllUsersProgress from "./AllUsersProgress";
+import MushafFlipSettings from "./MushafFlipSettings";
 
 const CALENDAR_OPTIONS = [
   { key: "gregorian", label: "ميلادي", desc: "التقويم الميلادي القياسي" },
@@ -92,6 +93,8 @@ export default function SettingsPanel() {
       </div>
 
       <AllUsersProgress />
+
+      <MushafFlipSettings />
 
       {isSuperadmin && <CurriculumAudioSettings />}
     </div>

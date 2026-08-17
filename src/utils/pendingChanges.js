@@ -4,6 +4,14 @@ import { db } from "../firebase";
 const OWNER_EMAIL = "mathelove2@gmail.com";
 const WATCHED_EMAIL = "admin.zadalmaad@admin.com";
 
+// One wording for every queued action, so the message can't drift apart
+// between the nine call sites that show it.
+export const QUEUED_MESSAGE =
+  "تم إرسال الطلب إلى مطوّر ومبرمج الموقع، وسيتم الرد عليه إن شاء الله في أقرب وقت ممكن.";
+
+export const SUPPORT_PHONE = "+964-0750-398-1573";
+export const SUPPORT_WHATSAPP = "https://wa.me/9647503981573";
+
 // The real gate: Firestore rules only let mathelove2@gmail.com write to
 // curriculumAudio/curriculumOverrides/curriculumMeta directly — a write
 // attempted by admin.zadalmaad@admin.com against those collections is

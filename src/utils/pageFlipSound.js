@@ -3,22 +3,61 @@
 // is essentially what a sheet of paper sounds like — broadband, brief, and
 // brightest in the middle of the motion. Keeps the bundle unchanged and
 // works offline.
-const MUTE_KEY = "mushafFlipMuted";
+const MODE_KEY = "mushafFlipSound";
+
+// Two calm profiles the reader can pick between, plus silence. "soft" stays
+// audible on a phone's own speaker; "whisper" is for a quiet room or
+// headphones, where even that reads as loud.
+export const FLIP_MODES = ["soft", "whisper", "off"];
+export const FLIP_MODE_LABELS = { soft: "ناعم", whisper: "همس", off: "صامت" };
+
+const PROFILES = {
+  soft: { rate: 0.42, freq: [300, 780, 360], q: 0.4, lowpass: 1200, peak: 0.032, attack: 0.2, release: 0.8, dur: 0.9 },
+  whisper: { rate: 0.32, freq: [240, 560, 280], q: 0.35, lowpass: 900, peak: 0.02, attack: 0.28, release: 1.05, dur: 1.2 },
+};
 
 let ctx = null;
 let noiseBuffer = null;
 
-export function isFlipMuted() {
+export function getFlipMode() {
   try {
-    return localStorage.getItem(MUTE_KEY) === "1";
+    const v = localStorage.getItem(MODE_KEY);
+    return FLIP_MODES.includes(v) ? v : "soft";
   } catch {
-    return false;
+    return "soft";
   }
 }
 
-export function setFlipMuted(muted) {
+export function setFlipMode(mode) {
   try {
-    localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+    localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    // storage unavailable — the choice just won't persist
+  }
+}
+
+export function nextFlipMode(mode) {
+  return FLIP_MODES[(FLIP_MODES.indexOf(mode) + 1) % FLIP_MODES.length];
+}
+
+const SPEED_KEY = "mushafFlipSpeed";
+export const FLIP_SPEED_MIN = 400;
+export const FLIP_SPEED_MAX = 1600;
+export const FLIP_SPEED_DEFAULT = 900;
+
+export function getFlipSpeed() {
+  try {
+    const n = Number(localStorage.getItem(SPEED_KEY));
+    if (!n) return FLIP_SPEED_DEFAULT;
+    return Math.min(FLIP_SPEED_MAX, Math.max(FLIP_SPEED_MIN, n));
+  } catch {
+    return FLIP_SPEED_DEFAULT;
+  }
+}
+
+export function setFlipSpeed(ms) {
+  try {
+    localStorage.setItem(SPEED_KEY, String(ms));
   } catch {
     // storage unavailable — the choice just won't persist
   }
@@ -38,15 +77,16 @@ function getContext() {
 
 function getNoise(audio) {
   if (noiseBuffer) return noiseBuffer;
-  const len = Math.floor(audio.sampleRate * 0.32);
+  const len = Math.floor(audio.sampleRate * 1.5);
   noiseBuffer = audio.createBuffer(1, len, audio.sampleRate);
   const data = noiseBuffer.getChannelData(0);
   for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
   return noiseBuffer;
 }
 
-export function playPageFlip() {
-  if (isFlipMuted()) return;
+export function playPageFlip(mode = getFlipMode()) {
+  const p = PROFILES[mode];
+  if (!p) return; // "off"
   let audio;
   try {
     audio = getContext();
@@ -58,22 +98,28 @@ export function playPageFlip() {
   const now = audio.currentTime;
   const src = audio.createBufferSource();
   src.buffer = getNoise(audio);
-  src.playbackRate.value = 0.9 + Math.random() * 0.25; // no two turns identical
+  src.playbackRate.value = p.rate * (0.94 + Math.random() * 0.12); // no two turns identical
 
+  // Soft paper, not a sharp rustle: a gentle mid sweep with the harshness
+  // rolled off on top, so it reads as calm rather than papery static.
   const band = audio.createBiquadFilter();
   band.type = "bandpass";
-  band.Q.value = 0.9;
-  // Sweeping upward then down mimics the paper lifting and settling.
-  band.frequency.setValueAtTime(700, now);
-  band.frequency.exponentialRampToValueAtTime(2600, now + 0.09);
-  band.frequency.exponentialRampToValueAtTime(900, now + 0.26);
+  band.Q.value = p.q;
+  band.frequency.setValueAtTime(p.freq[0], now);
+  band.frequency.exponentialRampToValueAtTime(p.freq[1], now + p.dur * 0.34);
+  band.frequency.exponentialRampToValueAtTime(p.freq[2], now + p.dur * 0.88);
 
+  const tame = audio.createBiquadFilter();
+  tame.type = "lowpass";
+  tame.frequency.value = p.lowpass;
+
+  // Slow fade in and a long tail — no click, no snap.
   const gain = audio.createGain();
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.16, now + 0.035);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.27);
+  gain.gain.exponentialRampToValueAtTime(p.peak, now + p.attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + p.release);
 
-  src.connect(band).connect(gain).connect(audio.destination);
+  src.connect(band).connect(tame).connect(gain).connect(audio.destination);
   src.start(now);
-  src.stop(now + 0.3);
+  src.stop(now + p.dur + 0.2);
 }

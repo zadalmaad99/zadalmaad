@@ -3,7 +3,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { STUDY_PLAN } from "./studyPlan";
 import { useAuth } from "../context/AuthContext";
-import { applyOrQueue } from "../utils/pendingChanges";
+import { applyOrQueue, QUEUED_MESSAGE } from "../utils/pendingChanges";
 
 export function noteLines(note) {
   return note
@@ -47,7 +47,7 @@ export function useCurriculumPlan(planSections = STUDY_PLAN, overridesDocId = "g
         description: description || JSON.stringify(patch).slice(0, 200),
       });
       if (result.queued) {
-        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");

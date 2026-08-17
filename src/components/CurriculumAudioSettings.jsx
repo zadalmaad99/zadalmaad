@@ -5,7 +5,7 @@ import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { HADITH_STUDY_SECTION } from "../data/hadithStudyPlan";
 import SelectPickerModal from "./SelectPickerModal";
 import { useAuth } from "../context/AuthContext";
-import { applyOrQueue } from "../utils/pendingChanges";
+import { applyOrQueue, QUEUED_MESSAGE } from "../utils/pendingChanges";
 
 const HADITH_PLAN_SECTIONS = [HADITH_STUDY_SECTION];
 
@@ -243,7 +243,7 @@ export default function CurriculumAudioSettings() {
         description: `${bookTitle} — ${sheikh} (${nextLessons.length} درسًا)`,
       });
       if (result.queued) {
-        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
@@ -563,7 +563,7 @@ export default function CurriculumAudioSettings() {
         description: bookTitle,
       });
       if (result.queued) {
-        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
@@ -596,7 +596,7 @@ export default function CurriculumAudioSettings() {
         description: `${bookTitle} (${nextFiles.length} ملفًا)`,
       });
       if (result.queued) {
-        window.alert("تم إرسال التعديل لموافقة السوبر أدمن الأعلى — لن يظهر إلا بعد الموافقة.");
+        window.alert(QUEUED_MESSAGE);
       }
     } catch {
       window.alert("تعذّر الحفظ — تحقّق من اتصال الإنترنت وحاول مجددًا");
