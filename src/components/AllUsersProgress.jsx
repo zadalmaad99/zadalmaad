@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
@@ -39,6 +39,23 @@ export default function AllUsersProgress() {
   const [videoMap, setVideoMap] = useState({});
   const [expanded, setExpanded] = useState(false);
   const [expandedUid, setExpandedUid] = useState(null);
+  const [resettingUid, setResettingUid] = useState(null);
+
+  // Clears the tracked watch STATISTICS only (videoProgress docs) — never
+  // touches any uploaded curriculum content. The card list here updates the
+  // moment the deletes land, since it's driven by the same onSnapshot below;
+  // book cards read this per-viewer so there's nothing else to push to.
+  async function handleResetStats(uid, videoIds) {
+    if (!window.confirm(`هل تريد تصفير إحصائيات مشاهدة هذا المستخدم (${videoIds.length} فيديو)؟ لا يمكن التراجع.`)) return;
+    setResettingUid(uid);
+    try {
+      await Promise.all(videoIds.map((vid) => deleteDoc(doc(db, "videoProgress", `${uid}_${vid}`))));
+    } catch {
+      window.alert("تعذّر التصفير — تحقّق من اتصال الإنترنت وحاول مجددًا");
+    } finally {
+      setResettingUid(null);
+    }
+  }
 
   useEffect(() => {
     if (!isSupersuperadmin) return;
@@ -114,7 +131,7 @@ export default function AllUsersProgress() {
       const isOwnerEmail = email === "mathelove2@gmail.com";
       const isWatchedEmail = email === "admin.zadalmaad@admin.com";
       const name = student?.name || admin?.name || (isOwnerEmail || isWatchedEmail ? email : null);
-      const role = student ? "طالب" : admin ? "معلّم" : isOwnerEmail || isWatchedEmail ? "سوبر أدمن" : null;
+      const role = student ? "طالب" : admin ? "معلّم" : isOwnerEmail ? "Super X2-Admin" : isWatchedEmail ? "superadmin" : null;
       const videos = items
         .map((i) => {
           const percent = Math.min(100, i.percent ?? Math.round(((i.seconds || 0) / (i.duration || 1)) * 100));
@@ -198,6 +215,22 @@ export default function AllUsersProgress() {
 
                   {isOpen && (
                     <div className="all-progress-videos">
+                      <button
+                        type="button"
+                        className="all-progress-reset-btn"
+                        disabled={resettingUid === r.uid}
+                        onClick={() =>
+                          handleResetStats(
+                            r.uid,
+                            r.videos.map((v) => v.videoId)
+                          )
+                        }
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13" />
+                        </svg>
+                        {resettingUid === r.uid ? "جارٍ التصفير..." : "تصفير إحصائيات هذا المستخدم"}
+                      </button>
                       {r.videos.map((v) => (
                         <div key={v.videoId} className="all-progress-video-row">
                           <div className="all-progress-video-info">
@@ -218,15 +251,17 @@ export default function AllUsersProgress() {
                               </span>
                             )}
                           </div>
-                          <span className="all-progress-video-track">
-                            <span
-                              className="all-progress-video-fill"
-                              style={{ width: `${v.percent}%`, background: progressTier(v.percent) }}
-                            />
-                          </span>
-                          <span className="all-progress-video-percent" style={{ color: progressTier(v.percent) }}>
-                            {v.percent}%
-                          </span>
+                          <div className="all-progress-video-bar-line">
+                            <span className="all-progress-video-percent" style={{ color: progressTier(v.percent) }}>
+                              {v.percent}%
+                            </span>
+                            <span className="all-progress-video-track">
+                              <span
+                                className="all-progress-video-fill"
+                                style={{ width: `${v.percent}%`, background: progressTier(v.percent) }}
+                              />
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
