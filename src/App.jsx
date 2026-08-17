@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CalendarProvider } from "./context/CalendarContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import InstallButton from "./components/InstallButton";
+import BraveBanner from "./components/BraveBanner";
 import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import Dashboard from "./pages/Dashboard";
@@ -25,6 +26,7 @@ export default function App() {
     <AuthProvider>
       <ThemeProvider>
         <CalendarProvider>
+          <BraveBanner />
           <HashRouter>
             <Routes>
               <Route path="/login" element={<Login />} />

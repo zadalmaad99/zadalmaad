@@ -1347,6 +1347,123 @@ td.empty {
   }
 }
 
+.brave-card-wrap {
+  padding: 12px 16px 0;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.brave-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 44px 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #fff4e0 0%, #fff 55%, #fff4e0 100%);
+  border: 1px solid color-mix(in srgb, #fb542b 25%, transparent);
+  box-shadow: 0 6px 18px rgba(251, 84, 43, 0.12);
+}
+:root[data-theme="dark"] .brave-card {
+  background: linear-gradient(120deg, color-mix(in srgb, #fb542b 14%, var(--surface)) 0%, var(--surface) 55%, color-mix(in srgb, #fb542b 14%, var(--surface)) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brave-card {
+    background: linear-gradient(120deg, color-mix(in srgb, #fb542b 14%, var(--surface)) 0%, var(--surface) 55%, color-mix(in srgb, #fb542b 14%, var(--surface)) 100%);
+  }
+}
+.brave-card-icon {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fb542b;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(251, 84, 43, 0.35);
+}
+.brave-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.brave-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.brave-card-title {
+  margin: 0 0 3px;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.brave-card-desc {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.brave-card-desc strong {
+  color: #fb542b;
+}
+.brave-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.brave-card-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  background: #fb542b;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(251, 84, 43, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.brave-card-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(251, 84, 43, 0.4);
+}
+.brave-card-link svg {
+  width: 15px;
+  height: 15px;
+}
+.brave-card-close {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--muted);
+  box-shadow: none;
+}
+.brave-card-close:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+  transform: none;
+  box-shadow: none;
+}
+.brave-card-close svg {
+  width: 12px;
+  height: 12px;
+}
+@media (max-width: 620px) {
+  .brave-card {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: start;
+  }
+}
+
 .install-wrap {
   position: fixed;
   top: 14px;
@@ -2485,50 +2602,45 @@ td.empty {
   gap: 6px 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: color-mix(in srgb, #0891b2 8%, var(--surface-alt));
-  border: 1px solid color-mix(in srgb, #0891b2 20%, transparent);
+  background: color-mix(in srgb, var(--tier-color, #0891b2) 8%, var(--surface-alt));
+  border: 1px solid color-mix(in srgb, var(--tier-color, #0891b2) 25%, transparent);
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
 .study-plan-book-progress-icon {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
-  color: #0891b2;
+  color: var(--tier-color, #0891b2);
+  transition: color 0.4s ease;
 }
 .study-plan-book-progress-card-text {
   font-size: 12.5px;
   font-weight: 700;
-  color: #0891b2;
+  color: var(--tier-color, #0891b2);
   white-space: nowrap;
+  transition: color 0.4s ease;
 }
 .study-plan-book-progress-card-text strong {
   font-weight: 800;
 }
 .study-plan-book-progress-card-track {
+  display: block;
   flex-basis: 100%;
   height: 7px;
   border-radius: 4px;
-  background: color-mix(in srgb, #0891b2 22%, var(--surface));
-  border: 1px solid color-mix(in srgb, #0891b2 30%, transparent);
+  background: color-mix(in srgb, var(--tier-color, #0891b2) 22%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--tier-color, #0891b2) 30%, transparent);
   overflow: hidden;
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
 .study-plan-book-progress-card-fill {
+  display: block;
   height: 100%;
   min-width: 3%;
   border-radius: 4px;
-  background: linear-gradient(90deg, #0891b2, #22d3ee);
-  box-shadow: 0 0 6px rgba(34, 211, 238, 0.6);
-  transition: width 0.4s ease;
-}
-.study-plan-book-progress-card.done {
-  background: color-mix(in srgb, #16a34a 10%, var(--surface-alt));
-  border-color: color-mix(in srgb, #16a34a 25%, transparent);
-}
-.study-plan-book-progress-card.done .study-plan-book-progress-icon,
-.study-plan-book-progress-card.done .study-plan-book-progress-card-text {
-  color: #16a34a;
-}
-.study-plan-book-progress-card.done .study-plan-book-progress-card-fill {
-  background: linear-gradient(90deg, #16a34a, #4ade80);
+  background: var(--tier-color, #0891b2);
+  box-shadow: 0 0 6px var(--tier-glow, rgba(8, 145, 178, 0.5));
+  transition: width 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
 }
 .study-plan-book-title {
   font-size: 15px;
@@ -2747,9 +2859,10 @@ td.empty {
   z-index: -1;
   overflow: hidden;
   min-width: 4px;
-  background: linear-gradient(90deg, #0891b2 0%, #22d3ee 100%);
+  background: var(--tier-color, #0891b2);
+  box-shadow: 0 0 8px var(--tier-glow, rgba(8, 145, 178, 0.5)) inset;
   opacity: 0.6;
-  transition: width 0.4s ease;
+  transition: width 0.4s ease, background 0.4s ease;
 }
 .video-progress-fill-wave {
   position: absolute;

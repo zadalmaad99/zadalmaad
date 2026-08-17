@@ -160,11 +160,22 @@ function aggregateVideoProgress(list, liveProgress) {
   return avg;
 }
 
+// Traffic-light tiers, soft/pastel so they stay easy on the eye across every
+// progress bar on a book card: just started (red) → halfway (yellow) →
+// nearly done (green).
+function progressTier(percent) {
+  if (percent < 30) return { color: "#f87171", glow: "rgba(248, 113, 113, 0.35)" };
+  if (percent <= 70) return { color: "#fbbf24", glow: "rgba(251, 191, 36, 0.35)" };
+  return { color: "#4ade80", glow: "rgba(74, 222, 128, 0.35)" };
+}
+
 function BookProgressLabel({ percent }) {
   if (percent == null || percent < 1) return null;
   const done = percent >= 96;
+  const tier = progressTier(percent);
+  const style = { "--tier-color": tier.color, "--tier-glow": tier.glow };
   return (
-    <div className={`study-plan-book-progress-card${done ? " done" : ""}`}>
+    <div className="study-plan-book-progress-card" style={style}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="study-plan-book-progress-icon">
         {done ? <path d="M20 6 9 17l-5-5" /> : <path d="M3 17 9 11 13 15 21 7M21 7h-6M21 7v6" />}
       </svg>
@@ -206,8 +217,14 @@ function VideoProgressBar({ videoId, live }) {
   const percent = live ?? readLocalProgress(videoId)?.percent;
   if (!percent || percent < 3) return null;
   const clamped = Math.min(100, percent);
+  const tier = progressTier(percent);
   return (
-    <span className="video-progress-fill" style={{ width: `${clamped}%` }} aria-hidden="true" title={`تمت مشاهدة ${clamped}%`}>
+    <span
+      className="video-progress-fill"
+      style={{ width: `${clamped}%`, "--tier-color": tier.color, "--tier-glow": tier.glow }}
+      aria-hidden="true"
+      title={`تمت مشاهدة ${clamped}%`}
+    >
       <span className="video-progress-fill-wave" />
     </span>
   );
