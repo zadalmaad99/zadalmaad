@@ -118,24 +118,27 @@ function getYoutubeId(url) {
 
 // Every viewer — signed in or anonymous — gets their watch position saved
 // locally so the video resumes where they left off. Signed-in users also get
-// it mirrored to Firestore under their uid, so it follows them across devices.
-function localProgressKey(videoId) {
-  return `ytprog_${videoId}`;
+// it mirrored to Firestore under their uid, so it follows them across
+// devices. Keyed per-identity (not just per-video) — otherwise a shared
+// browser/device would show one person's progress to the next viewer,
+// including a superadmin's progress leaking into the anonymous public view.
+function localProgressKey(videoId, uid) {
+  return `ytprog_${uid || "anon"}_${videoId}`;
 }
 
-function readLocalProgress(videoId) {
+function readLocalProgress(videoId, uid) {
   try {
-    const raw = localStorage.getItem(localProgressKey(videoId));
+    const raw = localStorage.getItem(localProgressKey(videoId, uid));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function writeLocalProgress(videoId, seconds, duration) {
+function writeLocalProgress(videoId, seconds, duration, uid) {
   try {
     localStorage.setItem(
-      localProgressKey(videoId),
+      localProgressKey(videoId, uid),
       JSON.stringify({ seconds, duration, percent: Math.min(100, Math.round((seconds / duration) * 100)) })
     );
   } catch {
@@ -150,12 +153,12 @@ function videoProgressDocId(uid, videoId) {
 // Book-card-level summary — the average watch percentage across every
 // YouTube lesson under the currently-selected sheikh, so it's obvious at a
 // glance which books still need finishing.
-function aggregateVideoProgress(list, liveProgress) {
+function aggregateVideoProgress(list, liveProgress, uid) {
   if (!Array.isArray(list) || !list.length) return null;
   const ytPercents = list
     .map((l) => getYoutubeId(l.url))
     .filter(Boolean)
-    .map((id) => liveProgress?.[id] ?? readLocalProgress(id)?.percent ?? 0);
+    .map((id) => liveProgress?.[id] ?? readLocalProgress(id, uid)?.percent ?? 0);
   if (!ytPercents.length) return null;
   const avg = Math.round(ytPercents.reduce((a, b) => a + b, 0) / ytPercents.length);
   return avg;
@@ -215,7 +218,8 @@ function useYoutubeApiReady() {
 // A horizontal water fill behind a lesson button — rises from the right
 // edge toward the left as the viewer progresses, like a level filling up.
 function VideoProgressBar({ videoId, live }) {
-  const percent = live ?? readLocalProgress(videoId)?.percent;
+  const { user } = useAuth();
+  const percent = live ?? readLocalProgress(videoId, user?.uid)?.percent;
   if (!percent || percent < 3) return null;
   const clamped = Math.min(100, percent);
   const tier = progressTier(percent);
@@ -241,7 +245,7 @@ function YoutubeEmbed({ videoId, label, onProgress }) {
   const resumeSecondsRef = useRef(0);
 
   useEffect(() => {
-    const local = readLocalProgress(videoId);
+    const local = readLocalProgress(videoId, user?.uid);
     resumeSecondsRef.current = local?.seconds || 0;
     if (!user) return;
     let cancelled = false;
@@ -284,7 +288,7 @@ function YoutubeEmbed({ videoId, label, onProgress }) {
     function saveProgress() {
       const t = readPlayerTime();
       if (!t || t.seconds < 3) return;
-      writeLocalProgress(videoId, t.seconds, t.duration);
+      writeLocalProgress(videoId, t.seconds, t.duration, user?.uid);
       onProgress?.(videoId, t.percent);
       if (user) {
         setDoc(
@@ -1312,7 +1316,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
       {idx !== null && isLessonSeries && (
         <>
-          <BookProgressLabel percent={aggregateVideoProgress(entry, liveProgress)} />
+          <BookProgressLabel percent={aggregateVideoProgress(entry, liveProgress, user?.uid)} />
 
           <button
             type="button"
