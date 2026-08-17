@@ -334,32 +334,62 @@ export default function CurriculumAudioSettings() {
     }
   }
 
-  // A single YouTube video link (no ?list=) — add it as one lesson instead
-  // of erroring out just because it isn't a playlist. The title comes from
-  // YouTube's public oEmbed endpoint, no API key needed.
-  async function importSingleYoutubeVideo(videoId) {
-    setImporting(true);
+  // YouTube's public oEmbed endpoint — no API key needed, works for any
+  // single public video.
+  async function fetchYoutubeTitle(videoId) {
     try {
       const res = await fetch(
         `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`
       );
       if (!res.ok) throw new Error("oembed failed");
       const data = await res.json();
-      setPreview([
-        {
-          title: `الدرس ${lessons.length + 1}`,
-          sourceName: data.title || videoId,
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-        },
-      ]);
+      return data.title || null;
     } catch {
-      window.alert("تعذّر جلب بيانات هذا الفيديو — تحقّق من الرابط أو حاول مجددًا");
+      return null;
+    }
+  }
+
+  // One or several plain YouTube video links (no ?list=, e.g. pasted one per
+  // line when there's no actual playlist) — add them all as lessons instead
+  // of erroring out just because it isn't a playlist link.
+  async function importYoutubeVideoLinks(videoIds) {
+    setImporting(true);
+    try {
+      const items = await Promise.all(
+        videoIds.map(async (id, i) => ({ id, index: i, title: (await fetchYoutubeTitle(id)) || id }))
+      );
+      const sorted = sortByLessonNumber(items, (it) => it.title, () => null, (it) => it.index);
+      const startAt = lessons.length + 1;
+      setPreview(
+        sorted.map((it, i) => ({
+          title: `الدرس ${startAt + i}`,
+          sourceName: it.title,
+          url: `https://www.youtube.com/watch?v=${it.id}`,
+        }))
+      );
+    } catch {
+      window.alert("تعذّر جلب بيانات الفيديو — تحقّق من الروابط أو حاول مجددًا");
     } finally {
       setImporting(false);
     }
   }
 
   async function handleImportPlaylist() {
+    const lines = playlistUrl.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+    // Several lines pasted at once — support plain video links this way too,
+    // not just an actual playlist link, since a lot of series never got
+    // collected into one.
+    if (lines.length > 1) {
+      const videoIds = lines.map(extractYoutubeVideoId);
+      if (videoIds.every(Boolean)) {
+        await importYoutubeVideoLinks(videoIds);
+        return;
+      }
+      window.alert("تأكد أن كل سطر رابط فيديو يوتيوب صالح (سطر واحد لكل رابط)");
+      return;
+    }
+
     const ytPlaylistId = extractYoutubePlaylistId(playlistUrl);
     if (ytPlaylistId) {
       await importYoutubePlaylist(ytPlaylistId);
@@ -368,7 +398,7 @@ export default function CurriculumAudioSettings() {
 
     const ytVideoId = extractYoutubeVideoId(playlistUrl);
     if (ytVideoId) {
-      await importSingleYoutubeVideo(ytVideoId);
+      await importYoutubeVideoLinks([ytVideoId]);
       return;
     }
 
@@ -680,10 +710,10 @@ export default function CurriculumAudioSettings() {
 
             <div className="curriculum-settings-playlist">
               <label className="curriculum-settings-field">
-                <span>رابط قائمة الدروس (playlist) — من archive.org أو يوتيوب</span>
-                <input
-                  type="url"
-                  placeholder="archive.org/details/... أو youtube.com/playlist?list=..."
+                <span>رابط قائمة الدروس (playlist)، أو عدة روابط فيديوهات يوتيوب منفصلة (سطر لكل رابط) — من archive.org أو يوتيوب</span>
+                <textarea
+                  rows={2}
+                  placeholder={"archive.org/details/... أو youtube.com/playlist?list=...\nأو عدة روابط يوتيوب، رابط في كل سطر"}
                   value={playlistUrl}
                   onChange={(e) => setPlaylistUrl(e.target.value)}
                 />
@@ -692,7 +722,7 @@ export default function CurriculumAudioSettings() {
                 {importing ? "جارٍ الجلب..." : "جلب كل الدروس تلقائيًا"}
               </button>
               <p className="hint-text">
-                يجلب كل الدروس (صوتية من الأرشيف أو فيديوهات من يوتيوب) ويعرضها للمراجعة قبل الحفظ.
+                يجلب كل الدروس (صوتية من الأرشيف أو فيديوهات من يوتيوب) ويعرضها للمراجعة قبل الحفظ. يمكن أيضًا لصق عدة روابط فيديوهات يوتيوب منفصلة، رابط واحد في كل سطر، دون الحاجة لقائمة تشغيل فعلية.
               </p>
             </div>
 

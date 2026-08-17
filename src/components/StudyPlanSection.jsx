@@ -999,7 +999,7 @@ function PdfManagerModal({ bookTitle, pdfs, onAdd, onRemove, onClose }) {
           />
           <input
             type="url"
-            placeholder="رابط ملف PDF"
+            placeholder="رابط ملف PDF (مثلًا من jsDelivr أو archive.org)"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
@@ -1562,7 +1562,7 @@ function CurriculumPdfPanel() {
         <div className="curriculum-pdf-url-form">
           <input
             type="url"
-            placeholder="رابط ملف PDF (مثلًا من archive.org)"
+            placeholder="رابط ملف PDF (مثلًا من jsDelivr أو archive.org)"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
           />

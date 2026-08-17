@@ -1807,7 +1807,8 @@ td.empty {
   padding-bottom: 16px;
   border-bottom: 1px dashed var(--border);
 }
-.curriculum-settings-playlist .curriculum-settings-field input {
+.curriculum-settings-playlist .curriculum-settings-field input,
+.curriculum-settings-playlist .curriculum-settings-field textarea {
   padding: 9px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
@@ -1816,6 +1817,11 @@ td.empty {
   font-size: 13px;
   direction: ltr;
   text-align: left;
+}
+.curriculum-settings-playlist .curriculum-settings-field textarea {
+  font-family: inherit;
+  resize: vertical;
+  min-height: 40px;
 }
 .curriculum-settings-playlist button {
   background: var(--gold);
