@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { db } from "../firebase";
@@ -149,12 +149,12 @@ function videoProgressDocId(uid, videoId) {
 // Book-card-level summary — the average watch percentage across every
 // YouTube lesson under the currently-selected sheikh, so it's obvious at a
 // glance which books still need finishing.
-function aggregateVideoProgress(list) {
+function aggregateVideoProgress(list, liveProgress) {
   if (!Array.isArray(list) || !list.length) return null;
   const ytPercents = list
     .map((l) => getYoutubeId(l.url))
     .filter(Boolean)
-    .map((id) => readLocalProgress(id)?.percent || 0);
+    .map((id) => liveProgress?.[id] ?? readLocalProgress(id)?.percent ?? 0);
   if (!ytPercents.length) return null;
   const avg = Math.round(ytPercents.reduce((a, b) => a + b, 0) / ytPercents.length);
   return avg;
@@ -202,8 +202,8 @@ function useYoutubeApiReady() {
 
 // A horizontal water fill behind a lesson button — rises from the right
 // edge toward the left as the viewer progresses, like a level filling up.
-function VideoProgressBar({ videoId }) {
-  const percent = readLocalProgress(videoId)?.percent;
+function VideoProgressBar({ videoId, live }) {
+  const percent = live ?? readLocalProgress(videoId)?.percent;
   if (!percent || percent < 3) return null;
   const clamped = Math.min(100, percent);
   return (
@@ -213,12 +213,13 @@ function VideoProgressBar({ videoId }) {
   );
 }
 
-function YoutubeEmbed({ videoId, label }) {
+function YoutubeEmbed({ videoId, label, onProgress }) {
   const { user } = useAuth();
   const apiReady = useYoutubeApiReady();
   const mountId = useRef(`yt-player-${Math.random().toString(36).slice(2)}`).current;
   const playerRef = useRef(null);
   const saveTimerRef = useRef(null);
+  const liveTimerRef = useRef(null);
   const resumeSecondsRef = useRef(0);
 
   useEffect(() => {
@@ -241,17 +242,32 @@ function YoutubeEmbed({ videoId, label }) {
     if (!apiReady) return;
     let destroyed = false;
 
-    function saveProgress() {
+    function readPlayerTime() {
       const player = playerRef.current;
-      if (!player?.getCurrentTime) return;
+      if (!player?.getCurrentTime) return null;
       const seconds = player.getCurrentTime();
       const duration = player.getDuration();
-      if (!duration || seconds < 3) return;
-      writeLocalProgress(videoId, seconds, duration);
+      if (!duration) return null;
+      return { seconds, duration, percent: Math.min(100, Math.round((seconds / duration) * 100)) };
+    }
+
+    // Ticks every second while playing so every progress bar on this book's
+    // card (lesson button, picker list, book-level summary) moves live —
+    // not just when a checkpoint gets written to storage.
+    function reportLive() {
+      const t = readPlayerTime();
+      if (t) onProgress?.(videoId, t.percent);
+    }
+
+    function saveProgress() {
+      const t = readPlayerTime();
+      if (!t || t.seconds < 3) return;
+      writeLocalProgress(videoId, t.seconds, t.duration);
+      onProgress?.(videoId, t.percent);
       if (user) {
         setDoc(
           doc(db, "videoProgress", videoProgressDocId(user.uid, videoId)),
-          { uid: user.uid, videoId, seconds, duration, updatedAt: Date.now() },
+          { uid: user.uid, videoId, seconds: t.seconds, duration: t.duration, updatedAt: Date.now() },
           { merge: true }
         ).catch(() => {});
       }
@@ -270,8 +286,10 @@ function YoutubeEmbed({ videoId, label }) {
           },
           onStateChange: (e) => {
             clearInterval(saveTimerRef.current);
+            clearInterval(liveTimerRef.current);
             if (e.data === window.YT.PlayerState.PLAYING) {
               saveTimerRef.current = setInterval(saveProgress, 5000);
+              liveTimerRef.current = setInterval(reportLive, 1000);
             } else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) {
               saveProgress();
             }
@@ -284,6 +302,7 @@ function YoutubeEmbed({ videoId, label }) {
       destroyed = true;
       clearTimeout(startTimer);
       clearInterval(saveTimerRef.current);
+      clearInterval(liveTimerRef.current);
       saveProgress();
       playerRef.current?.destroy?.();
       playerRef.current = null;
@@ -799,7 +818,7 @@ function NoPdfModal({ onClose }) {
   );
 }
 
-function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, onSelect, onDelete, onClose }) {
+function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, liveProgress, onSelect, onDelete, onClose }) {
   const { isSuperadmin } = useAuth();
 
   // Show YouTube lessons first — original index (li) rides along for the
@@ -841,7 +860,7 @@ function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, onS
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
                   )}
-                  {isYoutube && <VideoProgressBar videoId={getYoutubeId(l.url)} />}
+                  {isYoutube && <VideoProgressBar videoId={getYoutubeId(l.url)} live={liveProgress?.[getYoutubeId(l.url)]} />}
                 </button>
                 {isDeletable && (
                   <button
@@ -989,7 +1008,16 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const [showPdfPicker, setShowPdfPicker] = useState(false);
   const [showPdfManager, setShowPdfManager] = useState(false);
   const [showSheikhPicker, setShowSheikhPicker] = useState(false);
+  const [liveProgress, setLiveProgress] = useState({});
   const sheikhAutoPickedRef = useRef(false);
+
+  // Stable identity so passing this to YoutubeEmbed doesn't retrigger its
+  // player-setup effect on every tick — live watch-progress ticks push
+  // straight into state here, and every progress bar on this card (lesson
+  // button, picker list, book-level summary) reads from it live.
+  const handleVideoProgress = useCallback((videoId, percent) => {
+    setLiveProgress((prev) => (prev[videoId] === percent ? prev : { ...prev, [videoId]: percent }));
+  }, []);
 
   const idx = selected === "" ? null : Number(selected);
   const staticEntry = idx !== null ? book.audio?.[idx] : null;
@@ -1260,7 +1288,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
       {idx !== null && isLessonSeries && (
         <>
-          <BookProgressLabel percent={aggregateVideoProgress(entry)} />
+          <BookProgressLabel percent={aggregateVideoProgress(entry, liveProgress)} />
 
           <button
             type="button"
@@ -1274,7 +1302,10 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
             )}
             {lessonIdx !== "" ? entry[Number(lessonIdx)].title : "انقر لرؤية الدروس"}
             {lessonIdx !== "" && getYoutubeId(entry[Number(lessonIdx)]?.url) && (
-              <VideoProgressBar videoId={getYoutubeId(entry[Number(lessonIdx)].url)} />
+              <VideoProgressBar
+                videoId={getYoutubeId(entry[Number(lessonIdx)].url)}
+                live={liveProgress[getYoutubeId(entry[Number(lessonIdx)].url)]}
+              />
             )}
           </button>
 
@@ -1284,6 +1315,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
               sheikhLabel={sheikhLabel}
               downloadedSet={downloadedSet}
               staticCount={Array.isArray(staticEntry) ? staticEntry.length : 0}
+              liveProgress={liveProgress}
               onSelect={(li) => {
                 setLessonIdx(String(li));
                 setShowLessonPicker(false);
@@ -1304,6 +1336,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
                   key={lesson.url}
                   videoId={getYoutubeId(lesson.url)}
                   label={lesson.title}
+                  onProgress={handleVideoProgress}
                 />
               ) : isStreamableAudioUrl(lesson.url) ? (
                 <AudioPlayer
@@ -1329,7 +1362,7 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
             )
           ) : singleUrl ? (
             getYoutubeId(singleUrl) ? (
-              <YoutubeEmbed key={singleUrl} videoId={getYoutubeId(singleUrl)} label={null} />
+              <YoutubeEmbed key={singleUrl} videoId={getYoutubeId(singleUrl)} label={null} onProgress={handleVideoProgress} />
             ) : isStreamableAudioUrl(singleUrl) ? (
               <AudioPlayer
                 key={singleUrl}
