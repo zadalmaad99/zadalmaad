@@ -167,7 +167,73 @@ export default function CurriculumAudioSettings() {
     return null;
   }
 
+  function extractYoutubePlaylistId(input) {
+    try {
+      const u = new URL(input.trim());
+      const host = u.hostname.toLowerCase().replace(/^www\./, "");
+      if (host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be") {
+        return u.searchParams.get("list");
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function importYoutubePlaylist(playlistId) {
+    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    if (!apiKey) {
+      window.alert("مفتاح YouTube API غير مُعدّ على الموقع بعد");
+      return;
+    }
+    setImporting(true);
+    try {
+      let items = [];
+      let pageToken = "";
+      do {
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${encodeURIComponent(playlistId)}&key=${apiKey}${pageToken ? `&pageToken=${pageToken}` : ""}`
+        );
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message || "youtube api error");
+        items = items.concat(data.items || []);
+        pageToken = data.nextPageToken || "";
+      } while (pageToken);
+
+      // Playlist item "position" already reflects the sheikh's own ordering.
+      items.sort((a, b) => (a.snippet?.position ?? 0) - (b.snippet?.position ?? 0));
+      const usable = items.filter(
+        (it) =>
+          it.snippet?.resourceId?.videoId &&
+          it.snippet.title !== "Private video" &&
+          it.snippet.title !== "Deleted video"
+      );
+      if (!usable.length) {
+        window.alert("لم يُعثر على أي فيديوهات صالحة في هذه القائمة");
+        return;
+      }
+      const startAt = lessons.length + 1;
+      setPreview(
+        usable.map((it, i) => ({
+          title: `الدرس ${startAt + i}`,
+          sourceName: it.snippet.title,
+          url: `https://www.youtube.com/watch?v=${it.snippet.resourceId.videoId}`,
+        }))
+      );
+    } catch {
+      window.alert("تعذّر جلب قائمة يوتيوب — تحقّق من الرابط أو حاول مجددًا");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function handleImportPlaylist() {
+    const ytPlaylistId = extractYoutubePlaylistId(playlistUrl);
+    if (ytPlaylistId) {
+      await importYoutubePlaylist(ytPlaylistId);
+      return;
+    }
+
     const identifier = extractArchiveIdentifier(playlistUrl);
     if (!identifier) {
       window.alert("تعذّر التعرّف على معرّف العنصر — تأكد أن الرابط من archive.org/details/...");
@@ -464,19 +530,19 @@ export default function CurriculumAudioSettings() {
 
             <div className="curriculum-settings-playlist">
               <label className="curriculum-settings-field">
-                <span>رابط قائمة الدروس (playlist) من archive.org</span>
+                <span>رابط قائمة الدروس (playlist) — من archive.org أو يوتيوب</span>
                 <input
                   type="url"
-                  placeholder="مثلًا: archive.org/details/4-_20260814"
+                  placeholder="archive.org/details/... أو youtube.com/playlist?list=..."
                   value={playlistUrl}
                   onChange={(e) => setPlaylistUrl(e.target.value)}
                 />
               </label>
               <button type="button" onClick={handleImportPlaylist} disabled={importing || !playlistUrl.trim()}>
-                {importing ? "جارٍ الجلب..." : "جلب كل الدروس تلقائيًا من الأرشيف"}
+                {importing ? "جارٍ الجلب..." : "جلب كل الدروس تلقائيًا"}
               </button>
               <p className="hint-text">
-                يجلب كل الدروس الصوتية من صفحة العنصر ويعرضها للمراجعة قبل الحفظ.
+                يجلب كل الدروس (صوتية من الأرشيف أو فيديوهات من يوتيوب) ويعرضها للمراجعة قبل الحفظ.
               </p>
             </div>
 
