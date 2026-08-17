@@ -53,9 +53,15 @@ export default function BraveBanner() {
         </button>
 
         <div className="brave-card-icon">
+          {/* Stylized lion-shield mark, in the spirit of Brave's own logo */}
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1 3 5v6c0 5.6 3.8 10.7 9 12 5.2-1.3 9-6.4 9-12V5l-9-4Zm0 2.2 7 3.1v4.7c0 4.6-3 8.8-7 9.9-4-1.1-7-5.3-7-9.9V6.3l7-3.1Z" />
-            <path d="M12 6.5 8 8.6v3.2c0 2.9 1.7 5.5 4 6.2 2.3-.7 4-3.3 4-6.2V8.6L12 6.5Z" opacity="0.55" />
+            <path d="M12 1 3 4.5v6.3c0 5.9 3.8 10.9 9 12.2 5.2-1.3 9-6.3 9-12.2V4.5L12 1Z" />
+            <path
+              d="M12 5.3 6.7 7.4v3.4c0 4 2.4 7.5 5.3 8.6 2.9-1.1 5.3-4.6 5.3-8.6V7.4L12 5.3Z"
+              fill="#fff"
+              opacity="0.9"
+            />
+            <path d="M9 10.2c1 .6 2 1.7 3 1.7s2-1.1 3-1.7c-.7 2.3-1.7 5-3 6.6-1.3-1.6-2.3-4.3-3-6.6Z" fill="currentColor" />
           </svg>
         </div>
 
@@ -72,6 +78,11 @@ export default function BraveBanner() {
               </a>
             ))}
           </div>
+          <p className="brave-card-note">
+            بعض الأحيان لا تفتح الروابط مباشرة — في هذه الحالة ابحث بنفسك في متجر التطبيقات عن اسم التطبيق:{" "}
+            <strong dir="ltr">Brave</strong> — عبر <strong dir="ltr">Google Play</strong> (أندرويد) أو{" "}
+            <strong dir="ltr">App Store</strong> (آيفون).
+          </p>
         </div>
       </div>
     </div>

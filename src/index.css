@@ -1411,6 +1411,16 @@ td.empty {
   flex-wrap: wrap;
   gap: 8px;
 }
+.brave-card-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.brave-card-note strong {
+  color: #fb542b;
+  font-weight: 800;
+}
 .brave-card-link {
   display: flex;
   align-items: center;
