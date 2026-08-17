@@ -1113,27 +1113,31 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "curriculumAudio", book.title), (snap) => {
       const data = snap.data();
-      const nextBySheikh = data?.bySheikh || {};
-      setExtraBySheikh(nextBySheikh);
+      setExtraBySheikh(data?.bySheikh || {});
       setDynamicPdfUrl(data?.pdfUrl || null);
       setPdfList(Array.isArray(data?.pdfs) ? data.pdfs : []);
-
-      // Open the card straight on a sheikh's lessons by default — prefer
-      // whichever sheikh actually has lessons saved (static or dynamic) over
-      // just always defaulting to the first one listed in the note.
-      if (!sheikhAutoPickedRef.current && lines.length > 0) {
-        const withData = lines.findIndex((label, i) => {
-          const staticHas = Array.isArray(book.audio?.[i])
-            ? book.audio[i].length > 0
-            : !!book.audio?.[i];
-          return staticHas || (nextBySheikh[label] || []).length > 0;
-        });
-        setSelected(String(withData >= 0 ? withData : 0));
-        sheikhAutoPickedRef.current = true;
-      }
     });
     return unsub;
   }, [book.title]);
+
+  // Open the card straight on a sheikh's lessons by default — prefer
+  // whichever sheikh actually has lessons saved (static or dynamic) over
+  // just always defaulting to the first one listed in the note. Kept as its
+  // own effect (not inlined in the onSnapshot above) because `book.note`
+  // arrives asynchronously from curriculumOverrides — a callback created
+  // before it loads would otherwise keep closing over an empty `lines` for
+  // the rest of the card's life and never auto-pick anything.
+  const linesKey = lines.join("|");
+  useEffect(() => {
+    if (sheikhAutoPickedRef.current || lines.length === 0) return;
+    const withData = lines.findIndex((label, i) => {
+      const staticHas = Array.isArray(book.audio?.[i]) ? book.audio[i].length > 0 : !!book.audio?.[i];
+      return staticHas || (extraBySheikh[label] || []).length > 0;
+    });
+    setSelected(String(withData >= 0 ? withData : 0));
+    sheikhAutoPickedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linesKey, extraBySheikh]);
 
   // Open straight on the first lesson — same "default open" treatment as
   // the sheikh picker above — for every role (nothing here is gated by
