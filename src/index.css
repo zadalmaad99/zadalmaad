@@ -2803,10 +2803,10 @@ td.empty {
   width: 16px;
   height: 16px;
 }
-.picker-modal-item-badge.done.yt {
+.picker-modal-item-badge.done.yt svg {
   color: #ff0000;
 }
-.picker-modal-item-badge.done.pdf {
+.picker-modal-item-badge.done.pdf svg {
   color: #0891b2;
 }
 .lesson-picker-title {
