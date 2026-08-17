@@ -1905,15 +1905,16 @@ td.empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* The mark carries its own brand colours, so the plate behind it stays
-     neutral instead of an orange-on-orange blur. */
-  background: #fff;
-  border: 1px solid rgba(251, 84, 43, 0.3);
-  box-shadow: 0 4px 10px rgba(251, 84, 43, 0.22);
+  /* The app icon already includes its own rounded white plate, so this
+     container adds nothing behind it. */
+  background: transparent;
+  box-shadow: none;
 }
-.brave-card-icon svg {
-  width: 30px;
-  height: 30px;
+.brave-card-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 .brave-card-body {
   flex: 1;

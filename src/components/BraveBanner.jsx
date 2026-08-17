@@ -77,20 +77,7 @@ export default function BraveBanner() {
         </button>
 
         <div className="brave-card-icon">
-          {/* Brave's lion mark: the orange mane silhouette with the face
-              carved out of it as negative space, matching the app icon. */}
-          <svg viewBox="0 0 64 64" aria-label="Brave" role="img">
-            <path
-              fill="#EB4E27"
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M25.4 8h13.2l3.3 3.7h5.6l4.1 4.4-1.6 3.9 1.9 5.4-6.1 23.2c-.6 2.3-2 4.2-4 5.4L32 56l-9.8-6c-2-1.2-3.4-3.1-4-5.4L12.1 21.4 14 16l-1.6-3.9 4.1-4.4h5.6L25.4 8Zm6.6 8.6-6.6-2.2-3.6 3.4-4.4-1 1.7 4.3-1.3 2.6 4.5 12.6c.4 1.1 1.2 2 2.3 2.4l3.6 1.5-3 2.4c-.5.4-.6 1.1-.3 1.6l2.1 3.4c.3.5.9.7 1.4.5l5.3-2c.5-.2 1.1-.2 1.6 0l5.3 2c.5.2 1.1 0 1.4-.5l2.1-3.4c.3-.5.2-1.2-.3-1.6l-3-2.4 3.6-1.5c1.1-.4 1.9-1.3 2.3-2.4l4.5-12.6-1.3-2.6 1.7-4.3-4.4 1-3.6-3.4-6.6 2.2Z"
-            />
-            <path
-              fill="#EB4E27"
-              d="m32 30.6 4.8 2.2c.5.2.7.9.4 1.4l-4.3 5.4c-.5.6-1.4.6-1.9 0l-4.3-5.4c-.3-.5-.1-1.2.4-1.4l4.9-2.2Z"
-            />
-          </svg>
+          <img src={`${import.meta.env.BASE_URL}brave.png`} alt="Brave" width="34" height="34" />
         </div>
 
         <div className="brave-card-body">
