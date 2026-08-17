@@ -26,25 +26,52 @@ function pageUrl(page) {
 export function QuranPageViewer({ page, onPageChange }) {
   const [loading, setLoading] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const swipeRef = useRef(null);
+  const soundMode = getFlipMode();
+  const softness = getSoftness();
 
   function go(delta) {
     const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
     if (next === page) return;
-    playPageFlip();
+    playPageFlip(softness, soundMode);
     setLoading(true);
     onPageChange(next);
   }
 
+  function handleTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+
+  function handleTouchEnd(e) {
+    // Reading the mushaf embedded in the tab (not just full-screen) should
+    // turn by swipe too — that was the whole point of a book-like reader,
+    // and having to reach for the "الصفحة التالية" button every line was
+    // exactly the friction being complained about.
+    const s = swipeRef.current;
+    swipeRef.current = null;
+    if (!s) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx > 0 ? 1 : -1);
+  }
+
   return (
     <>
-      <div className="quran-page-viewer">
+      <div
+        className="quran-page-viewer"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {loading && <div className="quran-page-loading">جارٍ التحميل...</div>}
         <img
           src={pageUrl(page)}
           alt={`صفحة ${page}`}
           className="quran-page-img"
           onLoad={() => setLoading(false)}
-          style={{ display: loading ? "none" : "block" }}
+          style={{ opacity: loading ? 0 : 1 }}
         />
         <button
           type="button"
@@ -61,11 +88,17 @@ export function QuranPageViewer({ page, onPageChange }) {
 
       <div className="quran-page-nav">
         <button type="button" className="ghost" onClick={() => go(-1)} disabled={page <= 1}>
-          الصفحة السابقة
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+          السابقة
         </button>
         <span className="hint-text">{page} / {PAGE_COUNT}</span>
         <button type="button" className="ghost" onClick={() => go(1)} disabled={page >= PAGE_COUNT}>
-          الصفحة التالية
+          التالية
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
         </button>
       </div>
 

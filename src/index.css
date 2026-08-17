@@ -878,12 +878,26 @@ label {
      paper (white, black ink) regardless of light/dark theme, never blend
      into a dark card background. */
   background: #fff;
+  transition: opacity 0.28s ease;
+}
+.quran-page-viewer {
+  touch-action: pan-y;
 }
 .quran-page-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
+}
+.quran-page-nav .ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.quran-page-nav .ghost svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* Surah / juz / hizb strip above the mushaf page — takes the space the
@@ -2040,13 +2054,6 @@ td.empty {
 .brave-card-close svg {
   width: 12px;
   height: 12px;
-}
-@media (max-width: 620px) {
-  .brave-card {
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: start;
-  }
 }
 
 .install-wrap {
