@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useCalendar } from "../context/CalendarContext";
@@ -13,7 +13,11 @@ const PAGE_COUNT = 604;
 // mushaf reader last saved, live, per section (قراءة/حفظ/مراجعة). Nothing
 // here is entered by hand anymore.
 export default function QuranPageTracking({ type, title, focusStudentId, onFocusHandled }) {
-  const { isAdmin, isSuperadmin, user } = useAuth();
+  const { role, user } = useAuth();
+  // Teachers only — students read the mushaf here, and the القرآن tab stays
+  // a clean reader for everyone else. This panel exists purely so a معلّم
+  // can review where their own students have reached.
+  const isTeacher = role === "admin";
   const { formatDate } = useCalendar();
   const [students, setStudents] = useState([]);
   const [progress, setProgress] = useState({});
@@ -28,10 +32,8 @@ export default function QuranPageTracking({ type, title, focusStudentId, onFocus
   }, [focusStudentId, students]);
 
   useEffect(() => {
-    if (!isAdmin) return;
-    const studentsQuery = isSuperadmin
-      ? query(collection(db, "students"), orderBy("name"))
-      : query(collection(db, "students"), where("adminId", "==", user.uid));
+    if (!isTeacher) return;
+    const studentsQuery = query(collection(db, "students"), where("adminId", "==", user.uid));
     const unsubStudents = onSnapshot(studentsQuery, (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       rows.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
@@ -51,7 +53,7 @@ export default function QuranPageTracking({ type, title, focusStudentId, onFocus
       unsubStudents();
       unsubProgress();
     };
-  }, [isAdmin, isSuperadmin, user, type]);
+  }, [isTeacher, user, type]);
 
   function studentName(id) {
     return students.find((s) => s.id === id)?.name || "—";
@@ -61,7 +63,7 @@ export default function QuranPageTracking({ type, title, focusStudentId, onFocus
     .filter((s) => (filterStudentId ? s.id === filterStudentId : true))
     .filter((s) => (s.name || "").toLowerCase().includes(search.trim().toLowerCase()));
 
-  if (!isAdmin) return null;
+  if (!isTeacher) return null;
 
   return (
     <div className="panel">
