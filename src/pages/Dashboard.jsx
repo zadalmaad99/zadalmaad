@@ -10,6 +10,7 @@ import ScrollButtons from "../components/ScrollButtons";
 import MenhajAccordion from "../components/MenhajAccordion";
 import AdminAlertsBell from "../components/AdminAlertsBell";
 import { QuranPageViewer } from "../components/QuranPageModal";
+import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
 import logo from "../assets/logo.png";
 
 const NAV_STORAGE_KEY = "quran-tracker-nav";
@@ -95,9 +96,8 @@ const ICONS = {
 };
 
 const SUB_SECTIONS = [
-  { key: "mushaf", label: "المصحف" },
-  { key: "hifz", label: "حفظ" },
   { key: "qiraah", label: "قراءة" },
+  { key: "hifz", label: "حفظ" },
   { key: "murajaah", label: "مراجعة" },
 ];
 
@@ -147,19 +147,20 @@ const QURAN_TITLES = {
   murajaah: "سجلات المراجعة",
 };
 
-function mushafPageKey(uid) {
-  return `mushafPage_${uid || "anon"}`;
+function mushafPageKey(uid, section) {
+  return `mushafPage_${uid || "anon"}_${section}`;
 }
 
-// The physical mus-haf reader, available to every signed-in role right
-// alongside the حفظ/قراءة/مراجعة tracking tabs — not just the anonymous
-// public page. Resumes on whichever page the viewer last had open, per
-// account, like the video/PDF progress elsewhere in the app.
-function MushafTabReader() {
+// The physical mus-haf reader, embedded directly inside each of the
+// قراءة/حفظ/مراجعة tabs (no separate المصحف tab anymore) — each section
+// remembers its own page independently and strictly, per account, exactly
+// like a real bookmark: it never jumps back to الفاتحة on refresh, only
+// when the viewer themselves turns the page.
+function MushafTabReader({ section }) {
   const { user } = useAuth();
   const [page, setPage] = useState(() => {
     try {
-      return Number(localStorage.getItem(mushafPageKey(user?.uid))) || 1;
+      return Number(localStorage.getItem(mushafPageKey(user?.uid, section))) || 1;
     } catch {
       return 1;
     }
@@ -168,16 +169,27 @@ function MushafTabReader() {
   function handlePageChange(next) {
     setPage(next);
     try {
-      localStorage.setItem(mushafPageKey(user?.uid), String(next));
+      localStorage.setItem(mushafPageKey(user?.uid, section), String(next));
     } catch {
       // private-browsing / storage-quota — resuming just won't work, no big deal
     }
   }
 
+  const info = getPageInfo(page);
+
   return (
     <>
       <div className="modal-header">
         <h3>صفحة {page} من المصحف</h3>
+        {info && (
+          <span className="mushaf-page-meta">
+            {info.surahs.map((s) => s.name.replace(/^سُورَةُ\s*/, "")).join(" / ")}
+            {" — "}
+            الجزء {info.juz.join("-")}
+            {" — "}
+            {hizbLabel(info.hizbQuarter)}
+          </span>
+        )}
       </div>
       <QuranPageViewer page={page} onPageChange={handlePageChange} />
     </>
@@ -193,9 +205,9 @@ export default function Dashboard() {
       );
   const savedNav = readNav();
   const [tab, setTab] = useState(savedNav.tab || (isAdmin ? "overview" : "quran"));
-  // Always opens on المصحف by design, even if a previous session left a
+  // Always opens on قراءة by design, even if a previous session left a
   // different sub-tab active — only the page-within-mushaf is remembered.
-  const [quranSub, setQuranSub] = useState("mushaf");
+  const [quranSub, setQuranSub] = useState("qiraah");
   const [focusStudentId, setFocusStudentId] = useState(null);
   const [focusAdmin, setFocusAdmin] = useState(null);
   const current = visibleTabs.find((t) => t.key === tab) || visibleTabs[0];
@@ -315,18 +327,18 @@ export default function Dashboard() {
           />
         )}
         {tab === "settings" && isAdmin && <SettingsPanel />}
-        {tab === "quran" && quranSub === "mushaf" && (
-          <div className="modal-card quran-page-card public-quran-card mushaf-tab-card">
-            <MushafTabReader />
-          </div>
-        )}
-        {tab === "quran" && quranSub !== "mushaf" && (
-          <TrackingSection
-            type={quranSub}
-            title={QURAN_TITLES[quranSub]}
-            focusStudentId={focusStudentId}
-            onFocusHandled={() => setFocusStudentId(null)}
-          />
+        {tab === "quran" && (
+          <>
+            <div className="modal-card quran-page-card public-quran-card mushaf-tab-card">
+              <MushafTabReader key={quranSub} section={quranSub} />
+            </div>
+            <TrackingSection
+              type={quranSub}
+              title={QURAN_TITLES[quranSub]}
+              focusStudentId={focusStudentId}
+              onFocusHandled={() => setFocusStudentId(null)}
+            />
+          </>
         )}
         {tab === "attendance" && (
           <AttendancePanel
