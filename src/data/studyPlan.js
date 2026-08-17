@@ -141,12 +141,12 @@ export const STUDY_PLAN = [
   },
 ];
 
-export const STUDY_PLAN_CREDIT_NAME = "الشيخ ريبه ر ئه‌رەدنى";
+export const STUDY_PLAN_CREDIT_NAME = "الشيخ ريبه ر ئه‌رەدنى (بفضل الله)";
 export const STUDY_PLAN_CREDIT_ROLE = "أتباع السلف في القدش";
 
 export const STUDY_PLAN_DEVELOPER_LABEL = "مطوّر الموقع";
 export const STUDY_PLAN_DEVELOPER_NAME = "أبو أيان الكردي";
-export const STUDY_PLAN_DEVELOPER_ROLE = "مدرّس رياضيات و مبرمج ومطوّر المواقع والتطبيقات";
+export const STUDY_PLAN_DEVELOPER_ROLE = "مطوّر و مبرمج الموقع (بفضل الله)";
 
 function noteLines(note) {
   return note
