@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useAuth } from "../context/AuthContext";
 
 // pdf.js is a hefty dependency (~400KB) that most visitors never touch —
 // load it only once someone actually opens a PDF, not on every page view.
@@ -42,21 +43,29 @@ function fileNameFromUrl(url, title) {
   return `${(title || "ملف").replace(/[\\/:*?"<>|]/g, "_")}.pdf`;
 }
 
-function progressKey(url) {
-  return `pdfprog_${url}`;
+// Exported so book cards can show a "تقدمك في القراءة" bar without
+// re-opening the viewer — kept per-account like the video progress, so a
+// shared device doesn't leak one person's reading position to the next.
+export function pdfProgressKey(url, uid) {
+  return `pdfprog_${uid || "anon"}_${url}`;
 }
 
-function readSavedPage(url) {
+export function readPdfProgress(url, uid) {
   try {
-    return Number(localStorage.getItem(progressKey(url))) || 1;
+    const raw = localStorage.getItem(pdfProgressKey(url, uid));
+    return raw ? JSON.parse(raw) : null;
   } catch {
-    return 1;
+    return null;
   }
 }
 
-function saveCurrentPage(url, page) {
+function readSavedPage(url, uid) {
+  return readPdfProgress(url, uid)?.page || 1;
+}
+
+function savePdfProgress(url, uid, page, numPages) {
   try {
-    localStorage.setItem(progressKey(url), String(page));
+    localStorage.setItem(pdfProgressKey(url, uid), JSON.stringify({ page, numPages }));
   } catch {
     // private-browsing / storage-quota — resuming just won't work, no big deal
   }
@@ -68,13 +77,15 @@ const MAX_SCALE = 3;
 // A fullscreen in-app PDF reader — pdf.js renders each page onto a canvas so
 // there's no external tab, and the last-read page is remembered per file.
 export default function PdfViewerModal({ url, title, onClose }) {
+  const { user } = useAuth();
+  const uid = user?.uid;
   const canvasRef = useRef(null);
   const pageWrapRef = useRef(null);
   const docRef = useRef(null);
   const renderTaskRef = useRef(null);
   const pinchRef = useRef(null); // { startDist, startScale }
   const [numPages, setNumPages] = useState(0);
-  const [pageNum, setPageNum] = useState(() => readSavedPage(url));
+  const [pageNum, setPageNum] = useState(() => readSavedPage(url, uid));
   const [scale, setScale] = useState(1.2);
   const [status, setStatus] = useState("loading"); // loading | ready | error
   const [downloading, setDownloading] = useState(false);
@@ -120,11 +131,11 @@ export default function PdfViewerModal({ url, title, onClose }) {
       renderTaskRef.current = task;
       task.promise.catch(() => {});
     });
-    saveCurrentPage(url, pageNum);
+    if (numPages) savePdfProgress(url, uid, pageNum, numPages);
     return () => {
       cancelled = true;
     };
-  }, [status, pageNum, scale, url]);
+  }, [status, pageNum, scale, url, uid, numPages]);
 
   function goPrev() {
     setPageNum((p) => Math.max(1, p - 1));

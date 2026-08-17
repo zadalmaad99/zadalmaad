@@ -12,7 +12,7 @@ import {
 import SelectPickerModal from "./SelectPickerModal";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
-import PdfViewerModal from "./PdfViewerModal";
+import PdfViewerModal, { readPdfProgress } from "./PdfViewerModal";
 import { applyOrQueue } from "../utils/pendingChanges";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
@@ -174,7 +174,7 @@ function progressTier(percent) {
   return { color: "#4ade80", glow: "rgba(74, 222, 128, 0.35)" };
 }
 
-function BookProgressLabel({ percent }) {
+function BookProgressLabel({ percent, label = "تقدمك في الاستماع" }) {
   if (percent == null || percent < 1) return null;
   const done = percent >= 96;
   const tier = progressTier(percent);
@@ -185,7 +185,7 @@ function BookProgressLabel({ percent }) {
         {done ? <path d="M20 6 9 17l-5-5" /> : <path d="M3 17 9 11 13 15 21 7M21 7h-6M21 7v6" />}
       </svg>
       <span className="study-plan-book-progress-card-text">
-        تقدمك في الكتاب: <strong>{percent}%</strong>
+        {label}: <strong>{percent}%</strong>
       </span>
       <span className="study-plan-book-progress-card-track">
         <span className="study-plan-book-progress-card-fill" style={{ width: `${Math.min(100, percent)}%` }} />
@@ -1102,6 +1102,14 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const hasLessons = Object.values(extraBySheikh).some((arr) => arr?.length > 0);
   const hasDynamicData = !!dynamicPdfUrl || pdfList.length > 0 || hasLessons;
 
+  // Reading progress for the book's main PDF — re-read from storage whenever
+  // the viewer closes, since that's the only moment it could have changed.
+  const mainPdfUrl = allPdfs[0]?.url || null;
+  const pdfProgress = mainPdfUrl ? readPdfProgress(mainPdfUrl, user?.uid) : null;
+  const pdfPercent = pdfProgress?.numPages
+    ? Math.min(100, Math.round((pdfProgress.page / pdfProgress.numPages) * 100))
+    : null;
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "curriculumAudio", book.title), (snap) => {
       const data = snap.data();
@@ -1397,6 +1405,8 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
       )}
 
       {trackingButton}
+
+      {mainPdfUrl && <BookProgressLabel percent={pdfPercent} label="تقدمك في القراءة" />}
 
       {idx !== null && isLessonSeries && (
         <>
@@ -2025,7 +2035,7 @@ export default function StudyPlanSection() {
             </svg>
           </span>
           <span className="study-plan-credit-text">
-            <span className="study-plan-credit-label">إعداد</span>
+            <span className="study-plan-credit-label">إعداد (بفضل الله ورحمته)</span>
             <span className="study-plan-credit-name">{STUDY_PLAN_CREDIT_NAME}</span>
             <span className="study-plan-credit-role">{STUDY_PLAN_CREDIT_ROLE}</span>
           </span>
@@ -2038,7 +2048,7 @@ export default function StudyPlanSection() {
             </svg>
           </span>
           <span className="study-plan-credit-text">
-            <span className="study-plan-credit-label">{STUDY_PLAN_DEVELOPER_LABEL}</span>
+            <span className="study-plan-credit-label">{STUDY_PLAN_DEVELOPER_LABEL} (بفضل الله ورحمته)</span>
             <span className="study-plan-credit-name">{STUDY_PLAN_DEVELOPER_NAME}</span>
             <span className="study-plan-credit-role">{STUDY_PLAN_DEVELOPER_ROLE}</span>
           </span>
