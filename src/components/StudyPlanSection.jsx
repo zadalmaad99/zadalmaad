@@ -865,6 +865,17 @@ function DownloadAllPanel({ entry, book, sheikhLabel, downloadedSet, onClose, on
 function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, onSelect, onDelete, onClose }) {
   const { isSuperadmin } = useAuth();
 
+  // Show YouTube lessons first — original index (li) rides along for the
+  // select/delete callbacks, which are keyed to the underlying storage order,
+  // not whatever order they're displayed in here.
+  const ordered = entry
+    .map((l, li) => ({ l, li }))
+    .sort((a, b) => {
+      const aYt = getYoutubeId(a.l.url) ? 0 : 1;
+      const bYt = getYoutubeId(b.l.url) ? 0 : 1;
+      return aYt - bYt || a.li - b.li;
+    });
+
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card lesson-picker-card" onClick={(e) => e.stopPropagation()}>
@@ -875,12 +886,18 @@ function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, onS
         </button>
         <p className="lesson-picker-title">اختر الدرس</p>
         <div className="lesson-picker-grid">
-          {entry.map((l, li) => {
+          {ordered.map(({ l, li }) => {
             const done = downloadedSet.has(`${sheikhLabel} — ${l.title}`);
             const isDeletable = isSuperadmin && li >= staticCount;
+            const isYoutube = !!getYoutubeId(l.url);
             return (
               <div key={li} className={`lesson-picker-item${done ? " done" : ""}${isDeletable ? " deletable" : ""}`}>
                 <button type="button" className="lesson-picker-item-btn" onClick={() => onSelect(li)}>
+                  {isYoutube && (
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="lesson-picker-item-youtube">
+                      <path d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2 12a28 28 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3a2.7 2.7 0 0 0 1.9-1.9A28 28 0 0 0 22 12a28 28 0 0 0-.4-4.8ZM10 15V9l5 3-5 3Z" />
+                    </svg>
+                  )}
                   {l.title}
                   {done && (
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -2527,6 +2527,9 @@ td.empty {
   flex-shrink: 0;
   color: var(--primary);
 }
+.lesson-picker-item-youtube {
+  color: #ff0000 !important;
+}
 .lesson-picker-item.deletable .lesson-picker-item-btn {
   padding-inline-end: 26px;
 }
