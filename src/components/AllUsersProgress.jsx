@@ -7,6 +7,15 @@ import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
 const QURAN_SECTION_LABELS = { qiraah: "قراءة", hifz: "حفظ", murajaah: "مراجعة" };
 const PAGE_COUNT = 604;
 
+function pdfNameFromUrl(url) {
+  if (!url) return null;
+  try {
+    return decodeURIComponent(new URL(url).pathname.split("/").pop() || "") || null;
+  } catch {
+    return null;
+  }
+}
+
 function extractYoutubeId(url) {
   try {
     const u = new URL(url);
@@ -196,7 +205,9 @@ export default function AllUsersProgress() {
         type: "pdf",
         id: i.docId,
         percent: Math.min(100, i.percent || 0),
-        book: i.title || null,
+        // Older docs (and backfilled ones) have no title — fall back to the
+        // file name so the row never degrades to a bare document id.
+        book: i.title || pdfNameFromUrl(i.url) || "ملف PDF",
         sheikh: null,
         lesson: `صفحة ${i.page} من ${i.numPages}`,
         updatedAt: i.updatedAt || 0,

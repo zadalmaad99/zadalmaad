@@ -11,8 +11,9 @@ import MenhajAccordion from "../components/MenhajAccordion";
 import AdminAlertsBell from "../components/AdminAlertsBell";
 import { QuranPageViewer } from "../components/QuranPageModal";
 import { getPageInfo, hizbLabel } from "../utils/quranPageInfo";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useProgressBackfill } from "../utils/progressBackfill";
 import logo from "../assets/logo.png";
 
 const NAV_STORAGE_KEY = "quran-tracker-nav";
@@ -168,6 +169,36 @@ function MushafTabReader({ section }) {
     }
   });
 
+  // Live two-way: the saved page follows the account across devices, and
+  // whatever this device has locally is pushed up on mount so the stats
+  // panel never sits at zero just because the reader wasn't touched
+  // since the cloud sync was added.
+  useEffect(() => {
+    if (!user?.uid) return;
+    const ref = doc(db, "quranPageProgress", `${user.uid}_${section}`);
+    let seeded = false;
+    const unsub = onSnapshot(ref, (snap) => {
+      const remote = snap.data()?.page;
+      if (remote) {
+        setPage(remote);
+        try {
+          localStorage.setItem(mushafPageKey(user.uid, section), String(remote));
+        } catch {
+          // storage unavailable — the live value still applies this session
+        }
+      } else if (!seeded) {
+        seeded = true;
+        const local = Number(localStorage.getItem(mushafPageKey(user.uid, section))) || 1;
+        setDoc(
+          ref,
+          { uid: user.uid, email: user.email || null, section, page: local, updatedAt: Date.now() },
+          { merge: true }
+        ).catch(() => {});
+      }
+    });
+    return unsub;
+  }, [user?.uid, user?.email, section]);
+
   function handlePageChange(next) {
     setPage(next);
     try {
@@ -209,7 +240,10 @@ function MushafTabReader({ section }) {
 }
 
 export default function Dashboard() {
-  const { logout, isAdmin, isSuperadmin, role } = useAuth();
+  const { logout, isAdmin, isSuperadmin, role, user } = useAuth();
+  // Push any progress this device recorded before the cloud sync existed,
+  // so الإعدادات's stats match what the cards already show.
+  useProgressBackfill(user);
   const visibleTabs = isAdmin
     ? TABS.filter((t) => t.key !== "superadmin" || isSuperadmin)
     : TABS.filter(

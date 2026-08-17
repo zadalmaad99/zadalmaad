@@ -73,7 +73,7 @@ function savePdfProgress(url, uid, page, numPages) {
   }
 }
 
-function pdfProgressDocId(uid, url) {
+export function pdfProgressDocId(uid, url) {
   // Firestore doc IDs can't contain "/", and the raw URL is full of them.
   let h = 0;
   for (let i = 0; i < url.length; i++) h = (h * 31 + url.charCodeAt(i)) | 0;
