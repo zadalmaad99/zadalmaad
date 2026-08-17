@@ -12,7 +12,6 @@ import {
 import SelectPickerModal from "./SelectPickerModal";
 import { noteLines, useCurriculumPlan } from "../data/curriculum";
 import { useAuth } from "../context/AuthContext";
-import { api } from "../api";
 
 const CURRICULUM_PDF_DOC = doc(db, "curriculumMeta", "studyPlanPdf");
 
@@ -147,6 +146,38 @@ function videoProgressDocId(uid, videoId) {
   return `${uid}_${videoId}`;
 }
 
+// Book-card-level summary — the average watch percentage across every
+// YouTube lesson under the currently-selected sheikh, so it's obvious at a
+// glance which books still need finishing.
+function aggregateVideoProgress(list) {
+  if (!Array.isArray(list) || !list.length) return null;
+  const ytPercents = list
+    .map((l) => getYoutubeId(l.url))
+    .filter(Boolean)
+    .map((id) => readLocalProgress(id)?.percent || 0);
+  if (!ytPercents.length) return null;
+  const avg = Math.round(ytPercents.reduce((a, b) => a + b, 0) / ytPercents.length);
+  return avg;
+}
+
+function BookProgressLabel({ percent }) {
+  if (percent == null || percent < 1) return null;
+  const done = percent >= 96;
+  return (
+    <div className={`study-plan-book-progress-card${done ? " done" : ""}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="study-plan-book-progress-icon">
+        {done ? <path d="M20 6 9 17l-5-5" /> : <path d="M3 17 9 11 13 15 21 7M21 7h-6M21 7v6" />}
+      </svg>
+      <span className="study-plan-book-progress-card-text">
+        تقدمك في الكتاب: <strong>{percent}%</strong>
+      </span>
+      <span className="study-plan-book-progress-card-track">
+        <span className="study-plan-book-progress-card-fill" style={{ width: `${Math.min(100, percent)}%` }} />
+      </span>
+    </div>
+  );
+}
+
 function useYoutubeApiReady() {
   const [ready, setReady] = useState(() => !!window.YT?.Player);
   useEffect(() => {
@@ -169,14 +200,15 @@ function useYoutubeApiReady() {
   return ready;
 }
 
-// A thin progress bar rendered under a lesson's title/button, showing how far
-// the current viewer got last time — same idea as a podcast app's episode list.
+// A horizontal water fill behind a lesson button — rises from the right
+// edge toward the left as the viewer progresses, like a level filling up.
 function VideoProgressBar({ videoId }) {
   const percent = readLocalProgress(videoId)?.percent;
   if (!percent || percent < 3) return null;
+  const clamped = Math.min(100, percent);
   return (
-    <span className="video-progress-bar" aria-hidden="true">
-      <span className="video-progress-bar-fill" style={{ width: `${Math.min(100, percent)}%` }} />
+    <span className="video-progress-fill" style={{ width: `${clamped}%` }} aria-hidden="true" title={`تمت مشاهدة ${clamped}%`}>
+      <span className="video-progress-fill-wave" />
     </span>
   );
 }
@@ -767,238 +799,6 @@ function NoPdfModal({ onClose }) {
   );
 }
 
-function DownloadsInfoModal({ onClose }) {
-  return createPortal(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card downloads-info-card" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="modal-close" onClick={onClose}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-
-        <p className="downloads-info-greeting">السلام عليكم أخي الكريم / أختي الكريمة</p>
-
-        <p className="downloads-info-body">
-          لو سمحت ادخل إلى <strong>التنزيلات</strong> — الملفات نزلت إلى هناك.
-        </p>
-
-        <p className="downloads-info-warning">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-            <path d="M12 9v5M12 17.5v.5" />
-            <path d="M10.3 3.9 1.9 18.4A2 2 0 0 0 3.6 21.4h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-          </svg>
-          يرجى جمع كل الدروس في مجلد واحد حتى لا تختلط مع الكتب الأخرى
-        </p>
-
-        <button type="button" className="downloads-info-ok" onClick={onClose}>
-          حسنًا
-        </button>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-function DownloadAllPanel({ entry, book, sheikhLabel, downloadedSet, onClose, onFileDownloaded }) {
-  const [sizes, setSizes] = useState({}); // idx -> bytes | null (loading) | undefined (unknown)
-  const [status, setStatus] = useState({}); // idx -> "queued" | "downloading" | "done" | "error"
-  const [running, setRunning] = useState(false);
-  const [justFinished, setJustFinished] = useState(false);
-  const [showDownloadsInfo, setShowDownloadsInfo] = useState(false);
-  const [bytesDone, setBytesDone] = useState(0);
-  const [runTotalBytes, setRunTotalBytes] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-  const startedAtRef = useRef(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.allSettled(
-      entry.map((lesson) =>
-        fetch(lesson.url, { method: "HEAD" }).then((res) =>
-          Number(res.headers.get("content-length")) || null
-        )
-      )
-    ).then((results) => {
-      if (cancelled) return;
-      const next = {};
-      results.forEach((r, i) => {
-        next[i] = r.status === "fulfilled" ? r.value : null;
-      });
-      setSizes(next);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [entry]);
-
-  function isDone(i) {
-    return status[i] === "done" || downloadedSet.has(`${sheikhLabel} — ${entry[i].title}`);
-  }
-
-  const totalKnownBytes = Object.values(sizes).reduce((sum, v) => sum + (v || 0), 0);
-  const doneCount = entry.filter((_, i) => isDone(i)).length;
-  const remainingIdx = entry.map((_, i) => i).filter((i) => !isDone(i));
-
-  // Tick while downloading so the speed/ETA readout stays live.
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => setElapsed((Date.now() - startedAtRef.current) / 1000), 500);
-    return () => clearInterval(id);
-  }, [running]);
-
-  // Prefer real byte progress; fall back to file counts if sizes are unknown.
-  const percent = runTotalBytes
-    ? Math.min(100, Math.round((bytesDone / runTotalBytes) * 100))
-    : Math.round((doneCount / entry.length) * 100);
-  const speedBps = elapsed > 0.5 ? bytesDone / elapsed : 0;
-  const etaSeconds =
-    speedBps > 0 && runTotalBytes > bytesDone ? (runTotalBytes - bytesDone) / speedBps : null;
-
-  async function startAll() {
-    const plannedBytes = remainingIdx.reduce((sum, i) => sum + (sizes[i] || 0), 0);
-    setRunTotalBytes(plannedBytes);
-    setBytesDone(0);
-    setElapsed(0);
-    startedAtRef.current = Date.now();
-    setRunning(true);
-
-    let anySaved = false;
-    for (const i of remainingIdx) {
-      setStatus((s) => ({ ...s, [i]: "downloading" }));
-      try {
-        await fetchAndSave(
-          entry[i].url,
-          composedFileName(book, sheikhLabel, entry[i].title, entry[i].url),
-          (chunkBytes) => setBytesDone((b) => b + chunkBytes)
-        );
-        setStatus((s) => ({ ...s, [i]: "done" }));
-        onFileDownloaded(entry[i].title);
-        anySaved = true;
-      } catch {
-        setStatus((s) => ({ ...s, [i]: "error" }));
-      }
-    }
-    setRunning(false);
-    if (anySaved) setJustFinished(true);
-  }
-
-  // Inside our Android app, MainActivity injects window.AndroidApp — use it to
-  // open the device's real Downloads screen directly. Everywhere else (plain
-  // browser) that bridge doesn't exist, so fall back to the in-app dialog
-  // instead of a native alert() (which would print the site's URL).
-  function openDownloads() {
-    if (window.AndroidApp?.openDownloadsFolder) {
-      window.AndroidApp.openDownloadsFolder();
-      return;
-    }
-    setShowDownloadsInfo(true);
-  }
-
-  return (
-    <div className="download-all-panel">
-      <div className="download-all-header">
-        <span>تنزيل كل الدروس ({entry.length})</span>
-        <button type="button" className="modal-close" onClick={onClose}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <ul className="download-all-list">
-        {entry.map((lesson, i) => {
-          const st =
-            status[i] === "downloading"
-              ? "downloading"
-              : isDone(i)
-                ? "done"
-                : status[i] === "error"
-                  ? "error"
-                  : "queued";
-          return (
-            <li key={i} className="download-all-item">
-              <span className="download-all-item-title">{lesson.title}</span>
-              <span className="download-all-item-size">{formatBytes(sizes[i])}</span>
-              <span className={`download-all-item-status status-${st}`}>
-                {st === "done" ? "✓" : st === "downloading" ? "..." : st === "error" ? "✕" : ""}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="download-all-footer">
-        <span>الحجم الإجمالي: {formatBytes(totalKnownBytes)}</span>
-        {running && (
-          <div className="download-all-progress">
-            <div className="download-all-bar-row">
-              <div className="leaderboard-bar download-all-bar">
-                <div className="leaderboard-bar-fill" style={{ width: `${percent}%` }} />
-              </div>
-              <span className="download-all-percent">{percent}%</span>
-            </div>
-            <div className="download-all-stats" dir="rtl">
-              <span>
-                الوقت المتبقي تقريبًا: <strong>{formatEta(etaSeconds)}</strong>
-              </span>
-              <span className="download-all-stats-sep">·</span>
-              <span>
-                {formatBytes(bytesDone)} من {formatBytes(runTotalBytes)}
-              </span>
-              {speedBps > 0 && (
-                <>
-                  <span className="download-all-stats-sep">·</span>
-                  <span dir="ltr">{formatSpeed(speedBps)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-        <button type="button" onClick={startAll} disabled={running || remainingIdx.length === 0}>
-          {running
-            ? `جارٍ التنزيل... (${doneCount}/${entry.length})`
-            : remainingIdx.length === 0
-              ? "تم تنزيل كل الدروس"
-              : `بدء تنزيل الكل (${remainingIdx.length} متبقّي)`}
-        </button>
-
-        {running && (
-          <p className="download-all-warning" role="alert">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-              <path d="M12 9v5M12 17.5v.5" />
-              <path d="M10.3 3.9 1.9 18.4A2 2 0 0 0 3.6 21.4h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-            </svg>
-            لا تغلق الصفحة حتى تنتهي كل التنزيلات
-          </p>
-        )}
-
-        {!running && justFinished && (
-          <div className="download-all-done">
-            <p className="download-all-done-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              اكتمل التنزيل — الملفات محفوظة في جهازك
-            </p>
-            <p className="download-all-done-path">
-              مجلّد التنزيلات: <span dir="ltr">Downloads</span>
-            </p>
-            <button type="button" className="download-all-open" onClick={openDownloads}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path d="M3 7h5l2 2h11v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7Z" />
-              </svg>
-              فتح مجلّد التنزيلات
-            </button>
-          </div>
-        )}
-      </div>
-
-      {showDownloadsInfo && <DownloadsInfoModal onClose={() => setShowDownloadsInfo(false)} />}
-    </div>
-  );
-}
-
 function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, onSelect, onDelete, onClose }) {
   const { isSuperadmin } = useAuth();
 
@@ -1181,7 +981,6 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
   const [selected, setSelected] = useState("");
   const [lessonIdx, setLessonIdx] = useState("");
   const [showNoPdf, setShowNoPdf] = useState(false);
-  const [showDownloadAll, setShowDownloadAll] = useState(false);
   const [showLessonPicker, setShowLessonPicker] = useState(false);
   const [downloadedSet, setDownloadedSet] = useState(new Set());
   const [extraBySheikh, setExtraBySheikh] = useState({});
@@ -1330,19 +1129,6 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
     onDeleteBook(book.title);
   }
 
-  function handleFileDownloaded(lessonTitle) {
-    if (isAdmin || !user) return;
-    api
-      .updateListeningProgress({
-        studentId: user.uid,
-        book: book.title,
-        sheikh: `${sheikhLabel} — ${lessonTitle}`,
-        progressPercent: 0,
-        downloaded: true,
-      })
-      .catch(() => {});
-  }
-
   return (
     <li className={`study-plan-book${hasLessons ? " study-plan-book-filled" : ""}`}>
       {isSuperadmin && (
@@ -1474,6 +1260,8 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
 
       {idx !== null && isLessonSeries && (
         <>
+          <BookProgressLabel percent={aggregateVideoProgress(entry)} />
+
           <button
             type="button"
             className="study-plan-book-select"
@@ -1488,14 +1276,6 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
             {lessonIdx !== "" && getYoutubeId(entry[Number(lessonIdx)]?.url) && (
               <VideoProgressBar videoId={getYoutubeId(entry[Number(lessonIdx)].url)} />
             )}
-          </button>
-
-          <button
-            type="button"
-            className="study-plan-book-select study-plan-download-all-btn"
-            onClick={() => setShowDownloadAll(true)}
-          >
-            تنزيل كل الدروس
           </button>
 
           {showLessonPicker && (
@@ -1597,21 +1377,6 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
         />
       )}
 
-      {showDownloadAll &&
-        isLessonSeries &&
-        createPortal(
-          <div className="download-all-fullscreen">
-            <DownloadAllPanel
-              entry={entry}
-              book={book}
-              sheikhLabel={sheikhLabel}
-              downloadedSet={downloadedSet}
-              onClose={() => setShowDownloadAll(false)}
-              onFileDownloaded={handleFileDownloaded}
-            />
-          </div>,
-          document.body
-        )}
     </li>
   );
 }

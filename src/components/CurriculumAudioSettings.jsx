@@ -117,6 +117,7 @@ export default function CurriculumAudioSettings() {
   const [showBookPicker, setShowBookPicker] = useState(false);
   const bulkDetailsRef = useRef(null);
   const bookInitRef = useRef(false);
+  const prevFilledRef = useRef(new Set());
 
   const book = BOOKS.find((b) => b.title === bookTitle);
   const sheikhOptions = book?.note ? noteLines(book.note) : [];
@@ -151,6 +152,20 @@ export default function CurriculumAudioSettings() {
     setBookTitle((firstUnfilled || BOOKS[0]).title);
     bookInitRef.current = true;
   }, [BOOKS, filledLoaded, filledTitles, bookTitle]);
+
+  // Once a book you were working on just became filled (its first lesson
+  // link was saved), jump straight to the next book still missing links —
+  // but never bounce someone who deliberately reopened an already-filled
+  // book from the picker to edit it.
+  useEffect(() => {
+    const wasFilled = prevFilledRef.current.has(bookTitle);
+    const isFilledNow = filledTitles.has(bookTitle);
+    if (bookInitRef.current && !wasFilled && isFilledNow) {
+      const next = BOOKS.find((b) => !filledTitles.has(b.title) && b.title !== bookTitle);
+      if (next) setBookTitle(next.title);
+    }
+    prevFilledRef.current = filledTitles;
+  }, [filledTitles, bookTitle, BOOKS]);
 
   // Keep the sheikh valid whenever the book — or its edited note — changes.
   useEffect(() => {
