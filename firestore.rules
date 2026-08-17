@@ -34,6 +34,13 @@ service cloud.firestore {
         (isAdminRole() && resource.data.adminId == request.auth.uid);
     }
 
+    // Per-account UI preferences (currently: which باب sections are
+    // collapsed in المنهج) — synced across every device the same account
+    // signs into, purely cosmetic so a simple own-uid rule is enough.
+    match /userPrefs/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+
     match /users/{uid} {
       allow read: if isAdmin() || request.auth.uid == uid;
       allow write: if isSuperadmin();

@@ -4,6 +4,8 @@ import { HADITH_BOOKS } from "../data/hadithBooks";
 import MenhajCard from "./MenhajCard";
 import StudyPlanSection from "./StudyPlanSection";
 import HadithBooksSection from "./HadithBooksSection";
+import { useAuth } from "../context/AuthContext";
+import { useCollapseSync } from "../utils/persistentCollapse";
 
 const TOTAL_HADITH = HADITH_BOOKS.reduce((sum, b) => sum + b.total, 0);
 
@@ -18,6 +20,8 @@ const HADITH_ICON = (
 // the logged-in dashboard and the public read-only page, since the book
 // cards themselves already degrade gracefully to read-only when signed out.
 export default function MenhajAccordion() {
+  const { user } = useAuth();
+  useCollapseSync(user?.uid);
   const [menhajSection, setMenhajSection] = useState(null);
   const { sections } = useCurriculumPlan();
   const sectionCount = sections.length;
