@@ -1831,6 +1831,63 @@ td.empty {
   margin-bottom: 12px;
 }
 
+.settings-quick-card {
+  padding: 12px;
+}
+.settings-square-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+.settings-square-option {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.settings-square-option svg {
+  width: 15px;
+  height: 15px;
+}
+.settings-square-option span {
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.settings-square-option:hover {
+  border-color: var(--primary);
+}
+.settings-square-option-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.settings-square-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 0 4px;
+  flex: 0 0 auto;
+}
+.settings-preview-compact {
+  margin: 8px 0 0;
+  font-size: 12px;
+  text-align: center;
+  padding: 6px 10px;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -4311,6 +4368,38 @@ td.empty {
   border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
+}
+.import-preview-move {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.import-preview-move button {
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border-radius: 5px;
+  background: var(--surface-alt);
+  color: var(--primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+.import-preview-move button:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  transform: none;
+  box-shadow: none;
+}
+.import-preview-move button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.import-preview-move svg {
+  width: 11px;
+  height: 11px;
 }
 .import-preview-num {
   flex: 0 0 84px;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { collection, deleteDoc, doc, onSnapshot, query, setDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   STUDY_PLAN_CREDIT_NAME,
@@ -116,17 +116,154 @@ function getYoutubeId(url) {
   }
 }
 
+// Every viewer — signed in or anonymous — gets their watch position saved
+// locally so the video resumes where they left off. Signed-in users also get
+// it mirrored to Firestore under their uid, so it follows them across devices.
+function localProgressKey(videoId) {
+  return `ytprog_${videoId}`;
+}
+
+function readLocalProgress(videoId) {
+  try {
+    const raw = localStorage.getItem(localProgressKey(videoId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalProgress(videoId, seconds, duration) {
+  try {
+    localStorage.setItem(
+      localProgressKey(videoId),
+      JSON.stringify({ seconds, duration, percent: Math.min(100, Math.round((seconds / duration) * 100)) })
+    );
+  } catch {
+    // private-browsing / storage-quota — resuming just won't work, no big deal
+  }
+}
+
+function videoProgressDocId(uid, videoId) {
+  return `${uid}_${videoId}`;
+}
+
+function useYoutubeApiReady() {
+  const [ready, setReady] = useState(() => !!window.YT?.Player);
+  useEffect(() => {
+    if (window.YT?.Player) {
+      setReady(true);
+      return;
+    }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      prev?.();
+      setReady(true);
+    };
+    if (!document.getElementById("youtube-iframe-api")) {
+      const tag = document.createElement("script");
+      tag.id = "youtube-iframe-api";
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+  }, []);
+  return ready;
+}
+
+// A thin progress bar rendered under a lesson's title/button, showing how far
+// the current viewer got last time — same idea as a podcast app's episode list.
+function VideoProgressBar({ videoId }) {
+  const percent = readLocalProgress(videoId)?.percent;
+  if (!percent || percent < 3) return null;
+  return (
+    <span className="video-progress-bar" aria-hidden="true">
+      <span className="video-progress-bar-fill" style={{ width: `${Math.min(100, percent)}%` }} />
+    </span>
+  );
+}
+
 function YoutubeEmbed({ videoId, label }) {
+  const { user } = useAuth();
+  const apiReady = useYoutubeApiReady();
+  const mountId = useRef(`yt-player-${Math.random().toString(36).slice(2)}`).current;
+  const playerRef = useRef(null);
+  const saveTimerRef = useRef(null);
+  const resumeSecondsRef = useRef(0);
+
+  useEffect(() => {
+    const local = readLocalProgress(videoId);
+    resumeSecondsRef.current = local?.seconds || 0;
+    if (!user) return;
+    let cancelled = false;
+    getDoc(doc(db, "videoProgress", videoProgressDocId(user.uid, videoId))).then((snap) => {
+      if (cancelled || !snap.exists()) return;
+      // Whichever device/session got further wins the resume point.
+      const remote = snap.data().seconds || 0;
+      if (remote > resumeSecondsRef.current) resumeSecondsRef.current = remote;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, videoId]);
+
+  useEffect(() => {
+    if (!apiReady) return;
+    let destroyed = false;
+
+    function saveProgress() {
+      const player = playerRef.current;
+      if (!player?.getCurrentTime) return;
+      const seconds = player.getCurrentTime();
+      const duration = player.getDuration();
+      if (!duration || seconds < 3) return;
+      writeLocalProgress(videoId, seconds, duration);
+      if (user) {
+        setDoc(
+          doc(db, "videoProgress", videoProgressDocId(user.uid, videoId)),
+          { uid: user.uid, videoId, seconds, duration, updatedAt: Date.now() },
+          { merge: true }
+        ).catch(() => {});
+      }
+    }
+
+    // Give the resume-lookup effect above a moment to populate resumeSecondsRef
+    // before the player is created and immediately fires onReady.
+    const startTimer = setTimeout(() => {
+      if (destroyed || !document.getElementById(mountId)) return;
+      playerRef.current = new window.YT.Player(mountId, {
+        videoId,
+        playerVars: { rel: 0 },
+        events: {
+          onReady: (e) => {
+            if (resumeSecondsRef.current > 5) e.target.seekTo(resumeSecondsRef.current, true);
+          },
+          onStateChange: (e) => {
+            clearInterval(saveTimerRef.current);
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              saveTimerRef.current = setInterval(saveProgress, 5000);
+            } else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) {
+              saveProgress();
+            }
+          },
+        },
+      });
+    }, 200);
+
+    return () => {
+      destroyed = true;
+      clearTimeout(startTimer);
+      clearInterval(saveTimerRef.current);
+      saveProgress();
+      playerRef.current?.destroy?.();
+      playerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiReady, videoId, user]);
+
   return (
     <div className="study-plan-audio study-plan-youtube">
       {label && <p className="study-plan-youtube-label">{label}</p>}
       <div className="study-plan-youtube-frame">
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}`}
-          title={label || "درس يوتيوب"}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <div id={mountId} />
       </div>
     </div>
   );
@@ -904,6 +1041,7 @@ function LessonPickerModal({ entry, sheikhLabel, downloadedSet, staticCount, onS
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
                   )}
+                  {isYoutube && <VideoProgressBar videoId={getYoutubeId(l.url)} />}
                 </button>
                 {isDeletable && (
                   <button
@@ -1347,6 +1485,9 @@ function BookCard({ book, order, onSaveEdit, onDeleteBook, trackingButton }) {
               </svg>
             )}
             {lessonIdx !== "" ? entry[Number(lessonIdx)].title : "انقر لرؤية الدروس"}
+            {lessonIdx !== "" && getYoutubeId(entry[Number(lessonIdx)]?.url) && (
+              <VideoProgressBar videoId={getYoutubeId(entry[Number(lessonIdx)].url)} />
+            )}
           </button>
 
           <button

@@ -18,6 +18,51 @@ function readableUrl(url) {
   }
 }
 
+// Shared between the archive.org and YouTube importers: figure out a lesson's
+// place in the series from its title/file name (or an embedded track number),
+// since upload/playlist order frequently doesn't match the actual lesson
+// order the sheikh taught them in. Both comparisons must stay NUMERIC — a
+// plain string sort puts "الدرس 10" before "الدرس 2".
+function extractLessonNumber(text, track) {
+  const trackNum = Number(String(track || "").match(/\d+/)?.[0]);
+  if (trackNum) return trackNum;
+  const fromText = text.match(/(?:الدرس|درس|الحلقة|المجلس)\s*(\d+)/);
+  if (fromText) return Number(fromText[1]);
+  // "3_12" / "3/12" / "3-12" / "3 من 12" — common when the number sits at the
+  // end of the title, where a plain sort would compare the topic first and
+  // shuffle the order. Sanity-check the pair so dates like "06-04-1444"
+  // aren't mistaken for a lesson number.
+  const partOf = text.match(/(\d+)\s*(?:_|\/|-|من)\s*(\d+)/);
+  if (partOf) {
+    const index = Number(partOf[1]);
+    const total = Number(partOf[2]);
+    if (index >= 1 && index <= total && total <= 300) return index;
+  }
+  // A bare number in brackets, e.g. "... آل الشيخ (7) - عقيدة".
+  const inBrackets = text.match(/[([](\d+)[)\]]/);
+  if (inBrackets) {
+    const index = Number(inBrackets[1]);
+    if (index >= 1 && index <= 300) return index;
+  }
+  // Unnumbered openers/closers still have an obvious position.
+  if (/(مقدمة|المقدمة|تمهيد)/.test(text)) return -Infinity;
+  if (/(الأخير|الاخير|الختام|الخاتمة)/.test(text)) return Infinity;
+  return null;
+}
+
+function sortByLessonNumber(list, textOf, trackOf, fallbackKeyOf) {
+  return [...list].sort((a, b) => {
+    const na = extractLessonNumber(textOf(a), trackOf?.(a));
+    const nb = extractLessonNumber(textOf(b), trackOf?.(b));
+    if (na !== null && nb !== null && na !== nb) return na - nb;
+    if (na !== null && nb === null) return -1; // unnumbered items last
+    if (na === null && nb !== null) return 1;
+    return String(fallbackKeyOf(a)).localeCompare(String(fallbackKeyOf(b)), undefined, {
+      numeric: true,
+    });
+  });
+}
+
 function isYoutubeUrl(url) {
   try {
     const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
@@ -235,8 +280,6 @@ export default function CurriculumAudioSettings() {
         pageToken = data.nextPageToken || "";
       } while (pageToken);
 
-      // Playlist item "position" already reflects the sheikh's own ordering.
-      items.sort((a, b) => (a.snippet?.position ?? 0) - (b.snippet?.position ?? 0));
       const usable = items.filter(
         (it) =>
           it.snippet?.resourceId?.videoId &&
@@ -247,9 +290,19 @@ export default function CurriculumAudioSettings() {
         window.alert("لم يُعثر على أي فيديوهات صالحة في هذه القائمة");
         return;
       }
+      // Playlist order (however the channel owner arranged it) doesn't always
+      // match the actual lesson order — prefer the number embedded in each
+      // video's own title, falling back to playlist position when a video
+      // has no such number.
+      const sortedUsable = sortByLessonNumber(
+        usable,
+        (it) => it.snippet.title,
+        () => null,
+        (it) => it.snippet?.position ?? 0
+      );
       const startAt = lessons.length + 1;
       setPreview(
-        usable.map((it, i) => ({
+        sortedUsable.map((it, i) => ({
           title: `الدرس ${startAt + i}`,
           sourceName: it.snippet.title,
           url: `https://www.youtube.com/watch?v=${it.snippet.resourceId.videoId}`,
@@ -293,50 +346,19 @@ export default function CurriculumAudioSettings() {
         window.alert("لم يُعثر على أي ملفات صوتية في هذا العنصر — قد يكون ما زال قيد المعالجة");
         return;
       }
-      // Order the lessons as the sheikh published them. Trust the embedded
-      // track number first; otherwise fall back to the lesson number written
-      // in the title/file name. Both comparisons must be NUMERIC — a plain
-      // string sort puts "الدرس 10" before "الدرس 2".
-      const lessonNumber = (f) => {
-        const track = Number(String(f.track || "").match(/\d+/)?.[0]);
-        if (track) return track;
-        const text = String(f.title || f.name);
-        const fromText = text.match(/(?:الدرس|درس|الحلقة|المجلس)\s*(\d+)/);
-        if (fromText) return Number(fromText[1]);
-        // "3_12" / "3/12" / "3-12" / "3 من 12" — common when the number sits at
-        // the end of the file name, where a plain name sort would compare the
-        // lesson topic first and shuffle the order. Sanity-check the pair so
-        // dates like "06-04-1444" aren't mistaken for a lesson number.
-        const partOf = text.match(/(\d+)\s*(?:_|\/|-|من)\s*(\d+)/);
-        if (partOf) {
-          const index = Number(partOf[1]);
-          const total = Number(partOf[2]);
-          if (index >= 1 && index <= total && total <= 300) return index;
-        }
-        // A bare number in brackets, e.g. "... آل الشيخ (7) - عقيدة".
-        const inBrackets = text.match(/[([](\d+)[)\]]/);
-        if (inBrackets) {
-          const index = Number(inBrackets[1]);
-          if (index >= 1 && index <= 300) return index;
-        }
-        // Unnumbered openers/closers still have an obvious position.
-        if (/(مقدمة|المقدمة|تمهيد)/.test(text)) return -Infinity;
-        if (/(الأخير|الاخير|الختام|الخاتمة)/.test(text)) return Infinity;
-        return null;
-      };
-      files.sort((a, b) => {
-        const na = lessonNumber(a);
-        const nb = lessonNumber(b);
-        if (na !== null && nb !== null && na !== nb) return na - nb;
-        if (na !== null && nb === null) return -1; // unnumbered items last
-        if (na === null && nb !== null) return 1;
-        return String(a.name).localeCompare(String(b.name), undefined, { numeric: true });
-      });
+      // Order the lessons as the sheikh published them, not however
+      // archive.org happens to list the files.
+      const sortedFiles = sortByLessonNumber(
+        files,
+        (f) => String(f.title || f.name),
+        (f) => f.track,
+        (f) => f.name
+      );
       // Skip duplicate uploads: archive.org items sometimes contain the same
       // lesson uploaded more than once under a different file name, but the
       // embedded title metadata is identical — keep only the first copy.
       const seenTitles = new Set();
-      const uniqueFiles = files.filter((f) => {
+      const uniqueFiles = sortedFiles.filter((f) => {
         // Collapse whitespace too — re-uploads of the same lesson often differ
         // only by stray spaces in the embedded title.
         const key = (f.title || f.name).trim().toLowerCase().replace(/\s+/g, " ");
@@ -344,7 +366,7 @@ export default function CurriculumAudioSettings() {
         seenTitles.add(key);
         return true;
       });
-      const skipped = files.length - uniqueFiles.length;
+      const skipped = sortedFiles.length - uniqueFiles.length;
       // Show a readable review list — the Arabic name of each file next to the
       // number it will be saved under — instead of a wall of percent-encoded
       // URLs. The URL rides along invisibly on each row.
@@ -387,6 +409,21 @@ export default function CurriculumAudioSettings() {
 
   function removePreviewRow(i) {
     setPreview((rows) => rows.filter((_, ri) => ri !== i));
+  }
+
+  // Playlist order (archive.org track numbers, YouTube playlist position)
+  // isn't always the sheikh's actual lesson order — let the admin fix it by
+  // hand instead of re-importing. Renumbers "الدرس N" titles that still
+  // match the auto-generated pattern so they stay in sync with the new
+  // position; a title the admin already edited by hand is left alone.
+  function movePreviewRow(i, delta) {
+    setPreview((rows) => {
+      const target = i + delta;
+      if (target < 0 || target >= rows.length) return rows;
+      const next = [...rows];
+      [next[i], next[target]] = [next[target], next[i]];
+      return next.map((r, ri) => (/^الدرس \d+$/.test(r.title) ? { ...r, title: `الدرس ${ri + 1}` } : r));
+    });
   }
 
   async function savePdfUrl(value) {
@@ -620,6 +657,30 @@ export default function CurriculumAudioSettings() {
                 <ul className="import-preview-list">
                   {preview.map((row, i) => (
                     <li key={i} className="import-preview-row">
+                      <span className="import-preview-move">
+                        <button
+                          type="button"
+                          onClick={() => movePreviewRow(i, -1)}
+                          disabled={i === 0}
+                          aria-label="تحريك لأعلى"
+                          title="تحريك لأعلى"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                            <path d="M12 19V6M6 11l6-6 6 6" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => movePreviewRow(i, 1)}
+                          disabled={i === preview.length - 1}
+                          aria-label="تحريك لأسفل"
+                          title="تحريك لأسفل"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                            <path d="M12 5v13M6 13l6 6 6-6" />
+                          </svg>
+                        </button>
+                      </span>
                       <input
                         className="import-preview-num"
                         type="text"
