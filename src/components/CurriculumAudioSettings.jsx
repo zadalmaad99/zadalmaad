@@ -17,6 +17,15 @@ function readableUrl(url) {
   }
 }
 
+function isYoutubeUrl(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    return host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be";
+  } catch {
+    return false;
+  }
+}
+
 function normalizeAudioUrl(raw) {
   const trimmed = String(raw).trim();
   try {
@@ -490,7 +499,14 @@ export default function CurriculumAudioSettings() {
               <ul className="curriculum-settings-list">
                 {lessons.map((l, i) => (
                   <li key={i}>
-                    <span className="curriculum-settings-lesson-title">{l.title}</span>
+                    <span className="curriculum-settings-lesson-title">
+                      {isYoutubeUrl(l.url) && (
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="curriculum-settings-youtube-icon">
+                          <path d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2 12a28 28 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3a2.7 2.7 0 0 0 1.9-1.9A28 28 0 0 0 22 12a28 28 0 0 0-.4-4.8ZM10 15V9l5 3-5 3Z" />
+                        </svg>
+                      )}
+                      {l.title}
+                    </span>
                     <button
                       type="button"
                       className="curriculum-settings-remove"

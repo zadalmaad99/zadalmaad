@@ -1582,9 +1582,18 @@ td.empty {
   border: 1px solid var(--border);
 }
 .curriculum-settings-lesson-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
+}
+.curriculum-settings-youtube-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #ff0000;
 }
 .curriculum-settings-remove {
   flex-shrink: 0;
