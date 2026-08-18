@@ -1,4 +1,5 @@
 import { loadPageFont, loadPageWords } from "./mushafText";
+import { textMargin } from "./mushafLines";
 
 // Where an ayah's words actually sit within their printed line(s) — not
 // just which line, but the horizontal span, so the ruler can be as short
@@ -52,22 +53,26 @@ function layoutLine(el, fontFamily, lineWords) {
   return { rects, totalWidth };
 }
 
-// Returns [{ line, left, right }] as fractions (0..1) of containerWidthPx,
-// one entry per line the ayah's words touch. The per-page font is
-// pre-kerned to exactly fill its real printed line at its own size, which
-// this can't reproduce — so each line is instead measured at a fixed size
-// and uniformly scaled to fill containerWidthPx, the same effect (exact
-// fill) reached a different way.
-export async function measureAyahSpans(page, verseKey, containerWidthPx) {
+// Returns [{ line, left, right }] as fractions (0..1) of the *whole page
+// image* width — already adjusted for the real printed margin — one entry
+// per line the ayah's words touch. The per-page font is pre-kerned to
+// exactly fill its real printed line at its own size, which this can't
+// reproduce, so each line is instead measured at a fixed size and
+// uniformly scaled to fill the actual text-block width (the page image
+// minus its margins), the same effect (exact fill) reached a different
+// way.
+export async function measureAyahSpans(page, verseKey, holderWidthPx) {
   const [{ lines }, fontFamily] = await Promise.all([loadPageWords(page), loadPageFont(page)]);
   const el = getMeasureEl();
+  const margin = textMargin(page);
+  const textWidthPx = holderWidthPx * (margin.right - margin.left);
 
   const results = [];
   for (const lineWords of lines) {
     if (!lineWords.some((w) => w.verseKey === verseKey)) continue;
     const { rects, totalWidth } = layoutLine(el, fontFamily, lineWords);
     if (!totalWidth) continue;
-    const scale = containerWidthPx / totalWidth;
+    const scale = textWidthPx / totalWidth;
 
     let left = Infinity;
     let right = -Infinity;
@@ -79,8 +84,8 @@ export async function measureAyahSpans(page, verseKey, containerWidthPx) {
     if (right > left) {
       results.push({
         line: lineWords[0].line,
-        left: (left * scale) / containerWidthPx,
-        right: (right * scale) / containerWidthPx,
+        left: margin.left + (left * scale) / holderWidthPx,
+        right: margin.left + (right * scale) / holderWidthPx,
       });
     }
   }

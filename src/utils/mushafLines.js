@@ -19,6 +19,20 @@ const SPECIAL = {
   2: { 10: 437, 11: 548, 12: 658, 13: 765, 14: 879, 15: 980 },
 };
 
+// The printed text block doesn't span the full image edge to edge — there
+// is real margin baked into the page images themselves. Measured directly
+// off the PNGs (scanning for the leftmost/rightmost dark pixel below the
+// header band) on a sample of pages: normal running pages (3-604) sit at
+// roughly 5%-95% of the image width; the decorative, centred pages 1-2
+// sit much narrower, around 20%-80%. A ruler positioned against the full
+// 0-100% width — the previous assumption — ran into that empty margin.
+const TEXT_MARGIN = { left: 0.05, right: 0.95 };
+const TEXT_MARGIN_SPECIAL = { left: 0.2, right: 0.8 };
+
+export function textMargin(page) {
+  return page <= 2 ? TEXT_MARGIN_SPECIAL : TEXT_MARGIN;
+}
+
 // Baseline of a line, in image pixels from the top.
 export function baselineFor(page, line) {
   const special = SPECIAL[page];
