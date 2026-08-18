@@ -1376,17 +1376,42 @@ label {
   padding: 6px;
   touch-action: none;
 }
-.quran-fs-img {
-  /* Fill the stage and stay centred on both axes whatever the page's
-     aspect ratio — no drifting to one edge. */
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+/* Locked to the page image's own 1260x2038 ratio, so the ruler can be
+   positioned as a plain percentage of height and still land on the right
+   printed line at any screen size. */
+.quran-fs-page-holder {
+  position: relative;
+  aspect-ratio: 1260 / 2038;
+  max-width: 100%;
+  max-height: 100%;
   background: #fff;
   transform-origin: center center;
   will-change: transform, opacity;
-  /* Unhurried fade so turning a page feels settled, not snapped. */
   transition: opacity 0.42s ease;
+}
+.quran-fs-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+/* The ruler under the ayah being recited — sits on the printed baseline
+   and slides to the next line as the recitation moves on. */
+.quran-fs-ruler {
+  position: absolute;
+  inset-inline: 3.5%;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(31, 122, 61, 0) 0%, #1f7a3d 12%, #1f7a3d 88%, rgba(31, 122, 61, 0) 100%);
+  box-shadow: 0 0 6px rgba(31, 122, 61, 0.5);
+  transform: translateY(2px);
+  transition: top 0.35s ease;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quran-fs-ruler {
+    transition: none;
+  }
 }
 /* Real per-word mushaf text (replaces the photo for the current page —
    the turning-away sheet above still uses the photo, which is fine since
@@ -1526,11 +1551,8 @@ label {
   inset: 6px;
   width: calc(100% - 12px);
   height: calc(100% - 12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #f7f1e4;
+  object-fit: contain;
+  background: #fff;
   backface-visibility: hidden;
   pointer-events: none;
   z-index: 3;

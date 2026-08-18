@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { getPageInfo, hizbLabel, surahNames, sajdasOnPage, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
 import { loadSurahRecitation, verseAtTime, RECITER_NAME } from "../utils/quranRecitation";
 import { SURAHS } from "../data/surahs";
-import MushafTextPage from "./MushafTextPage";
+import { loadPageWords } from "../utils/mushafText";
+import { baselineFraction } from "../utils/mushafLines";
 import {
   FLIP_MODE_LABELS,
   getFlipMode,
@@ -354,6 +355,38 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     []
   );
 
+  // Which line numbers on this page the ayah being recited occupies — the
+  // ruler is drawn under each of them, and moves on by itself as the
+  // recitation advances.
+  const [pageLines, setPageLines] = useState(null); // { [verseKey]: number[] }
+  useEffect(() => {
+    if (!reciting) {
+      setPageLines(null);
+      return;
+    }
+    let cancelled = false;
+    loadPageWords(page)
+      .then(({ lines }) => {
+        if (cancelled) return;
+        const map = {};
+        lines.forEach((lineWords) => {
+          lineWords.forEach((w) => {
+            (map[w.verseKey] ||= new Set()).add(w.line);
+          });
+        });
+        setPageLines(Object.fromEntries(Object.entries(map).map(([k, v]) => [k, [...v]])));
+      })
+      .catch(() => {
+        if (!cancelled) setPageLines(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, reciting]);
+
+  const rulerLines =
+    reciting && currentAyah && pageLines ? pageLines[currentAyah.verseKey] || [] : [];
+
   return createPortal(
     <div className="quran-fs">
       {/* Right-to-left across its own strip: السورة، الجزء، الحزب.
@@ -495,8 +528,10 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         onTouchEnd={handleTouchEnd}
       >
         {loading && <div className="quran-page-loading">جارٍ التحميل...</div>}
+        {/* The original printed page, untouched — the ruler is drawn over
+            it rather than the artwork being rebuilt. */}
         <div
-          className="quran-fs-text-wrap"
+          className="quran-fs-page-holder"
           style={{
             // Fade rather than swap — a hard cut between pages feels jarring
             // next to a soft turning sound.
@@ -504,23 +539,29 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           }}
         >
-          <MushafTextPage page={page} activeVerseKey={currentAyah?.verseKey} onReady={() => setLoading(false)} />
+          <img
+            src={pageUrl(page)}
+            alt={`صفحة ${page}`}
+            className="quran-fs-img"
+            onLoad={() => setLoading(false)}
+          />
+          {rulerLines.map((n) => {
+            const frac = baselineFraction(page, n);
+            return frac == null ? null : (
+              <span key={n} className="quran-fs-ruler" style={{ top: `${frac * 100}%` }} />
+            );
+          })}
         </div>
 
         {turning && (
-          // Renders the same text component the page itself uses — a photo
-          // here (the old approach) flashed as a visibly different style
-          // against the new text page for the length of the animation.
-          <div
+          <img
             key={turning.page}
+            src={pageUrl(turning.page)}
+            alt=""
             aria-hidden="true"
             className={`quran-fs-turning ${turning.dir}`}
             style={{ animationDuration: `${flipMs}ms` }}
-          >
-            <div className="quran-fs-text-wrap">
-              <MushafTextPage page={turning.page} />
-            </div>
-          </div>
+          />
         )}
 
         {/* At the outer edges rather than over the toolbar — kept away
