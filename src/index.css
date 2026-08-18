@@ -1399,7 +1399,11 @@ label {
    and slides to the next line as the recitation moves on. */
 .quran-fs-ruler {
   position: absolute;
-  height: 1.5px;
+  /* A whole pixel — a fractional height (the previous 1.5px) lands on a
+     different sub-pixel row depending on its top offset, so the browser
+     antialiases some rulers thicker than others even though the CSS value
+     never changes. */
+  height: 2px;
   border-radius: 1px;
   background: #1f7a3d;
   transform: translateY(2px);
