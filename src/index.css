@@ -1417,16 +1417,60 @@ label {
   gap: 8px;
   margin: 10px 0 14px;
 }
-/* Plain, no box or gold border — just the name set apart by weight and a
-   little space, the way an ordinary printed line would read. */
+/* Ornamental سورة band in polished gold: a double-ruled frame with a
+   rosette medallion at each end, echoing the printed mushaf's banner
+   without copying its exact artwork. */
 .mushaf-surah-banner {
+  position: relative;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 2px solid #c9a227;
+  outline: 1px solid #e3c766;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, #fffaf0 0%, #fdf3d8 45%, #f7e7bd 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(201, 162, 39, 0.35);
+}
+.mushaf-banner-name {
   font-family: "Cairo", sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a1a1a;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  /* Polished-metal gold: light catches the upper third of the glyphs. */
+  background: linear-gradient(180deg, #f6e6a8 0%, #d4af37 38%, #a9791b 62%, #e8cf7d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 0.4px rgba(120, 86, 12, 0.55);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.mushaf-banner-rosette {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+}
+.mushaf-banner-rosette svg {
+  width: 100%;
+  height: 100%;
+}
+.mushaf-rose-ring {
+  fill: none;
+  stroke: #c9a227;
+  stroke-width: 1.6;
+}
+.mushaf-rose-petals ellipse {
+  fill: #dcb63f;
+}
+.mushaf-rose-core {
+  fill: #a9791b;
 }
 .mushaf-basmalah {
   font-size: clamp(19px, 5.6vw, 26px);

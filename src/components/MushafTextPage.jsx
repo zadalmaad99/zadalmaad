@@ -45,7 +45,33 @@ export default function MushafTextPage({ page, activeVerseKey, onReady }) {
             {starts.map((s) => (
               <div key={s.surah} className="mushaf-surah-open">
                 <div className="mushaf-surah-banner">
-                  <span>سورة {SURAHS.find((x) => x.number === s.surah)?.name}</span>
+                  <span className="mushaf-banner-rosette" aria-hidden="true">
+                    <svg viewBox="0 0 40 40">
+                      <circle cx="20" cy="20" r="17" className="mushaf-rose-ring" />
+                      <circle cx="20" cy="20" r="11" className="mushaf-rose-ring" />
+                      <g className="mushaf-rose-petals">
+                        {Array.from({ length: 8 }).map((_, k) => (
+                          <ellipse key={k} cx="20" cy="7.5" rx="2.6" ry="5" transform={`rotate(${k * 45} 20 20)`} />
+                        ))}
+                      </g>
+                      <circle cx="20" cy="20" r="3.2" className="mushaf-rose-core" />
+                    </svg>
+                  </span>
+                  <span className="mushaf-banner-name">
+                    سورة {SURAHS.find((x) => x.number === s.surah)?.name}
+                  </span>
+                  <span className="mushaf-banner-rosette" aria-hidden="true">
+                    <svg viewBox="0 0 40 40">
+                      <circle cx="20" cy="20" r="17" className="mushaf-rose-ring" />
+                      <circle cx="20" cy="20" r="11" className="mushaf-rose-ring" />
+                      <g className="mushaf-rose-petals">
+                        {Array.from({ length: 8 }).map((_, k) => (
+                          <ellipse key={k} cx="20" cy="7.5" rx="2.6" ry="5" transform={`rotate(${k * 45} 20 20)`} />
+                        ))}
+                      </g>
+                      <circle cx="20" cy="20" r="3.2" className="mushaf-rose-core" />
+                    </svg>
+                  </span>
                 </div>
                 {/* الفاتحة's بسملة is itself its counted first ayah (rendered
                     below via the real word glyphs) and التوبة has none at
