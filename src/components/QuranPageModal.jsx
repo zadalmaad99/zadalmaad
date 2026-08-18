@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { getPageInfo, hizbLabel, surahNames, sajdasOnPage, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
 import { loadSurahRecitation, verseAtTime, RECITER_NAME } from "../utils/quranRecitation";
 import { SURAHS } from "../data/surahs";
-import { loadPageWords } from "../utils/mushafText";
+import { measureAyahSpans } from "../utils/measureAyahSpan";
 import { baselineFraction } from "../utils/mushafLines";
 import {
   FLIP_MODE_LABELS,
@@ -355,37 +355,31 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     []
   );
 
-  // Which line numbers on this page the ayah being recited occupies — the
-  // ruler is drawn under each of them, and moves on by itself as the
-  // recitation advances.
-  const [pageLines, setPageLines] = useState(null); // { [verseKey]: number[] }
+  // Only the ayah's own horizontal span on its line(s) — not the full line
+  // width — measured from the same font's real glyph widths so the ruler
+  // is as short as the ayah itself, and starts/ends mid-line when an ayah
+  // is split across a line break.
+  const [rulerSpans, setRulerSpans] = useState([]); // [{ line, left, right }]
+  const holderRef = useRef(null);
   useEffect(() => {
-    if (!reciting) {
-      setPageLines(null);
+    if (!reciting || !currentAyah) {
+      setRulerSpans([]);
       return;
     }
     let cancelled = false;
-    loadPageWords(page)
-      .then(({ lines }) => {
-        if (cancelled) return;
-        const map = {};
-        lines.forEach((lineWords) => {
-          lineWords.forEach((w) => {
-            (map[w.verseKey] ||= new Set()).add(w.line);
-          });
-        });
-        setPageLines(Object.fromEntries(Object.entries(map).map(([k, v]) => [k, [...v]])));
+    const width = holderRef.current?.getBoundingClientRect().width;
+    if (!width) return;
+    measureAyahSpans(page, currentAyah.verseKey, width)
+      .then((spans) => {
+        if (!cancelled) setRulerSpans(spans);
       })
       .catch(() => {
-        if (!cancelled) setPageLines(null);
+        if (!cancelled) setRulerSpans([]);
       });
     return () => {
       cancelled = true;
     };
-  }, [page, reciting]);
-
-  const rulerLines =
-    reciting && currentAyah && pageLines ? pageLines[currentAyah.verseKey] || [] : [];
+  }, [page, reciting, currentAyah]);
 
   return createPortal(
     <div className="quran-fs">
@@ -531,6 +525,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         {/* The original printed page, untouched — the ruler is drawn over
             it rather than the artwork being rebuilt. */}
         <div
+          ref={holderRef}
           className="quran-fs-page-holder"
           style={{
             // Fade rather than swap — a hard cut between pages feels jarring
@@ -545,10 +540,18 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             className="quran-fs-img"
             onLoad={() => setLoading(false)}
           />
-          {rulerLines.map((n) => {
-            const frac = baselineFraction(page, n);
-            return frac == null ? null : (
-              <span key={n} className="quran-fs-ruler" style={{ top: `${frac * 100}%` }} />
+          {rulerSpans.map((s) => {
+            const top = baselineFraction(page, s.line);
+            return top == null ? null : (
+              <span
+                key={s.line}
+                className="quran-fs-ruler"
+                style={{
+                  top: `${top * 100}%`,
+                  left: `${s.left * 100}%`,
+                  width: `${(s.right - s.left) * 100}%`,
+                }}
+              />
             );
           })}
         </div>

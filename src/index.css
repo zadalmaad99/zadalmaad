@@ -1399,13 +1399,11 @@ label {
    and slides to the next line as the recitation moves on. */
 .quran-fs-ruler {
   position: absolute;
-  inset-inline: 3.5%;
-  height: 3px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, rgba(31, 122, 61, 0) 0%, #1f7a3d 12%, #1f7a3d 88%, rgba(31, 122, 61, 0) 100%);
-  box-shadow: 0 0 6px rgba(31, 122, 61, 0.5);
+  height: 1.5px;
+  border-radius: 1px;
+  background: #1f7a3d;
   transform: translateY(2px);
-  transition: top 0.35s ease;
+  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease;
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1547,10 +1545,17 @@ label {
    edge it's bound to, so it reads as a leaf being turned rather than a
    crossfade. Forward turns pivot right (the mushaf's spine). */
 .quran-fs-turning {
+  /* Must match .quran-fs-page-holder's own sizing exactly (aspect-ratio
+     locked, centred by the flex stage) — it previously assumed the page
+     filled the stage edge-to-edge, so on a stage wider than the page's own
+     ratio the two no longer overlapped and looked like two pages side by
+     side instead of one turning over the other. */
   position: absolute;
-  inset: 6px;
-  width: calc(100% - 12px);
-  height: calc(100% - 12px);
+  inset: 0;
+  margin: auto;
+  aspect-ratio: 1260 / 2038;
+  max-width: calc(100% - 12px);
+  max-height: calc(100% - 12px);
   object-fit: contain;
   background: #fff;
   backface-visibility: hidden;
