@@ -57,6 +57,30 @@ export async function loadSurahRecitation(surahNumber) {
   }
 }
 
+// This per-ayah segmented archive strips the بسملة entirely — it isn't
+// tagged as belonging to any numbered ayah, so it never appears in a
+// surah's verse_timings and the recitation silently skipped straight to
+// the first real ayah (confirmed by inspecting the actual audio: no gap
+// wide enough for a spoken بسملة sits before 2:1 starts). الفاتحة's own
+// ayah 1 *is* a بسملة recitation by the same reciter, so it's reused as a
+// standalone clip and played first for every surah except الفاتحة itself
+// (whose بسملة is already its counted ayah 1) and التوبة (which has none).
+let basmalahPromise = null;
+export function loadBasmalah() {
+  if (!basmalahPromise) {
+    basmalahPromise = loadSurahRecitation(1).then(({ audioUrl, verses }) => ({
+      audioUrl,
+      from: 0,
+      to: verses[0].to,
+    }));
+  }
+  return basmalahPromise;
+}
+
+export function needsBasmalah(surahNumber) {
+  return surahNumber !== 1 && surahNumber !== 9;
+}
+
 // Binary search for the verse whose [from, to) window contains `time`.
 export function verseAtTime(verses, time) {
   let lo = 0,

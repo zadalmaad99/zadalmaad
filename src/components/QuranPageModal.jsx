@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getPageInfo, hizbLabel, surahNames, sajdasOnPage, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
-import { loadSurahRecitation, verseAtTime, RECITER_NAME } from "../utils/quranRecitation";
+import { loadSurahRecitation, verseAtTime, RECITER_NAME, loadBasmalah, needsBasmalah } from "../utils/quranRecitation";
 import { SURAHS } from "../data/surahs";
 import { measureAyahSpans } from "../utils/measureAyahSpan";
 import { baselineFraction } from "../utils/mushafLines";
@@ -243,9 +243,17 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     if (scale <= 1) setOffset({ x: 0, y: 0 });
   }
 
-  function jumpTo(target) {
+  function jumpTo(target, surahNumber) {
     setPicker(null);
     setSearch("");
+    // Picking a surah while reciting has to actually restart the audio
+    // there too — otherwise the page jumps but the audio (and the badge/
+    // ruler with it) just keeps going from wherever it already was,
+    // showing the wrong السورة entirely.
+    if (reciting && surahNumber) {
+      playSurah(surahNumber);
+      return;
+    }
     if (target === page) return;
     go(target - page);
   }
@@ -279,9 +287,14 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const [reciting, setReciting] = useState(false);
   const [recitingBusy, setRecitingBusy] = useState(false);
   const [currentAyah, setCurrentAyah] = useState(null);
+  const [readingBasmalah, setReadingBasmalah] = useState(false);
   const [recitationError, setRecitationError] = useState(null);
   const audioRef = useRef(null);
   const versesRef = useRef([]);
+  // Read by the timeupdate listener below — a ref because that listener is
+  // only re-attached when `reciting` changes, not on every render, so a
+  // plain state read inside it would stay stale for the whole clip.
+  const readingBasmalahRef = useRef(false);
 
   async function playSurah(surahNumber, seekVerseKey) {
     setRecitingBusy(true);
@@ -295,8 +308,37 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         audio.preload = "auto";
         audioRef.current = audio;
       }
-      audio.src = audioUrl;
       const startVerse = seekVerseKey ? verses.find((v) => v.verseKey === seekVerseKey) : verses[0];
+
+      // Only recited when genuinely starting the surah fresh from its own
+      // first ayah — resuming mid-surah shouldn't prepend it, same as a
+      // real reciter wouldn't. While it plays, the ruler must stay off
+      // ayah 1 entirely — beginners following along would otherwise be
+      // taught the wrong words sit under the ruler.
+      if (needsBasmalah(surahNumber) && startVerse?.verseKey === verses[0]?.verseKey) {
+        readingBasmalahRef.current = true;
+        setReadingBasmalah(true);
+        setCurrentAyah(null);
+        const bas = await loadBasmalah();
+        await new Promise((resolve, reject) => {
+          audio.src = bas.audioUrl;
+          audio.currentTime = bas.from;
+          audio.onended = null;
+          function onTime() {
+            if (audio.currentTime >= bas.to - 0.05) {
+              audio.pause();
+              audio.removeEventListener("timeupdate", onTime);
+              resolve();
+            }
+          }
+          audio.addEventListener("timeupdate", onTime);
+          audio.play().catch(reject);
+        });
+        readingBasmalahRef.current = false;
+        setReadingBasmalah(false);
+      }
+
+      audio.src = audioUrl;
       audio.currentTime = startVerse?.from || 0;
       audio.onended = () => {
         if (surahNumber < 114) playSurah(surahNumber + 1);
@@ -338,6 +380,12 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     const audio = audioRef.current;
     if (!audio || !reciting) return;
     function onTime() {
+      // The بسملة clip is a few seconds of a *different* surah's (الفاتحة)
+      // audio playing through this same element — looking up the target
+      // surah's verse timings against it would resolve to ayah 1 by
+      // coincidence and draw the ruler there before it's actually being
+      // recited.
+      if (readingBasmalahRef.current) return;
       const v = verseAtTime(versesRef.current, audio.currentTime);
       if (!v) return;
       setCurrentAyah((prev) => (prev?.verseKey === v.verseKey ? prev : v));
@@ -412,7 +460,15 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
       {/* Names the ayah currently being recited — the page is a photograph
           with no per-word coordinates, so this is a named indicator rather
           than a box drawn over the exact words. */}
-      {reciting && currentAyah && (
+      {readingBasmalah && (
+        <div className="quran-fs-ayah-badge basmalah">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="quran-fs-pulse-dot">
+            <circle cx="12" cy="12" r="5" />
+          </svg>
+          البسملة
+        </div>
+      )}
+      {reciting && !readingBasmalah && currentAyah && (
         <div className="quran-fs-ayah-badge">
           <svg viewBox="0 0 24 24" fill="currentColor" className="quran-fs-pulse-dot">
             <circle cx="12" cy="12" r="5" />
@@ -444,7 +500,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
                 <button
                   type="button"
                   className={it.active ? "active" : ""}
-                  onClick={() => jumpTo(it.page)}
+                  onClick={() => jumpTo(it.page, picker === "surah" ? it.number : null)}
                 >
                   <span className="quran-fs-picker-num">{it.number}</span>
                   <span className="quran-fs-picker-name">{it.label}</span>
