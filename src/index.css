@@ -1009,6 +1009,7 @@ label {
   white-space: nowrap;
 }
 .quran-fs-juz,
+.quran-fs-page-jump,
 .quran-fs-hizb {
   font-size: 11.5px;
   font-weight: 700;
@@ -1379,6 +1380,11 @@ label {
 .quran-fs-stage {
   position: relative;
   flex: 1;
+  /* Lets the browser/WebView keep vertical scroll gestures but stops it
+     from also treating a horizontal drag as its own edge-swipe-back
+     navigation (which drew a native green arrow hint over the page). */
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
   /* Never collapses to nothing in a short viewport (e.g. an embedded
      preview pane) — the surrounding chrome should scroll away before the
      page itself disappears. */

@@ -216,6 +216,15 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         x: e.touches[0].clientX - panRef.current.x,
         y: e.touches[0].clientY - panRef.current.y,
       });
+    } else if (swipeRef.current && e.touches.length === 1) {
+      // Without this, a plain single-finger horizontal drag is also read by
+      // the browser/WebView itself as its own edge-swipe-back gesture, which
+      // draws its own green arrow hint on top of the page — this stops that
+      // native gesture from ever engaging once we recognise the drag as ours.
+      const s = swipeRef.current;
+      const dx = e.touches[0].clientX - s.x;
+      const dy = e.touches[0].clientY - s.y;
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) e.preventDefault();
     }
   }
 
@@ -243,6 +252,21 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     if (scale <= 1) setOffset({ x: 0, y: 0 });
   }
 
+  // The recitation timing data and the mushaf page images come from two
+  // different sources, so their page numbers don't always agree exactly at
+  // a surah's boundary. Looking for an exact page match and falling back to
+  // verses[0] on a miss silently restarted the surah from أية 1 even when
+  // we were clearly mid-surah — this instead falls back to the closest verse
+  // at or before the current page, never jumping back past where we are.
+  function verseForPage(verses, targetPage) {
+    let candidate = verses[0];
+    for (const v of verses) {
+      if (v.page <= targetPage) candidate = v;
+      else break;
+    }
+    return candidate;
+  }
+
   function jumpTo(target, surahNumber) {
     setPicker(null);
     setSearch("");
@@ -261,7 +285,9 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const q = search.trim();
   const pickerItems =
     picker === "surah"
-      ? SURAH_STARTS.filter((s) => !q || s.name.includes(q) || String(s.number) === q).map((s) => ({
+      ? SURAH_STARTS.filter(
+          (s) => !q || s.name.includes(q) || String(s.number) === q || String(s.page) === q
+        ).map((s) => ({
           key: `s${s.number}`,
           number: s.number,
           label: s.name,
@@ -276,7 +302,17 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             page: j.page,
             active: !!info?.juz.includes(j.number),
           }))
-        : [];
+        : picker === "page"
+          ? Array.from({ length: 604 }, (_, i) => i + 1)
+              .filter((p) => !q || String(p).includes(q))
+              .map((p) => ({
+                key: `p${p}`,
+                number: p,
+                label: `صفحة ${p}`,
+                page: p,
+                active: p === page,
+              }))
+          : [];
 
   // Reading along with الشيخ المنشاوي: fetches one surah's timing at a time
   // (cached across the session), turns the page itself when the audio
@@ -364,13 +400,13 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
     const startSurah = info?.surahs[0]?.number;
     if (!startSurah) return;
     if (versesRef.current[0]?.surah === startSurah && audioRef.current) {
-      const onThisPage = versesRef.current.find((v) => v.page === page);
+      const onThisPage = verseForPage(versesRef.current, page);
       audioRef.current.currentTime = onThisPage?.from ?? 0;
       audioRef.current.play();
       setReciting(true);
     } else {
       loadSurahRecitation(startSurah).then(({ verses }) => {
-        const onThisPage = verses.find((v) => v.page === page);
+        const onThisPage = verseForPage(verses, page);
         playSurah(startSurah, onThisPage?.verseKey);
       });
     }
@@ -454,6 +490,16 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             <path d="m6 9 6 6 6-6" />
           </svg>
         </button>
+        <button
+          type="button"
+          className="quran-fs-page-jump quran-fs-jump"
+          onClick={() => setPicker(picker === "page" ? null : "page")}
+        >
+          صفحة {page}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
         <span className="quran-fs-hizb">{info ? hizbLabel(info.hizbQuarter) : ""}</span>
       </div>
 
@@ -486,7 +532,14 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={picker === "surah" ? "ابحث عن سورة..." : "ابحث عن جزء..."}
+              inputMode={picker === "page" ? "numeric" : "text"}
+              placeholder={
+                picker === "surah"
+                  ? "ابحث عن سورة أو رقم صفحة..."
+                  : picker === "juz"
+                    ? "ابحث عن جزء..."
+                    : "ابحث برقم الصفحة..."
+              }
             />
             <button type="button" onClick={() => setPicker(null)} aria-label="إغلاق">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -504,7 +557,7 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
                 >
                   <span className="quran-fs-picker-num">{it.number}</span>
                   <span className="quran-fs-picker-name">{it.label}</span>
-                  <span className="quran-fs-picker-page">صفحة {it.page}</span>
+                  {picker !== "page" && <span className="quran-fs-picker-page">صفحة {it.page}</span>}
                 </button>
               </li>
             ))}
