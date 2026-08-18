@@ -17,14 +17,18 @@ function fontFamilyFor(page) {
 export async function loadPageWords(page) {
   if (wordsCache.has(page)) return wordsCache.get(page);
   const promise = (async () => {
+    // code_v2 is the codepoint scheme that matches the QCF *v2* font files
+    // below — code_v1 belongs to the older QCF v1 fonts and renders as
+    // garbled shapes when paired with a v2 font, which is exactly the bug
+    // this was shipped with the first time.
     const res = await fetch(
-      `https://api.qurancdn.com/api/qdc/verses/by_page/${page}?words=true&word_fields=code_v1,line_number,verse_key&mushaf=2&per_page=100`
+      `https://api.qurancdn.com/api/qdc/verses/by_page/${page}?words=true&word_fields=code_v2,line_number,verse_key&mushaf=2&per_page=100`
     );
     if (!res.ok) throw new Error("تعذّر جلب نص الصفحة");
     const json = await res.json();
     const words = json.verses.flatMap((v) =>
       v.words.map((w) => ({
-        code: w.code_v1,
+        code: w.code_v2,
         line: w.line_number,
         verseKey: w.verse_key,
         type: w.char_type_name,
