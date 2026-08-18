@@ -963,6 +963,11 @@ label {
   background: #f7f1e4;
   display: flex;
   flex-direction: column;
+  /* If the surrounding chrome (place strip + toolbar + footer) ever adds
+     up to more than the available height, the panel scrolls as a whole
+     rather than silently squeezing the stage's min-height into
+     invisibility. */
+  overflow-y: auto;
   /* Keep the whole reader clear of the status bar and the gesture bar —
      otherwise the toolbar hides under the clock and the page runs beneath
      the system navigation. */
@@ -971,9 +976,10 @@ label {
 }
 .quran-fs-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   padding: 9px 12px;
   margin: 8px 10px 0;
   border-radius: 10px;
@@ -1134,10 +1140,121 @@ label {
   font-size: 12.5px;
   color: #9c8862;
 }
-.quran-fs-pager {
+.quran-fs-edge-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(253, 250, 243, 0.75);
+  border: 1px solid #e2d3ae;
+  color: #6b5426;
+  box-shadow: 0 2px 8px rgba(90, 68, 28, 0.15);
+  z-index: 2;
+}
+.quran-fs-edge-arrow:hover:not(:disabled) {
+  background: #fdfaf3;
+  transform: translateY(-50%);
+  box-shadow: 0 2px 8px rgba(90, 68, 28, 0.15);
+}
+.quran-fs-edge-arrow:disabled {
+  opacity: 0.3;
+}
+.quran-fs-edge-arrow.prev {
+  right: 6px;
+}
+.quran-fs-edge-arrow.next {
+  left: 6px;
+}
+.quran-fs-edge-arrow svg {
+  width: 19px;
+  height: 19px;
+}
+.quran-fs-recite {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: #f2e8d2;
+  border: 1px solid #e2d3ae;
+  color: #6b5426;
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.quran-fs-recite:hover:not(:disabled) {
+  background: #e8dabc;
+  transform: none;
+  box-shadow: none;
+}
+.quran-fs-recite.active {
+  background: #1f7a3d;
+  border-color: #1f7a3d;
+  color: #fff;
+}
+.quran-fs-recite svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.quran-fs-spin {
+  animation: quran-fs-spin 0.8s linear infinite;
+}
+@keyframes quran-fs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.quran-fs-ayah-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 7px;
+  margin: 0 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #eef7ee;
+  border: 1px solid #bfe3c1;
+  color: #1f7a3d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.quran-fs-pulse-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  animation: quran-fs-dot-pulse 1.4s ease-in-out infinite;
+}
+@keyframes quran-fs-dot-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.quran-fs-recite-error {
+  margin: 0 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #fdeaea;
+  border: 1px solid #f3b9b9;
+  color: #a33;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quran-fs-spin,
+  .quran-fs-pulse-dot {
+    animation: none;
+  }
 }
 .quran-fs-zoom {
   display: flex;
@@ -1248,7 +1365,10 @@ label {
 .quran-fs-stage {
   position: relative;
   flex: 1;
-  min-height: 0;
+  /* Never collapses to nothing in a short viewport (e.g. an embedded
+     preview pane) — the surrounding chrome should scroll away before the
+     page itself disappears. */
+  min-height: 260px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -1267,6 +1387,49 @@ label {
   will-change: transform, opacity;
   /* Unhurried fade so turning a page feels settled, not snapped. */
   transition: opacity 0.42s ease;
+}
+/* Real per-word mushaf text (replaces the photo for the current page —
+   the turning-away sheet above still uses the photo, which is fine since
+   it's only ever on screen mid-flip). */
+.quran-fs-text-wrap {
+  width: min(100%, 480px);
+  max-height: 100%;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 4px;
+  padding: 18px 14px;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  transition: opacity 0.42s ease;
+}
+.mushaf-text-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mushaf-text-line {
+  text-align: justify;
+  text-align-last: justify;
+  font-size: clamp(20px, 6.2vw, 30px);
+  line-height: 2;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+.mushaf-word {
+  display: inline;
+  border-radius: 4px;
+  padding: 1px 0;
+  transition: background 0.25s ease;
+}
+.mushaf-word.active {
+  background: #d7ecd9;
+  box-shadow: 0 0 0 3px #d7ecd9;
+}
+.mushaf-text-error {
+  padding: 30px 16px;
+  text-align: center;
+  color: #9c8862;
+  font-size: 13px;
 }
 @media (prefers-reduced-motion: reduce) {
   .quran-fs-img {

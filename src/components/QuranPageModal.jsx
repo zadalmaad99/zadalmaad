@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getPageInfo, hizbLabel, surahNames, sajdasOnPage, SURAH_STARTS, JUZ_STARTS } from "../utils/quranPageInfo";
+import { loadSurahRecitation, verseAtTime, RECITER_NAME } from "../utils/quranRecitation";
+import { SURAHS } from "../data/surahs";
+import MushafTextPage from "./MushafTextPage";
 import {
   FLIP_MODE_LABELS,
   getFlipMode,
@@ -130,24 +133,34 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
   const panRef = useRef(null);
   const swipeRef = useRef(null);
   const turnTimerRef = useRef(null);
+  const pageRef = useRef(page);
+  pageRef.current = page;
 
-  function go(delta) {
-    const next = Math.min(PAGE_COUNT, Math.max(1, page + delta));
+  // Reads pageRef instead of the `page` prop directly so it stays correct
+  // when called from long-lived callbacks (the recitation timeupdate
+  // listener below) whose closures were created on an earlier render.
+  function goToPage(target) {
+    const from = pageRef.current;
+    const next = Math.min(PAGE_COUNT, Math.max(1, target));
     // Deliberately not blocked while a turn is still animating: at slow
     // speeds that swallowed every follow-up swipe for over a second and
     // made the reader feel dead. A new turn just restarts the animation.
-    if (next === page) return;
+    if (next === from) return;
     playPageFlip(softness, soundMode);
     // The outgoing sheet keeps rendering on top and rotates about the edge
     // it's bound on, revealing the new page underneath — the same motion as
     // turning a real leaf, rather than a cut or a fade.
-    setTurning({ page, dir: delta > 0 ? "fwd" : "back" });
+    setTurning({ page: from, dir: next > from ? "fwd" : "back" });
     clearTimeout(turnTimerRef.current);
     turnTimerRef.current = setTimeout(() => setTurning(null), flipMs);
     setLoading(true);
     setScale(1);
     setOffset({ x: 0, y: 0 });
     onPageChange(next);
+  }
+
+  function go(delta) {
+    goToPage(page + delta);
   }
 
   useEffect(() => {
@@ -256,13 +269,90 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
           }))
         : [];
 
-  function zoom(delta) {
-    setScale((s) => {
-      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s + delta));
-      if (next <= 1) setOffset({ x: 0, y: 0 });
-      return next;
-    });
+  // Reading along with الشيخ المنشاوي: fetches one surah's timing at a time
+  // (cached across the session), turns the page itself when the audio
+  // crosses onto the next one, and marks which ayah is playing. The mushaf
+  // pages are photographs with no per-word coordinates, so there is no
+  // reliable way to box the exact words — the indicator names the ayah
+  // instead of drawing over it.
+  const [reciting, setReciting] = useState(false);
+  const [recitingBusy, setRecitingBusy] = useState(false);
+  const [currentAyah, setCurrentAyah] = useState(null);
+  const [recitationError, setRecitationError] = useState(null);
+  const audioRef = useRef(null);
+  const versesRef = useRef([]);
+
+  async function playSurah(surahNumber, seekVerseKey) {
+    setRecitingBusy(true);
+    setRecitationError(null);
+    try {
+      const { audioUrl, verses } = await loadSurahRecitation(surahNumber);
+      versesRef.current = verses;
+      let audio = audioRef.current;
+      if (!audio) {
+        audio = new Audio();
+        audio.preload = "auto";
+        audioRef.current = audio;
+      }
+      audio.src = audioUrl;
+      const startVerse = seekVerseKey ? verses.find((v) => v.verseKey === seekVerseKey) : verses[0];
+      audio.currentTime = startVerse?.from || 0;
+      audio.onended = () => {
+        if (surahNumber < 114) playSurah(surahNumber + 1);
+        else setReciting(false);
+      };
+      await audio.play();
+      setReciting(true);
+    } catch {
+      setRecitationError("تعذّر تشغيل التلاوة — تحقّق من اتصال الإنترنت");
+      setReciting(false);
+    } finally {
+      setRecitingBusy(false);
+    }
   }
+
+  function toggleRecitation() {
+    if (reciting) {
+      audioRef.current?.pause();
+      setReciting(false);
+      return;
+    }
+    // Start from the current page's first ayah, mid-surah if needed.
+    const startSurah = info?.surahs[0]?.number;
+    if (!startSurah) return;
+    if (versesRef.current[0]?.surah === startSurah && audioRef.current) {
+      const onThisPage = versesRef.current.find((v) => v.page === page);
+      audioRef.current.currentTime = onThisPage?.from ?? 0;
+      audioRef.current.play();
+      setReciting(true);
+    } else {
+      loadSurahRecitation(startSurah).then(({ verses }) => {
+        const onThisPage = verses.find((v) => v.page === page);
+        playSurah(startSurah, onThisPage?.verseKey);
+      });
+    }
+  }
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !reciting) return;
+    function onTime() {
+      const v = verseAtTime(versesRef.current, audio.currentTime);
+      if (!v) return;
+      setCurrentAyah((prev) => (prev?.verseKey === v.verseKey ? prev : v));
+      if (v.page !== pageRef.current) goToPage(v.page);
+    }
+    audio.addEventListener("timeupdate", onTime);
+    return () => audio.removeEventListener("timeupdate", onTime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reciting]);
+
+  useEffect(
+    () => () => {
+      audioRef.current?.pause();
+    },
+    []
+  );
 
   return createPortal(
     <div className="quran-fs">
@@ -291,6 +381,19 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         </button>
         <span className="quran-fs-hizb">{info ? hizbLabel(info.hizbQuarter) : ""}</span>
       </div>
+
+      {/* Names the ayah currently being recited — the page is a photograph
+          with no per-word coordinates, so this is a named indicator rather
+          than a box drawn over the exact words. */}
+      {reciting && currentAyah && (
+        <div className="quran-fs-ayah-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="quran-fs-pulse-dot">
+            <circle cx="12" cy="12" r="5" />
+          </svg>
+          {SURAHS.find((s) => s.number === currentAyah.surah)?.name} — آية {currentAyah.ayah}
+        </div>
+      )}
+      {recitationError && <div className="quran-fs-recite-error">{recitationError}</div>}
 
       {picker && (
         <div className="quran-fs-picker">
@@ -328,35 +431,30 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
       )}
 
       <div className="quran-fs-bar">
-        {/* Always-working page turn, independent of swipe/zoom state — a
-            swipe is ambiguous with panning once scale > 1 (that's the
-            whole reason panning was added), so these are the reliable
-            fallback rather than the only way to turn a zoomed page. */}
-        <div className="quran-fs-pager">
-          <button type="button" onClick={() => go(-1)} disabled={page <= 1} aria-label="الصفحة السابقة">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-              <path d="m9 18 6-6-6-6" />
+        {/* التلاوة مع الشيخ المنشاوي — تشغيل/إيقاف، مع تقليب الصفحة تلقائيًا. */}
+        <button
+          type="button"
+          className={reciting ? "quran-fs-recite active" : "quran-fs-recite"}
+          onClick={toggleRecitation}
+          disabled={recitingBusy}
+          title={`تلاوة ${RECITER_NAME}`}
+          aria-label={reciting ? "إيقاف التلاوة" : "تشغيل التلاوة"}
+        >
+          {recitingBusy ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="quran-fs-spin">
+              <path d="M21 12a9 9 0 1 1-9-9" />
             </svg>
-          </button>
-          <button type="button" onClick={() => go(1)} disabled={page >= PAGE_COUNT} aria-label="الصفحة التالية">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-              <path d="m15 18-6-6 6-6" />
+          ) : reciting ? (
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 5h3v14H7zM14 5h3v14h-3z" />
             </svg>
-          </button>
-        </div>
-        <div className="quran-fs-zoom">
-          <button type="button" onClick={() => zoom(-0.25)} disabled={scale <= MIN_SCALE} aria-label="تصغير">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14" />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7Z" />
             </svg>
-          </button>
-          <span>{Math.round(scale * 100)}%</span>
-          <button type="button" onClick={() => zoom(0.25)} disabled={scale >= MAX_SCALE} aria-label="تكبير">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-        </div>
+          )}
+          <span>تلاوة</span>
+        </button>
         {/* Sound on/off; the softness itself is tuned in الإعدادات. */}
         <button
           type="button"
@@ -397,18 +495,17 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         onTouchEnd={handleTouchEnd}
       >
         {loading && <div className="quran-page-loading">جارٍ التحميل...</div>}
-        <img
-          src={pageUrl(page)}
-          alt={`صفحة ${page}`}
-          className="quran-fs-img"
-          onLoad={() => setLoading(false)}
+        <div
+          className="quran-fs-text-wrap"
           style={{
             // Fade rather than swap — a hard cut between pages feels jarring
             // next to a soft turning sound.
             opacity: loading ? 0 : 1,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           }}
-        />
+        >
+          <MushafTextPage page={page} activeVerseKey={currentAyah?.verseKey} onReady={() => setLoading(false)} />
+        </div>
 
         {turning && (
           <img
@@ -420,10 +517,34 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
             style={{ animationDuration: `${flipMs}ms` }}
           />
         )}
+
+        {/* At the outer edges rather than over the toolbar — kept away
+            from the text itself, which is what made the earlier top-row
+            buttons unpleasant. */}
+        <button
+          type="button"
+          className="quran-fs-edge-arrow prev"
+          onClick={() => go(-1)}
+          disabled={page <= 1}
+          aria-label="الصفحة السابقة"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="quran-fs-edge-arrow next"
+          onClick={() => go(1)}
+          disabled={page >= PAGE_COUNT}
+          aria-label="الصفحة التالية"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
       </div>
 
-      {/* No arrow buttons — they sat on top of the text. Paging is by
-          swipe (and by keyboard on desktop). */}
       <div className="quran-fs-foot">
         {sajdas.length > 0 && (
           <span className="quran-fs-sajda" title={sajdas.map((s) => `${s.surah} ${s.ayah}`).join(" · ")}>
