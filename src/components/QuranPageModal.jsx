@@ -508,14 +508,19 @@ function QuranFullscreenReader({ page, onPageChange, onClose }) {
         </div>
 
         {turning && (
-          <img
+          // Renders the same text component the page itself uses — a photo
+          // here (the old approach) flashed as a visibly different style
+          // against the new text page for the length of the animation.
+          <div
             key={turning.page}
-            src={pageUrl(turning.page)}
-            alt=""
             aria-hidden="true"
             className={`quran-fs-turning ${turning.dir}`}
             style={{ animationDuration: `${flipMs}ms` }}
-          />
+          >
+            <div className="quran-fs-text-wrap">
+              <MushafTextPage page={turning.page} />
+            </div>
+          </div>
         )}
 
         {/* At the outer edges rather than over the toolbar — kept away

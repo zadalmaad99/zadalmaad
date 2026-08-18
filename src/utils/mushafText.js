@@ -22,7 +22,7 @@ export async function loadPageWords(page) {
     // garbled shapes when paired with a v2 font, which is exactly the bug
     // this was shipped with the first time.
     const res = await fetch(
-      `https://api.qurancdn.com/api/qdc/verses/by_page/${page}?words=true&word_fields=code_v2,line_number,verse_key&mushaf=2&per_page=100`
+      `https://api.qurancdn.com/api/qdc/verses/by_page/${page}?words=true&word_fields=code_v2,line_number,verse_key&fields=verse_number&mushaf=2&per_page=100`
     );
     if (!res.ok) throw new Error("تعذّر جلب نص الصفحة");
     const json = await res.json();
@@ -36,7 +36,19 @@ export async function loadPageWords(page) {
     );
     const lineNumbers = [...new Set(words.map((w) => w.line))].sort((a, b) => a - b);
     const lines = lineNumbers.map((n) => words.filter((w) => w.line === n));
-    return { lines };
+
+    // The API only returns ayah words — the ornamental سورة banner and the
+    // unnumbered opening بسملة are page furniture it doesn't carry, so a
+    // surah's first line on this page is detected here and the two are
+    // inserted just above it (skipped for surah 9, which has no بسملة).
+    const surahStarts = json.verses
+      .filter((v) => v.verse_number === 1)
+      .map((v) => ({
+        surah: Number(v.verse_key.split(":")[0]),
+        beforeLine: v.words[0]?.line_number,
+      }));
+
+    return { lines, surahStarts };
   })();
   wordsCache.set(page, promise);
   try {

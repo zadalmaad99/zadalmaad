@@ -1407,6 +1407,33 @@ label {
   flex-direction: column;
   gap: 2px;
 }
+/* Recreates the printed mushaf's سورة banner and بسملة — page furniture the
+   word API doesn't return, approximated here with CSS ornament rather than
+   the exact proprietary artwork (which isn't something this can source). */
+.mushaf-surah-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+/* Plain, no box or gold border — just the name set apart by weight and a
+   little space, the way an ordinary printed line would read. */
+.mushaf-surah-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cairo", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.mushaf-basmalah {
+  font-size: clamp(19px, 5.6vw, 26px);
+  color: #1a1a1a;
+  font-family: "Cairo", sans-serif;
+  font-weight: 600;
+}
 .mushaf-text-line {
   text-align: justify;
   text-align-last: justify;
@@ -1455,8 +1482,11 @@ label {
   inset: 6px;
   width: calc(100% - 12px);
   height: calc(100% - 12px);
-  object-fit: contain;
-  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f7f1e4;
   backface-visibility: hidden;
   pointer-events: none;
   z-index: 3;

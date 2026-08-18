@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { loadPageFont, loadPageWords } from "../utils/mushafText";
+import { SURAHS } from "../data/surahs";
+
+const BASMALAH = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
 
 // Renders one mushaf page as real justified text in that page's own
 // bespoke font, instead of a photograph — the only way a specific ayah can
-// actually be highlighted rather than just named in a badge.
+// actually be highlighted rather than just named in a badge. The ornamental
+// سورة banner and the بسملة are page furniture the word API doesn't carry,
+// so they're reconstructed here to match the printed mushaf's layout.
 export default function MushafTextPage({ page, activeVerseKey, onReady }) {
-  const [data, setData] = useState(null); // { lines, fontFamily } | null
+  const [data, setData] = useState(null); // { lines, surahStarts, fontFamily } | null
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -32,18 +37,35 @@ export default function MushafTextPage({ page, activeVerseKey, onReady }) {
 
   return (
     <div className="mushaf-text-page" style={{ fontFamily: data.fontFamily }} dir="rtl">
-      {data.lines.map((line, i) => (
-        <div className="mushaf-text-line" key={i}>
-          {line.map((w, j) => (
-            <span
-              key={j}
-              className={w.verseKey === activeVerseKey ? "mushaf-word active" : "mushaf-word"}
-            >
-              {w.code}
-            </span>
-          ))}
-        </div>
-      ))}
+      {data.lines.map((line, i) => {
+        const lineNumber = line[0]?.line;
+        const starts = (data.surahStarts || []).filter((s) => s.beforeLine === lineNumber);
+        return (
+          <div key={i}>
+            {starts.map((s) => (
+              <div key={s.surah} className="mushaf-surah-open">
+                <div className="mushaf-surah-banner">
+                  <span>سورة {SURAHS.find((x) => x.number === s.surah)?.name}</span>
+                </div>
+                {/* الفاتحة's بسملة is itself its counted first ayah (rendered
+                    below via the real word glyphs) and التوبة has none at
+                    all — both would otherwise show it twice. */}
+                {s.surah !== 1 && s.surah !== 9 && <div className="mushaf-basmalah">{BASMALAH}</div>}
+              </div>
+            ))}
+            <div className="mushaf-text-line">
+              {line.map((w, j) => (
+                <span
+                  key={j}
+                  className={w.verseKey === activeVerseKey ? "mushaf-word active" : "mushaf-word"}
+                >
+                  {w.code}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
